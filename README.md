@@ -26,10 +26,10 @@ In accordance with strict verification criteria, features are marked as **`VERIF
 
 | Controller Model | Protocol Family | Feature Coverage | Status |
 | :--- | :---: | :--- | :--- |
-| **Virtual Device Simulator** | `SP621E (Sim)` | Power, RGB, Brightness, Speed, Effects, Notifications | **VERIFIED (Simulator)** |
-| **SP621E Mini Controller** | `BanlanX2` | Full protocol mapping (`0xA0` opcodes, `0xFFE0` GATT) | **Implemented, untested on hardware** |
-| **SP611E SPI Controller** | `BanlanX2` | Full protocol mapping | **Implemented, untested on hardware** |
-| **SP620E USB Controller** | `BanlanX2` | Full protocol mapping | **Implemented, untested on hardware** |
+| **Virtual Device Simulator** | `SP6xxE (Sim)` | Power, RGB, Brightness, Speed, Effects, Notifications | **VERIFIED (Simulator)** |
+| **SP621E Mini Controller** | `SP6xxE Standard` | Full protocol mapping (`0xA0` opcodes, `0xFFE0` GATT) | **Implemented, untested on hardware** |
+| **SP611E SPI Controller** | `SP6xxE Standard` | Full protocol mapping | **Implemented, untested on hardware** |
+| **SP620E USB Controller** | `SP6xxE Standard` | Full protocol mapping | **Implemented, untested on hardware** |
 
 ---
 
@@ -107,11 +107,25 @@ cargo xtask package
 
 ---
 
-## Compatibility and Disclaimer
+## Compatibility and Legal Disclaimer
 
-**Unofficial Software**: Pyxillum is an independent, clean-room open-source project created strictly for hardware interoperability. It is not affiliated with, authorized by, endorsed by, or in any way officially connected with Shenzhen Sperll Optoelectronic Technology Co., Ltd. or the developers of the companion mobile applications (`SceneX`, `BanlanX`).
+**Independent Clean-Room Implementation**: Pyxillum is an entirely independent, clean-room reverse-engineered open-source project created solely for hardware interoperability. It is not affiliated with, authorised by, endorsed by, or in any way associated with the manufacturers of any physical pixel LED controllers or the developers of any proprietary mobile applications.
 
-All brand names, trademarks, and model designations (such as "SP621E", "SceneX", "Sperll") are used solely in a factual, nominative sense to denote hardware compatibility.
+All hardware model designations (such as "SP621E", "SP611E", "SP620E") are used solely in a factual, nominative sense to indicate device compatibility under international reverse-engineering and interoperability protections, including Directive 2009/24/EC Article 6 and United States Code Title 17 Section 1201(f).
+
+## Limitation of Liability & Legal Immunity
+
+This project is distributed under the GNU Affero General Public License v3.0 (`AGPL-3.0-or-later`). To the maximum extent permitted by applicable law:
+
+1. **Disclaimer of Warranty**: The software is provided "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+2. **Limitation of Liability**: IN NO EVENT SHALL THE AUTHORS, MAINTAINERS, CONTRIBUTORS, OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, LOSS OF DATA, DEVICE MALFUNCTION, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+3. **No Proprietary Assets**: This repository contains zero proprietary binary blobs, zero decompiled source code, zero third-party trade dress, and zero copyrighted artwork or strings.
+
+---
+
+## Agent and Developer Context
+
+For comprehensive technical context, architectural rules, confidence tags, and workflow guidance for automated tools and AI assistants, refer to [AGENTS.md](AGENTS.md).
 
 ---
 

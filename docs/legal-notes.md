@@ -17,8 +17,11 @@ The development of this software is undertaken strictly for the purpose of enabl
    - The production codebase contains exclusively original Rust implementations derived from documented wire protocol specifications.
    - No decompiled source code, proprietary graphic assets, proprietary font files, or copyrighted audio files from the original vendor app are redistributed or committed.
 4. **Independent Branding & Non-Affiliation**:
-   - The project uses an entirely distinct, original brand name.
-   - All references to original brand names (e.g. "SceneX", "SP621E", "Sperll") are strictly factual nominative references for interoperability descriptions.
+   - The project uses an entirely distinct, original brand name (`Pyxillum`).
+   - Third-party mobile application names are strictly avoided. Physical hardware model designations (e.g. "SP621E") are cited solely in a factual nominative sense to indicate device compatibility.
+5. **Limitation of Liability & Statutory Immunity**:
+   - The software is provided under AGPL-3.0 with complete disclaimer of warranties and limitation of liability (Sections 15, 16, and 17).
+   - Under international statutory exemptions (Directive 2009/24/EC Art. 6, US 17 U.S.C. § 1201(f), Indian Copyright Act Section 52(1)(ab)), reverse engineering unencrypted protocols solely to achieve interoperability with independent computer systems is legally protected.
 
 ---
 

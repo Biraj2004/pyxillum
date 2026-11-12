@@ -7,7 +7,7 @@
 //! and `BtleplugTransport` (real Bluetooth Low Energy interface with software filtering).
 
 use async_trait::async_trait;
-use pyxillum_protocol::{MANUFACTURER_ID_SPERLL, MANUFACTURER_ID_SPERLL_ALT, SERVICE_UUID};
+use pyxillum_protocol::{MANUFACTURER_ID_ALT, MANUFACTURER_ID_SP, SERVICE_UUID};
 use pyxillum_sim::{DeviceSimulator, SimError};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -192,7 +192,7 @@ impl BtleplugTransport {
     pub fn is_sp6xx_advertisement(manufacturer_ids: &[u16], service_uuids: &[String]) -> bool {
         let has_manufacturer = manufacturer_ids
             .iter()
-            .any(|&id| id == MANUFACTURER_ID_SPERLL || id == MANUFACTURER_ID_SPERLL_ALT);
+            .any(|&id| id == MANUFACTURER_ID_SP || id == MANUFACTURER_ID_ALT);
 
         let has_service = service_uuids
             .iter()

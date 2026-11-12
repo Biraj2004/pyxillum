@@ -95,3 +95,4 @@
     <UIRef Id="WixUI_Minimal" />
   </Product>
 </Wix>
+

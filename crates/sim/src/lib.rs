@@ -2,7 +2,7 @@
 
 //! # Pyxillum Simulator
 //!
-//! Faithful hardware simulator for the SP621E / BanlanX2 Bluetooth Low Energy pixel controller.
+//! Faithful hardware simulator for the SP621E-family Bluetooth Low Energy pixel controller.
 //! Provides an accurate virtual state machine, enforces frame timing limits, validates incoming packets,
 //! and synthesizes response notification chunks (`0x53 0x43`).
 

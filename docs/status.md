@@ -7,7 +7,7 @@ Last updated: 2026-11-12
 ### Done
 - Project workspace initialized with Git, `.gitignore`, and AGPL-3.0 License (`LICENSE`).
 - Setup 64-bit GNU UCRT toolchain (`stable-x86_64-pc-windows-gnu` + MSYS2 UCRT64).
-- Extracted and corroborated SP621E / BanlanX2 BLE protocol specifications:
+- Extracted and corroborated SP621E-family BLE protocol specifications:
   - Service UUID: `0000ffe0-0000-1000-8000-00805f9b34fb` (`0xFFE0`)
   - Characteristic UUID: `0000ffe1-0000-1000-8000-00805f9b34fb` (`0xFFE1`)
   - Manufacturer ID: `20563` (`0x5053`, "SP")
@@ -53,4 +53,4 @@ Last updated: 2026-11-12
 
 ### Things Only User Can Do
 - Connect physical SP621E controller and run `pyxillum hwcheck` to promote features to `VERIFIED-HW`.
-- Connect Android phone with `com.spled.scenex` installed via USB to pull and record APK cryptographic fingerprints into `re-workspace/identity.md`.
+- Connect mobile test device via USB to pull and record APK cryptographic fingerprints into `re-workspace/identity.md`.

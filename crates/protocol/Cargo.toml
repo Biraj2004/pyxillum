@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Pure Rust protocol codec for SP621E/BanlanX2 BLE controllers"
+description = "Pure Rust protocol codec for SP621E-family BLE controllers"
 
 [dependencies]
 thiserror.workspace = true

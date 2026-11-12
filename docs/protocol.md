@@ -1,4 +1,4 @@
-# Protocol Specification: SP621E / BanlanX2 BLE Protocol
+# Protocol Specification: SP621E Family BLE Protocol
 
 **Document Version**: 1.0.0  
 **Project**: Pyxillum  
@@ -21,10 +21,10 @@ The target device family (including the SP621E Mini Bluetooth Pixel LED Controll
 | **Default ATT MTU** | 23 bytes (20 bytes effective payload) | `CORROBORATED` | Governs notification chunk fragmentation |
 
 ### 1.2 Concurrency and Timing Constraints
-1. **Connection Exclusivity**: The hardware controller permits only **one active BLE central connection**. If a mobile companion app (`com.spled.scenex` or BanlanX) holds an active link, the controller does not respond to external connection attempts.
+1. **Connection Exclusivity**: The hardware controller permits only **one active BLE central connection**. If any other central device or companion mobile application holds an active link, the controller does not respond to external connection attempts.
 2. **Write Inter-packet Delay**:
    - Acknowledged writes (`WRITE` with response) consume ~110 ms round-trip time.
-   - Unacknowledged writes (`WRITE_WITHOUT_RESPONSE`) must be paced at >= 40 ms between packets to avoid controller FIFO buffer overruns.
+   - Unacknowledged writes (`WRITE_WITHOUT_RESPONSE`) must be paced at >= 30 ms between packets to avoid controller FIFO buffer overruns. Pyxillum enforces a 30 ms pacing delay automatically.
 
 ---
 

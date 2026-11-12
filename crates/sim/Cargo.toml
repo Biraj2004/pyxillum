@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Virtual device simulator for SP621E/BanlanX2 BLE controllers"
+description = "Virtual device simulator for SP621E-family BLE controllers"
 
 [dependencies]
 pyxillum-protocol = { path = "../protocol" }

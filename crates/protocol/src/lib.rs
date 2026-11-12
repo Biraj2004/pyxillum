@@ -3,20 +3,20 @@
 
 //! # Pyxillum Protocol
 //!
-//! Pure Rust codec for Bluetooth Low Energy LED pixel controllers in the SP621E / BanlanX2 family.
+//! Pure Rust codec for Bluetooth Low Energy LED pixel controllers in the SP621E family.
 //! This crate contains zero I/O, zero asynchronous code, and `#![forbid(unsafe_code)]`.
 //!
 //! Protocol facts implemented herein are clean-room derived and corroborated against
-//! open-source references (`monty68/uniled`, `xevrion/wallglow`).
+//! independent open-source reference implementations.
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-/// Standard Bluetooth SIG Company Identifier for Sperll / SP-series controllers.
-pub const MANUFACTURER_ID_SPERLL: u16 = 20563; // 0x5053 ("SP")
+/// Standard Bluetooth SIG Company Identifier for SP-series controllers (0x5053, "SP").
+pub const MANUFACTURER_ID_SP: u16 = 20563;
 
 /// Alternative manufacturer ID encountered in some firmware revisions.
-pub const MANUFACTURER_ID_SPERLL_ALT: u16 = 5053;
+pub const MANUFACTURER_ID_ALT: u16 = 5053;
 
 /// Primary GATT Service UUID (128-bit).
 pub const SERVICE_UUID: &str = "0000ffe0-0000-1000-8000-00805f9b34fb";

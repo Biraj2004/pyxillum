@@ -1,7 +1,7 @@
 # Phase 0 Research Report: Clean-Room BLE Pixel LED Desktop Controller
 
 **Date**: 2026-11-12  
-**Target Hardware Family**: SP621E / SP6xxE Mini Bluetooth Pixel LED Controllers (`com.spled.scenex`)  
+**Target Hardware Family**: SP621E / SP6xxE Mini Bluetooth Pixel LED Controllers  
 **Methodology**: Clean-Room Reverse Engineering, Public Protocol Corroboration, Hardware Simulator  
 **Style Guidelines**: British/Indian English, no colloquialisms, strict absence of emojis  
 
@@ -54,7 +54,7 @@ This survey examines active, representative open-source projects across three do
 - **Stars**: ~50+
 - **Technology Stack**: Python 3.11+, Bleak, BlueZ, Noctalia
 - **Architecture**: Minimal CLI daemon that extracts dominant colours from desktop wallpapers and transmits raw Bluetooth Low Energy (BLE) control frames to SP621E, SP611E, and SP620E controllers.
-- **What to Learn**: Confirms exact compatibility with the SP621E hardware family. Proves that connection persistence and connection pooling achieve sub-120ms colour-shift latency. Highlights that BanlanX/SceneX controllers permit only **one active Bluetooth connection at a time**.
+- **What to Learn**: Confirms exact compatibility with the SP621E hardware family. Proves that connection persistence and connection pooling achieve sub-120ms colour-shift latency. Highlights that these controllers permit only **one active Bluetooth connection at a time**.
 - **What to Avoid**: Fragile hardcoded GATT payloads without formal frame validation, type-safe error boundaries, or checksum verification.
 
 #### Project 2: `monty68/uniled`
@@ -63,17 +63,17 @@ This survey examines active, representative open-source projects across three do
 - **Last Commit**: Active (within last 90 days)
 - **Stars**: ~160+
 - **Technology Stack**: Python, Bleak, Home Assistant Core Custom Components
-- **Architecture**: Universal abstraction layer for Bluetooth and local Wi-Fi LED controllers. Maps distinct device families (including BanlanX SP621E, SP611E, SP608E, SP601E, and SP107E) into standardized light primitives (brightness, RGB, effect, speed).
+- **Architecture**: Universal abstraction layer for Bluetooth and local Wi-Fi LED controllers. Maps distinct device families (including SP621E, SP611E, SP608E, SP601E, and SP107E) into standardized light primitives (brightness, RGB, effect, speed).
 - **What to Learn**: Clean separation between high-level logical light state and low-level protocol frame assemblers. Accurate mapping of manufacturer IDs (`0x5053` / `20563`) and GATT characteristic endpoints (`0xFFE0` / `0xFFE1`).
 - **What to Avoid**: Large monolithic Python files with complex conditional branching for device-specific quirks; lack of strict compile-time packet schemas.
 
-#### Project 3: `phhusson/ha-banlanx`
-- **Repository**: `phhusson/ha-banlanx`
+#### Project 3: `phhusson/ha-sp6xx`
+- **Repository**: `phhusson/ha-sp6xx`
 - **Licence**: GPL-3.0
 - **Last Commit**: Reference repository
 - **Stars**: ~20+
 - **Technology Stack**: Python, Bleak, Home Assistant
-- **Architecture**: Early reverse-engineered proof-of-concept for BanlanX controllers. Accompanied by documentation in `REVERSE-NOTES`.
+- **Architecture**: Early reverse-engineered proof-of-concept for SP-series controllers. Accompanied by documentation in `REVERSE-NOTES`.
 - **What to Learn**: Foundational documentation of the byte framing structure and connection exclusivity requirement.
 - **What to Avoid**: Copyleft code borrowing; lack of connection retry backoff; hardcoded hardware addresses.
 
@@ -124,11 +124,11 @@ Corroborated by `monty68/uniled`, `xevrion/wallglow`, and community reverse-engi
   - `0000ffe1-0000-1000-8000-00805f9b34fb` (short `0xFFE1`).
   - Permissions: Write Without Response (`WRITE_NO_RESP`), Write (`WRITE`), and Notify (`NOTIFY`).
 - **Bluetooth SIG Manufacturer Identifier**:
-  - `0x5053` (`20563` decimal), representing Shenzhen Sperll Optoelectronic Technology ("PS" in ASCII little-endian).
+  - `0x5053` (`20563` decimal), Bluetooth SIG Company ID ("SP" in ASCII little-endian).
 
 ### 2.2 Critical Physical Hardware Constraints
 1. **Single Active Connection Exclusivity**:
-   The controller hardware allows only one active BLE central connection at any moment. If the original smartphone app (`com.spled.scenex` or BanlanX) is connected or operating in the background on a paired mobile device, connection requests from the desktop host will consistently time out.
+   The controller hardware allows only one active BLE central connection at any moment. If any companion mobile application is connected or operating in the background on a paired mobile device, connection requests from the desktop host will consistently time out.
 2. **MTU Limitations**:
    The default BLE MTU is 23 bytes (yielding a 20-byte ATT payload limit). High-speed updates and pixel maps must adhere to chunked framing or negotiate an extended MTU.
 3. **Write Type**:
@@ -163,7 +163,7 @@ Corroborated by `monty68/uniled`, `xevrion/wallglow`, and community reverse-engi
 
 In accordance with strict branding and trademark requirements:
 - The project name must be original, memorable, and distinct.
-- Must not resemble "SceneX", "SP6xxE", "SPLED", "BanlanX", "Sperll", or related trademarks.
+- Must not resemble any third-party app names, hardware trademarks, or related marks.
 - Checked against crates.io, npm, GitHub, Google Play, Apple App Store, and general web search.
 
 ### Candidate 1: `Pyxillum`
