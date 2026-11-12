@@ -60,3 +60,4 @@ Five candidate GUI technologies in the Rust ecosystem were evaluated:
 1. **Single Toolchain Simplicity**: Enables a 100% Rust workspace where `cargo build`, `cargo test`, and `cargo xtask check` compile the entire application without any Node.js, npm, or web bundler prerequisites.
 2. **First-Class Virtual Hardware Simulation**: The virtual LED strip preview is a central requirement because physical hardware is unavailable. Immediate-mode drawing via `egui::Painter` renders individual addressable pixels, chasing animations, rainbow sweeps, and audio visualisations in real time with near-zero latency.
 3. **Decoupled Architecture**: By isolating BLE I/O to an asynchronous Tokio worker in `crates/transport` and exchanging typed messages over unbounded crossbeam/mpsc channels, `egui` remains completely non-blocking.
+

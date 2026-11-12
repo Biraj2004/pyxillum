@@ -1,0 +1,20 @@
+[package]
+name = "pyxillum-transport"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Transport trait, in-memory simulator transport, and btleplug backend for Pyxillum"
+
+[dependencies]
+pyxillum-protocol = { path = "../protocol" }
+pyxillum-sim = { path = "../sim" }
+thiserror.workspace = true
+async-trait.workspace = true
+tokio = { workspace = true, features = ["sync", "time", "rt"] }
+tracing.workspace = true
+btleplug.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

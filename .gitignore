@@ -5,4 +5,5 @@ re-workspace/
 *.so
 .DS_Store
 Thumbs.db
+hardware-verification-report.md
 

@@ -53,3 +53,4 @@ Use **`btleplug` (v0.13)** wrapped strictly behind a custom `Transport` trait de
    ```
 2. **First-Class Simulator Support**: The same `Transport` trait is implemented by `SimTransport`, which routes packets directly to `crates/sim::DeviceSimulator` without touching Bluetooth hardware.
 3. **Application-Level Filtering**: When scanning with `btleplug`, request unfiltered discovery and apply MAC/name/manufacturer (`0x5053`) filtering in software to guarantee uniform discovery behaviour across Windows, macOS, and Linux.
+

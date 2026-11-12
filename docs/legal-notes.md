@@ -34,3 +34,4 @@ When consulting legal counsel regarding open-source distribution of this interop
    - Does citing specific model numbers (e.g. "SP621E") in compatibility matrices and documentation qualify as nominative fair use without risk of trademark dilution?
 3. **Distribution of Protocol Test Vectors**:
    - Do static-derived protocol test vectors consisting of synthetic hex byte arrays represent functional facts (unprotectable under copyright law) rather than expressive content?
+

@@ -48,3 +48,4 @@ Any command that alters physical NVRAM state on the controller presents a risk o
 4. **Device Renaming & Hardware Pairing**: Modifying broadcast identity.
 
 In CLI and GUI, executing these requires passing `--i-understand-this-changes-the-device` or confirming an explicit, multi-step safety modal.
+

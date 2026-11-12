@@ -1,0 +1,23 @@
+[package]
+name = "pyxillum-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Command-line interface and hardware checklist runner for Pyxillum"
+
+[[bin]]
+name = "pyxillum"
+path = "src/main.rs"
+
+[dependencies]
+pyxillum-protocol = { path = "../protocol" }
+pyxillum-transport = { path = "../transport" }
+pyxillum-sim = { path = "../sim" }
+pyxillum-core = { path = "../core" }
+clap.workspace = true
+tokio = { workspace = true, features = ["full"] }
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde_json.workspace = true

@@ -208,3 +208,4 @@ In accordance with strict branding and trademark requirements:
    Crates in `crates/` contain solely fresh, original Rust code written to conform with protocol specifications documented in `docs/protocol.md`. No proprietary code or assets are incorporated.
 4. **Attribution**:
    References to external open-source projects (`monty68/uniled`, `xevrion/wallglow`) are documented factually with respective MIT licences acknowledged.
+

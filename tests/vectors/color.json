@@ -1,0 +1,34 @@
+[
+  {
+    "description": "Solid Red at Full Brightness",
+    "confidence": "static-derived-unverified",
+    "action": "set_color",
+    "input": { "r": 255, "g": 0, "b": 0, "level": 255 },
+    "expected_hex": "a06904ff0000ff",
+    "expected_bytes": [160, 105, 4, 255, 0, 0, 255]
+  },
+  {
+    "description": "Solid Custom Pink at Level 112",
+    "confidence": "static-derived-unverified",
+    "action": "set_color",
+    "input": { "r": 255, "g": 114, "b": 114, "level": 112 },
+    "expected_hex": "a06904ff727270",
+    "expected_bytes": [160, 105, 4, 255, 114, 114, 112]
+  },
+  {
+    "description": "Zero Black Level Zero",
+    "confidence": "static-derived-unverified",
+    "action": "set_color",
+    "input": { "r": 0, "g": 0, "b": 0, "level": 0 },
+    "expected_hex": "a0690400000000",
+    "expected_bytes": [160, 105, 4, 0, 0, 0, 0]
+  },
+  {
+    "description": "Brightness Set to 50%",
+    "confidence": "static-derived-unverified",
+    "action": "set_brightness",
+    "input": { "level": 128 },
+    "expected_hex": "a0660180",
+    "expected_bytes": [160, 102, 1, 128]
+  }
+]

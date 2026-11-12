@@ -1,0 +1,29 @@
+[
+  {
+    "description": "Two-Chunk Status Response Reassembly",
+    "confidence": "static-derived-unverified",
+    "chunks": [
+      {
+        "index": 1,
+        "raw_hex": "534301170f0100be02ff0a10ff005e0110090b14"
+      },
+      {
+        "index": 2,
+        "raw_hex": "53430217081a32375373851b00"
+      }
+    ],
+    "expected_assembled_hex": "0100be02ff0a10ff005e0110090b141a32375373851b00",
+    "expected_status": {
+      "power": true,
+      "light_mode": 0,
+      "effect_id": 190,
+      "chip_order": 2,
+      "brightness": 255,
+      "speed": 10,
+      "length": 16,
+      "rgb": [255, 0, 94],
+      "audio_input": 1,
+      "audio_sensitivity": 16
+    }
+  }
+]

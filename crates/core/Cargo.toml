@@ -1,0 +1,21 @@
+[package]
+name = "pyxillum-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "High-level device state, effects engine, scene presets, and manager for Pyxillum"
+
+[dependencies]
+pyxillum-protocol = { path = "../protocol" }
+pyxillum-transport = { path = "../transport" }
+pyxillum-sim = { path = "../sim" }
+thiserror.workspace = true
+tokio = { workspace = true, features = ["sync", "time", "rt"] }
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+directories.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

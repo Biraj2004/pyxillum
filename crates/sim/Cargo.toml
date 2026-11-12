@@ -1,0 +1,16 @@
+[package]
+name = "pyxillum-sim"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Virtual device simulator for SP621E/BanlanX2 BLE controllers"
+
+[dependencies]
+pyxillum-protocol = { path = "../protocol" }
+thiserror.workspace = true
+serde.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }

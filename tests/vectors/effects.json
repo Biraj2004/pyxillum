@@ -1,0 +1,50 @@
+[
+  {
+    "description": "Solid Color Effect Mode",
+    "confidence": "static-derived-unverified",
+    "action": "set_effect",
+    "input": { "effect_id": 190 },
+    "expected_hex": "a06301be",
+    "expected_bytes": [160, 99, 1, 190]
+  },
+  {
+    "description": "Rainbow Effect Mode",
+    "confidence": "static-derived-unverified",
+    "action": "set_effect",
+    "input": { "effect_id": 1 },
+    "expected_hex": "a0630101",
+    "expected_bytes": [160, 99, 1, 1]
+  },
+  {
+    "description": "Effect Speed Set to 5",
+    "confidence": "static-derived-unverified",
+    "action": "set_speed",
+    "input": { "speed": 5 },
+    "expected_hex": "a0670105",
+    "expected_bytes": [160, 103, 1, 5]
+  },
+  {
+    "description": "Effect Length Set to 16 Pixels",
+    "confidence": "static-derived-unverified",
+    "action": "set_length",
+    "input": { "length": 16 },
+    "expected_hex": "a0680110",
+    "expected_bytes": [160, 104, 1, 16]
+  },
+  {
+    "description": "Chip Order Set to GRB (Index 2)",
+    "confidence": "static-derived-unverified",
+    "action": "set_chip_order",
+    "input": { "order": 2 },
+    "expected_hex": "a0640102",
+    "expected_bytes": [160, 100, 1, 2]
+  },
+  {
+    "description": "State Query Command",
+    "confidence": "static-derived-unverified",
+    "action": "query_state",
+    "input": {},
+    "expected_hex": "a07000",
+    "expected_bytes": [160, 112, 0]
+  }
+]
