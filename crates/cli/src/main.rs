@@ -1,7 +1,7 @@
 use anyhow::{bail, Context, Result};
 use clap::{Parser, Subcommand};
 use pyxillum_core::DeviceManager;
-use pyxillum_protocol::{ChipOrder, Command, RgbColor};
+use pyxillum_protocol::{AudioInput, ChipOrder, Command, LightMode, RgbColor};
 use pyxillum_sim::DeviceSimulator;
 use pyxillum_transport::{BtleplugTransport, SimTransport, Transport};
 use std::io::{self, Write};
@@ -68,6 +68,23 @@ enum Commands {
         /// Playback speed (1–10).
         #[arg(short, long, default_value = "5")]
         speed: u8,
+    },
+
+    /// Set global light operating mode (single, dynamic, sound).
+    Mode {
+        /// Mode type: 'single', 'dynamic', or 'sound'.
+        mode: String,
+    },
+
+    /// Configure music and sound-reactive parameters.
+    Music {
+        /// Audio input source: 'mic', 'player', or 'aux'.
+        #[arg(short, long, default_value = "mic")]
+        input: String,
+
+        /// Sensitivity gain level (1–16).
+        #[arg(short, long, default_value = "8")]
+        sensitivity: u8,
     },
 
     /// Configure hardware strip parameters (Gated safety command).
@@ -184,6 +201,48 @@ async fn main() -> Result<()> {
             manager.send_command(Command::SetSpeed(speed)).await?;
             manager.send_command(Command::SetEffect(id)).await?;
             println!("Set effect pattern to 0x{:02X} at speed {}", id, speed);
+        }
+        Commands::Mode { mode } => {
+            let addr = resolve_address(&manager, cli.address.as_deref()).await?;
+            let m = match mode.to_lowercase().as_str() {
+                "single" | "0" => LightMode::Single,
+                "dynamic" | "autodynamic" | "1" => LightMode::AutoDynamic,
+                "sound" | "autosound" | "music" | "2" => LightMode::AutoSound,
+                other => bail!(
+                    "Invalid light mode '{}'. Use 'single', 'dynamic', or 'sound'.",
+                    other
+                ),
+            };
+            manager.connect(&addr).await?;
+            manager.send_command(Command::SetLightMode(m)).await?;
+            println!("Set global light operating mode to {:?}", m);
+        }
+        Commands::Music { input, sensitivity } => {
+            let addr = resolve_address(&manager, cli.address.as_deref()).await?;
+            let inp = match input.to_lowercase().as_str() {
+                "mic" | "internal" | "0" => AudioInput::InternalMic,
+                "player" | "stream" | "1" => AudioInput::Player,
+                "aux" | "external" | "2" => AudioInput::ExternalMic,
+                other => bail!(
+                    "Invalid audio input '{}'. Use 'mic', 'player', or 'aux'.",
+                    other
+                ),
+            };
+            if !(1..=16).contains(&sensitivity) {
+                bail!(
+                    "Sensitivity must be between 1 and 16 (got {}).",
+                    sensitivity
+                );
+            }
+            manager.connect(&addr).await?;
+            manager.send_command(Command::SetAudioInput(inp)).await?;
+            manager
+                .send_command(Command::SetSensitivity(sensitivity))
+                .await?;
+            println!(
+                "Configured music mode: input {:?}, sensitivity {}/16",
+                inp, sensitivity
+            );
         }
         Commands::Configure {
             chip_order,
