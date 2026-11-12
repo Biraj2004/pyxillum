@@ -4,8 +4,8 @@
 //! # Pyxillum Desktop Application
 //!
 //! Native cross-platform GUI for controlling Bluetooth Low Energy pixel LED controllers.
-//! Presentation-only layer; all protocol logic is isolated in `pyxillum-protocol`
-//! and BLE communication is decoupled on a background Tokio runtime.
+//! Features a modern glassmorphic Material/iOS-inspired interface, 60 FPS neon strip
+//! simulation, and native Windows audio and media session integration.
 
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 use pyxillum_core::{DeviceManager, DeviceState};
@@ -16,8 +16,10 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::{mpsc, Mutex};
 use tracing::info;
+use windows_media::{NowPlayingInfo, WindowsAudioService};
 
 mod icon_data;
+mod windows_media;
 
 #[derive(Debug, Clone)]
 enum GuiCommand {
@@ -56,6 +58,7 @@ struct PyxillumApp {
     cmd_tx: mpsc::Sender<GuiCommand>,
     _state_reader: Arc<tokio::sync::RwLock<DeviceState>>,
     _simulator_ref: Option<Arc<Mutex<DeviceSimulator>>>,
+    audio_service: WindowsAudioService,
 
     // UI Local State
     is_demo_mode: bool,
@@ -64,6 +67,7 @@ struct PyxillumApp {
     logs: Vec<LogEntry>,
     active_tab: ActiveTab,
     flow_direction: FlowDirection,
+    sync_with_windows_audio: bool,
 
     // Controls
     ui_power: bool,
@@ -76,6 +80,10 @@ struct PyxillumApp {
     ui_audio_input: AudioInput,
     ui_sensitivity: u8,
     ui_confirm_safety: bool,
+
+    // Live Windows Media State
+    now_playing: NowPlayingInfo,
+    live_audio_peak: f32,
 
     // Animation preview
     last_frame_instant: Instant,
@@ -91,42 +99,52 @@ impl PyxillumApp {
         state_reader: Arc<tokio::sync::RwLock<DeviceState>>,
         simulator_ref: Option<Arc<Mutex<DeviceSimulator>>>,
     ) -> Self {
-        // Configure dark theme inspired by smart lighting companion apps
+        // Configure refined glassmorphic visuals with frosted translucency
         let mut visuals = egui::Visuals::dark();
-        visuals.override_text_color = Some(Color32::from_rgb(240, 244, 248));
-        visuals.panel_fill = Color32::from_rgb(16, 19, 27);
-        visuals.window_fill = Color32::from_rgb(22, 27, 38);
-        visuals.extreme_bg_color = Color32::from_rgb(11, 14, 20);
-        visuals.faint_bg_color = Color32::from_rgb(26, 32, 46);
-        visuals.widgets.noninteractive.bg_fill = Color32::from_rgb(22, 28, 40);
+        visuals.override_text_color = Some(Color32::from_rgb(242, 246, 252));
+        visuals.panel_fill = Color32::from_rgba_premultiplied(12, 16, 24, 240);
+        visuals.window_fill = Color32::from_rgba_premultiplied(18, 24, 36, 230);
+        visuals.extreme_bg_color = Color32::from_rgb(8, 11, 16);
+        visuals.faint_bg_color = Color32::from_rgba_premultiplied(24, 32, 48, 180);
+
+        visuals.widgets.noninteractive.bg_fill = Color32::from_rgba_premultiplied(20, 26, 40, 200);
         visuals.widgets.noninteractive.bg_stroke =
-            Stroke::new(1.0_f32, Color32::from_rgb(38, 48, 68));
-        visuals.widgets.inactive.bg_fill = Color32::from_rgb(26, 34, 50);
-        visuals.widgets.inactive.bg_stroke = Stroke::new(1.0_f32, Color32::from_rgb(44, 56, 80));
-        visuals.widgets.hovered.bg_fill = Color32::from_rgb(38, 50, 75);
+            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(65, 85, 125, 70));
+
+        visuals.widgets.inactive.bg_fill = Color32::from_rgba_premultiplied(26, 34, 52, 210);
+        visuals.widgets.inactive.bg_stroke =
+            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(75, 95, 140, 90));
+
+        visuals.widgets.hovered.bg_fill = Color32::from_rgba_premultiplied(38, 52, 80, 230);
         visuals.widgets.hovered.bg_stroke = Stroke::new(1.5_f32, Color32::from_rgb(0, 210, 255));
-        visuals.widgets.active.bg_fill = Color32::from_rgb(0, 160, 220);
-        visuals.selection.bg_fill = Color32::from_rgb(0, 180, 230);
-        visuals.widgets.inactive.rounding = Rounding::same(6.0);
-        visuals.widgets.hovered.rounding = Rounding::same(6.0);
-        visuals.widgets.active.rounding = Rounding::same(6.0);
-        visuals.window_rounding = Rounding::same(10.0);
+
+        visuals.widgets.active.bg_fill = Color32::from_rgb(0, 160, 225);
+        visuals.selection.bg_fill = Color32::from_rgb(0, 180, 235);
+
+        visuals.widgets.inactive.rounding = Rounding::same(8.0);
+        visuals.widgets.hovered.rounding = Rounding::same(8.0);
+        visuals.widgets.active.rounding = Rounding::same(8.0);
+        visuals.window_rounding = Rounding::same(12.0);
         cc.egui_ctx.set_visuals(visuals);
+
+        let audio_service = WindowsAudioService::new();
 
         Self {
             cmd_tx,
             _state_reader: state_reader,
             _simulator_ref: simulator_ref,
+            audio_service,
             is_demo_mode: true,
             _discovered: Vec::new(),
             _selected_device: None,
             logs: vec![LogEntry {
                 timestamp: "00:00:00".to_string(),
-                message: "Pyxillum initialized in offline-first mode.".to_string(),
+                message: "Pyxillum initialized in offline-first glassmorphism mode.".to_string(),
                 hex: String::new(),
             }],
             active_tab: ActiveTab::Illumination,
             flow_direction: FlowDirection::Forward,
+            sync_with_windows_audio: true,
             ui_power: true,
             ui_color: [1.0, 0.47, 0.0], // Amber
             ui_brightness: 255,
@@ -137,6 +155,8 @@ impl PyxillumApp {
             ui_audio_input: AudioInput::InternalMic,
             ui_sensitivity: 8,
             ui_confirm_safety: false,
+            now_playing: NowPlayingInfo::default(),
+            live_audio_peak: 0.0,
             last_frame_instant: Instant::now(),
             animation_timer: 0.0,
             audio_visualizer_timer: 0.0,
@@ -170,6 +190,11 @@ impl eframe::App for PyxillumApp {
         self.animation_timer += dt * (self.ui_speed as f32);
         self.audio_visualizer_timer += dt;
 
+        // Query Windows native audio peak & media status
+        let (now_playing, peak) = self.audio_service.get_state();
+        self.now_playing = now_playing;
+        self.live_audio_peak = peak;
+
         // Update virtual strip pixels
         self.update_virtual_pixels();
 
@@ -184,72 +209,134 @@ impl eframe::App for PyxillumApp {
             self.send(GuiCommand::SendCommand(cmd));
         }
 
-        // Top Navigation Bar
+        // Top Navigation Bar (Frosted Glass Header)
         egui::TopBottomPanel::top("header_panel")
             .frame(
                 egui::Frame::none()
-                    .fill(Color32::from_rgb(14, 17, 24))
-                    .inner_margin(egui::Margin::symmetric(14.0, 10.0)),
+                    .fill(Color32::from_rgba_premultiplied(12, 16, 24, 235))
+                    .inner_margin(egui::Margin::symmetric(16.0, 12.0)),
             )
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    // App Logo and Name
+                    // Brand and Logo Title
                     ui.label(
                         egui::RichText::new("PYXILLUM")
                             .strong()
-                            .size(17.0)
-                            .color(Color32::from_rgb(0, 210, 255)),
+                            .size(18.0)
+                            .color(Color32::from_rgb(0, 215, 255)),
                     );
                     ui.label(
-                        egui::RichText::new("Pixel LED Controller")
-                            .size(12.0)
-                            .color(Color32::from_rgb(140, 155, 175)),
+                        egui::RichText::new("Pixel LED Studio")
+                            .size(11.0)
+                            .color(Color32::from_rgb(140, 155, 180)),
                     );
 
-                    ui.add_space(12.0);
+                    ui.add_space(14.0);
 
-                    // Connection status pill
-                    let (status_text, status_color) = if self.is_demo_mode {
-                        (
-                            "Simulated Controller [SIM:00:11:22:33:44:55]",
-                            Color32::from_rgb(52, 211, 153),
-                        )
-                    } else {
-                        (
-                            "Hardware Controller [Disconnected]",
-                            Color32::from_rgb(251, 146, 60),
-                        )
-                    };
-
-                    ui.group(|ui| {
-                        ui.label(
-                            egui::RichText::new(status_text)
-                                .size(11.0)
-                                .color(status_color),
+                    // Dynamic Now Playing Pill or Device Connection Status
+                    if !self.now_playing.title.is_empty() && self.now_playing.is_playing {
+                        let media_pill = format!(
+                            "NOW PLAYING: {} - {}",
+                            self.now_playing.title, self.now_playing.artist
                         );
-                    });
-
-                    // Right actions: Scan and Power Toggle
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        // Large Power Toggle Button
-                        let pwr_text = if self.ui_power {
-                            "POWER ON"
+                        let (rect, _) =
+                            ui.allocate_exact_size(Vec2::new(320.0, 26.0), egui::Sense::hover());
+                        let painter = ui.painter_at(rect);
+                        painter.rect_filled(
+                            rect,
+                            Rounding::same(13.0),
+                            Color32::from_rgba_premultiplied(0, 140, 220, 45),
+                        );
+                        painter.rect_stroke(
+                            rect,
+                            Rounding::same(13.0),
+                            Stroke::new(
+                                1.0_f32,
+                                Color32::from_rgba_premultiplied(0, 215, 255, 120),
+                            ),
+                        );
+                        painter.text(
+                            rect.center(),
+                            egui::Align2::CENTER_CENTER,
+                            media_pill,
+                            egui::FontId::proportional(11.0),
+                            Color32::from_rgb(0, 230, 255),
+                        );
+                    } else {
+                        let (status_text, status_col) = if self.is_demo_mode {
+                            (
+                                "Virtual Simulator Active [SIM:00:11:22:33:44:55]",
+                                Color32::from_rgb(52, 211, 153),
+                            )
                         } else {
-                            "POWER OFF"
+                            (
+                                "Hardware Peripheral [Disconnected]",
+                                Color32::from_rgb(251, 146, 60),
+                            )
+                        };
+                        let (rect, _) =
+                            ui.allocate_exact_size(Vec2::new(300.0, 26.0), egui::Sense::hover());
+                        let painter = ui.painter_at(rect);
+                        painter.rect_filled(
+                            rect,
+                            Rounding::same(13.0),
+                            Color32::from_rgba_premultiplied(22, 28, 42, 180),
+                        );
+                        painter.rect_stroke(
+                            rect,
+                            Rounding::same(13.0),
+                            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(50, 65, 95, 90)),
+                        );
+                        painter.text(
+                            rect.center(),
+                            egui::Align2::CENTER_CENTER,
+                            status_text,
+                            egui::FontId::proportional(11.0),
+                            status_col,
+                        );
+                    }
+
+                    // Right Actions: Power Toggle and Peripheral Scanner
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        // Glassmorphic Power Button
+                        let pwr_lbl = if self.ui_power {
+                            "POWER ACTIVE"
+                        } else {
+                            "STANDBY"
                         };
                         let pwr_bg = if self.ui_power {
-                            Color32::from_rgb(16, 185, 129)
+                            Color32::from_rgba_premultiplied(16, 185, 129, 210)
                         } else {
-                            Color32::from_rgb(45, 55, 75)
+                            Color32::from_rgba_premultiplied(45, 55, 75, 180)
                         };
-                        let pwr_btn = egui::Button::new(
-                            egui::RichText::new(pwr_text).strong().color(Color32::WHITE),
-                        )
-                        .fill(pwr_bg)
-                        .rounding(Rounding::same(8.0))
-                        .min_size(Vec2::new(100.0, 28.0));
 
-                        if ui.add(pwr_btn).clicked() {
+                        let (btn_rect, btn_resp) =
+                            ui.allocate_exact_size(Vec2::new(125.0, 32.0), egui::Sense::click());
+                        let painter = ui.painter_at(btn_rect);
+
+                        // Specular glass bevel
+                        painter.rect_filled(btn_rect, Rounding::same(16.0), pwr_bg);
+                        painter.rect_stroke(
+                            btn_rect,
+                            Rounding::same(16.0),
+                            Stroke::new(
+                                1.0_f32,
+                                if self.ui_power {
+                                    Color32::from_rgb(110, 231, 183)
+                                } else {
+                                    Color32::from_rgba_premultiplied(85, 105, 140, 100)
+                                },
+                            ),
+                        );
+                        painter.text(
+                            btn_rect.center(),
+                            egui::Align2::CENTER_CENTER,
+                            pwr_lbl,
+                            egui::FontId::proportional(12.0),
+                            Color32::WHITE,
+                        );
+
+                        if btn_resp.clicked() {
                             self.ui_power = !self.ui_power;
                             let cmd = Command::Power(self.ui_power);
                             self.log(
@@ -265,7 +352,7 @@ impl eframe::App for PyxillumApp {
                             .button(
                                 egui::RichText::new("Scan BLE")
                                     .size(12.0)
-                                    .color(Color32::from_rgb(200, 215, 235)),
+                                    .color(Color32::from_rgb(205, 220, 240)),
                             )
                             .clicked()
                         {
@@ -290,22 +377,45 @@ impl eframe::App for PyxillumApp {
                 });
             });
 
-        // Main Content Area
+        // Main Canvas Panel with Ambient Background Lighting Pools
         egui::CentralPanel::default().show(ctx, |ui| {
+            // Paint ambient background light pools for authentic glassmorphism refraction
+            let canvas_rect = ui.max_rect();
+            let bg_painter = ui.painter();
+
+            // Top-right diffuse cyan orb
+            bg_painter.circle_filled(
+                Pos2::new(canvas_rect.max.x - 120.0, canvas_rect.min.y + 140.0),
+                300.0,
+                Color32::from_rgba_premultiplied(0, 150, 220, 22),
+            );
+            // Bottom-left diffuse violet orb
+            bg_painter.circle_filled(
+                Pos2::new(canvas_rect.min.x + 140.0, canvas_rect.max.y - 120.0),
+                260.0,
+                Color32::from_rgba_premultiplied(130, 50, 200, 18),
+            );
+            // Center warm amber orb
+            bg_painter.circle_filled(
+                Pos2::new(canvas_rect.center().x, canvas_rect.center().y + 60.0),
+                220.0,
+                Color32::from_rgba_premultiplied(255, 140, 0, 12),
+            );
+
             egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.add_space(4.0);
+                ui.add_space(6.0);
 
-                // Section 1: Illuminated Virtual LED Neon Strip Monitor
-                self.render_virtual_strip_container(ui);
-
-                ui.add_space(8.0);
-
-                // Section 2: Segmented Mode Navigation Bar
-                self.render_navigation_bar(ui);
+                // Section 1: Glass Neon Tube LED Visualizer
+                self.render_glass_neon_strip(ui);
 
                 ui.add_space(10.0);
 
-                // Section 3: Active Mode Content
+                // Section 2: Segmented Glass Navigation Bar
+                self.render_navigation_bar(ui);
+
+                ui.add_space(12.0);
+
+                // Section 3: Active Tab Content
                 match self.active_tab {
                     ActiveTab::Illumination => self.render_tab_illumination(ui),
                     ActiveTab::DynamicEffects => self.render_tab_effects(ui),
@@ -317,104 +427,202 @@ impl eframe::App for PyxillumApp {
             });
         });
 
-        // Continuous 60 FPS repaints for LED visualizer
+        // Maintain continuous 60 FPS repaint cadence for fluid neon strip rendering
         ctx.request_repaint();
     }
 }
 
 impl PyxillumApp {
-    /// Renders the top addressable LED neon strip simulation.
-    fn render_virtual_strip_container(&self, ui: &mut egui::Ui) {
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label(
-                    egui::RichText::new("Virtual LED Strip Monitor")
-                        .strong()
-                        .size(12.0)
-                        .color(Color32::from_rgb(180, 195, 215)),
-                );
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let pwr_lbl = if self.ui_power { "ACTIVE" } else { "STANDBY" };
-                    let pwr_col = if self.ui_power {
-                        Color32::from_rgb(52, 211, 153)
-                    } else {
-                        Color32::from_rgb(156, 163, 175)
-                    };
-                    ui.label(
-                        egui::RichText::new(format!(
-                            "{} Pixels | Power: {} | 60 FPS",
-                            self.ui_length, pwr_lbl
-                        ))
-                        .size(11.0)
-                        .color(pwr_col),
-                    );
-                });
-            });
-            ui.add_space(4.0);
-            self.render_virtual_strip(ui);
-        });
-    }
+    /// Renders the addressable LED visualizer inside a frosted glass neon tube enclosure.
+    fn render_glass_neon_strip(&self, ui: &mut egui::Ui) {
+        let (rect, _response) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 68.0), egui::Sense::hover());
+        let painter = ui.painter_at(rect);
 
-    /// Renders the modern navigation segmented buttons.
-    fn render_navigation_bar(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            let tabs = [
-                (ActiveTab::Illumination, "Illumination"),
-                (ActiveTab::DynamicEffects, "Dynamic Scenes"),
-                (ActiveTab::MusicReactive, "Music & Sound"),
-                (ActiveTab::CustomScenes, "DIY Scenes"),
-                (ActiveTab::HardwareSetup, "Hardware Config"),
-                (ActiveTab::Diagnostics, "Diagnostics"),
-            ];
+        // Frosted glass tube container
+        painter.rect_filled(
+            rect,
+            Rounding::same(14.0),
+            Color32::from_rgba_premultiplied(16, 22, 34, 210),
+        );
+        // Specular top highlight line on glass edge
+        painter.line_segment(
+            [
+                Pos2::new(rect.min.x + 14.0, rect.min.y + 1.0),
+                Pos2::new(rect.max.x - 14.0, rect.min.y + 1.0),
+            ],
+            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(255, 255, 255, 45)),
+        );
+        // Translucent frosted border
+        painter.rect_stroke(
+            rect,
+            Rounding::same(14.0),
+            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(75, 95, 140, 80)),
+        );
 
-            for (tab, label) in tabs {
-                let is_selected = self.active_tab == tab;
-                let bg_color = if is_selected {
-                    Color32::from_rgb(0, 140, 200)
-                } else {
-                    Color32::from_rgb(24, 30, 44)
-                };
-                let text_color = if is_selected {
-                    Color32::WHITE
-                } else {
-                    Color32::from_rgb(160, 175, 195)
-                };
+        // Header caption inside tube
+        let pwr_lbl = if self.ui_power { "ACTIVE" } else { "STANDBY" };
+        let pwr_col = if self.ui_power {
+            Color32::from_rgb(52, 211, 153)
+        } else {
+            Color32::from_rgb(156, 163, 175)
+        };
+        painter.text(
+            Pos2::new(rect.min.x + 14.0, rect.min.y + 8.0),
+            egui::Align2::LEFT_TOP,
+            "Frosted Glass Neon Strip Monitor",
+            egui::FontId::proportional(11.0),
+            Color32::from_rgb(180, 195, 215),
+        );
+        painter.text(
+            Pos2::new(rect.max.x - 14.0, rect.min.y + 8.0),
+            egui::Align2::RIGHT_TOP,
+            format!("{} Pixels | Power: {} | 60 FPS", self.ui_length, pwr_lbl),
+            egui::FontId::proportional(11.0),
+            pwr_col,
+        );
 
-                let btn = egui::Button::new(egui::RichText::new(label).strong().color(text_color))
-                    .fill(bg_color)
-                    .rounding(Rounding::same(6.0))
-                    .min_size(Vec2::new(105.0, 30.0));
+        let count = self.strip_pixels.len();
+        if count == 0 {
+            return;
+        }
 
-                if ui.add(btn).clicked() {
-                    self.active_tab = tab;
-                }
+        let spacing = (rect.width() - 28.0) / (count as f32);
+        let radius = (spacing * 0.38).clamp(3.5, 11.0);
+        let center_y = rect.min.y + 40.0;
+
+        for (i, p) in self.strip_pixels.iter().enumerate() {
+            let center = Pos2::new(rect.min.x + 14.0 + spacing * (i as f32 + 0.5), center_y);
+            let color = Color32::from_rgb(p.r, p.g, p.b);
+
+            // Wide diffuse neon aura bloom through frosted glass
+            if self.ui_power && (p.r > 15 || p.g > 15 || p.b > 15) {
+                let bloom_color = Color32::from_rgba_premultiplied(p.r / 3, p.g / 3, p.b / 3, 50);
+                painter.circle_filled(center, radius * 2.4, bloom_color);
             }
-        });
-        ui.separator();
+
+            // Core LED diode
+            painter.circle_filled(center, radius, color);
+            painter.circle_stroke(
+                center,
+                radius,
+                Stroke::new(0.5_f32, Color32::from_black_alpha(110)),
+            );
+
+            // Specular crystal core point
+            if self.ui_power && (p.r > 40 || p.g > 40 || p.b > 40) {
+                painter.circle_filled(center, radius * 0.36, Color32::from_white_alpha(140));
+            }
+        }
     }
 
-    /// Renders the Illumination screen featuring the interactive Hue-Saturation wheel.
+    /// Renders the floating segmented glass navigation island.
+    fn render_navigation_bar(&mut self, ui: &mut egui::Ui) {
+        let (rect, _) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 42.0), egui::Sense::hover());
+        let painter = ui.painter_at(rect);
+
+        // Translucent floating glass bar
+        painter.rect_filled(
+            rect,
+            Rounding::same(21.0),
+            Color32::from_rgba_premultiplied(18, 24, 36, 190),
+        );
+        painter.line_segment(
+            [
+                Pos2::new(rect.min.x + 21.0, rect.min.y + 1.0),
+                Pos2::new(rect.max.x - 21.0, rect.min.y + 1.0),
+            ],
+            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(255, 255, 255, 35)),
+        );
+        painter.rect_stroke(
+            rect,
+            Rounding::same(21.0),
+            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(65, 85, 125, 75)),
+        );
+
+        let tabs = [
+            (ActiveTab::Illumination, "Illumination"),
+            (ActiveTab::DynamicEffects, "Dynamic Scenes"),
+            (ActiveTab::MusicReactive, "Windows Audio & Music"),
+            (ActiveTab::CustomScenes, "DIY Palettes"),
+            (ActiveTab::HardwareSetup, "Hardware Config"),
+            (ActiveTab::Diagnostics, "Diagnostics"),
+        ];
+
+        let tab_count = tabs.len() as f32;
+        let tab_width = (rect.width() - 8.0) / tab_count;
+
+        for (i, (tab, label)) in tabs.into_iter().enumerate() {
+            let tab_rect = Rect::from_min_size(
+                Pos2::new(rect.min.x + 4.0 + (i as f32) * tab_width, rect.min.y + 4.0),
+                Vec2::new(tab_width, 34.0),
+            );
+
+            let is_selected = self.active_tab == tab;
+            let tab_resp = ui.allocate_rect(tab_rect, egui::Sense::click());
+
+            if is_selected {
+                painter.rect_filled(
+                    tab_rect,
+                    Rounding::same(17.0),
+                    Color32::from_rgb(0, 150, 220),
+                );
+                painter.rect_stroke(
+                    tab_rect,
+                    Rounding::same(17.0),
+                    Stroke::new(1.0_f32, Color32::from_rgb(125, 225, 255)),
+                );
+            } else if tab_resp.hovered() {
+                painter.rect_filled(
+                    tab_rect,
+                    Rounding::same(17.0),
+                    Color32::from_rgba_premultiplied(35, 48, 72, 160),
+                );
+            }
+
+            let text_color = if is_selected {
+                Color32::WHITE
+            } else {
+                Color32::from_rgb(165, 180, 205)
+            };
+
+            painter.text(
+                tab_rect.center(),
+                egui::Align2::CENTER_CENTER,
+                label,
+                egui::FontId::proportional(12.0),
+                text_color,
+            );
+
+            if tab_resp.clicked() {
+                self.active_tab = tab;
+            }
+        }
+    }
+
+    /// Renders the Illumination screen with glassmorphic cards and circular disc.
     fn render_tab_illumination(&mut self, ui: &mut egui::Ui) {
         ui.columns(2, |columns| {
-            // Left Column: Interactive Radial Hue-Saturation Disc
-            columns[0].group(|ui| {
+            // Left Column: Radial Hue-Saturation Glass Disc
+            render_glass_card(&mut columns[0], 360.0, |ui| {
                 ui.vertical_centered(|ui| {
                     ui.label(
                         egui::RichText::new("Radial Hue & Saturation Disc")
                             .strong()
                             .size(13.0)
-                            .color(Color32::from_rgb(200, 215, 235)),
+                            .color(Color32::from_rgb(215, 230, 250)),
                     );
                     ui.label(
-                        egui::RichText::new("Drag on the disc to pick chromatic colour")
+                        egui::RichText::new("Drag on the disc to pick chromatic light colour")
                             .size(11.0)
-                            .color(Color32::from_rgb(130, 145, 165)),
+                            .color(Color32::from_rgb(135, 150, 175)),
                     );
 
                     ui.add_space(8.0);
 
-                    // Circular Hue-Saturation Wheel
-                    if render_color_disc(ui, &mut self.ui_color, 90.0) {
+                    // Circular Hue-Saturation Disc
+                    if render_color_disc(ui, &mut self.ui_color, 95.0) {
                         self.ui_effect = EFFECT_SOLID;
                         let r = (self.ui_color[0] * 255.0) as u8;
                         let g = (self.ui_color[1] * 255.0) as u8;
@@ -428,27 +636,26 @@ impl PyxillumApp {
 
                     ui.add_space(10.0);
 
-                    // Active Colour Preview Swatch
+                    // Active Colour Preview Swatch with Glass Bevel
                     let r = (self.ui_color[0] * 255.0) as u8;
                     let g = (self.ui_color[1] * 255.0) as u8;
                     let b = (self.ui_color[2] * 255.0) as u8;
                     let hex = format!("#{:02X}{:02X}{:02X}", r, g, b);
 
                     let (preview_rect, _) =
-                        ui.allocate_exact_size(Vec2::new(200.0, 32.0), egui::Sense::hover());
+                        ui.allocate_exact_size(Vec2::new(210.0, 34.0), egui::Sense::hover());
                     let painter = ui.painter_at(preview_rect);
                     painter.rect_filled(
                         preview_rect,
-                        Rounding::same(6.0),
+                        Rounding::same(10.0),
                         Color32::from_rgb(r, g, b),
                     );
                     painter.rect_stroke(
                         preview_rect,
-                        Rounding::same(6.0),
-                        Stroke::new(1.0_f32, Color32::from_rgb(255, 255, 255)),
+                        Rounding::same(10.0),
+                        Stroke::new(1.0_f32, Color32::from_white_alpha(180)),
                     );
 
-                    // Text contrast
                     let text_col =
                         if (r as u32 * 299 + g as u32 * 587 + b as u32 * 114) / 1000 > 128 {
                             Color32::BLACK
@@ -465,17 +672,17 @@ impl PyxillumApp {
                 });
             });
 
-            // Right Column: Master Brightness and Quick Palette Swatches
-            columns[1].group(|ui| {
+            // Right Column: Master Brightness & Chromatic Glass Swatches
+            render_glass_card(&mut columns[1], 360.0, |ui| {
                 ui.label(
                     egui::RichText::new("Master Brightness & Quick Swatches")
                         .strong()
                         .size(13.0)
-                        .color(Color32::from_rgb(200, 215, 235)),
+                        .color(Color32::from_rgb(215, 230, 250)),
                 );
                 ui.separator();
 
-                ui.add_space(4.0);
+                ui.add_space(6.0);
                 let pct = (self.ui_brightness as f32 / 255.0 * 100.0) as u32;
                 ui.label(format!(
                     "Brightness Level: {}/255 ({}%)",
@@ -490,7 +697,7 @@ impl PyxillumApp {
                     self.send(GuiCommand::SendCommand(cmd));
                 }
 
-                // Quick brightness steps
+                // Quick brightness step buttons
                 ui.horizontal(|ui| {
                     let steps = [("25%", 64), ("50%", 128), ("75%", 192), ("100%", 255)];
                     for (lbl, val) in steps {
@@ -534,11 +741,10 @@ impl PyxillumApp {
                 ui.horizontal_wrapped(|ui| {
                     for (_label, rgb_arr, c32) in swatches {
                         let (rect, response) =
-                            ui.allocate_exact_size(Vec2::new(32.0, 32.0), egui::Sense::click());
+                            ui.allocate_exact_size(Vec2::new(34.0, 34.0), egui::Sense::click());
                         let painter = ui.painter_at(rect);
-                        painter.circle_filled(rect.center(), 14.0, c32);
+                        painter.circle_filled(rect.center(), 14.5, c32);
 
-                        // Highlight ring if active
                         let is_active = (self.ui_color[0] - rgb_arr[0]).abs() < 0.05
                             && (self.ui_color[1] - rgb_arr[1]).abs() < 0.05
                             && (self.ui_color[2] - rgb_arr[2]).abs() < 0.05;
@@ -546,14 +752,17 @@ impl PyxillumApp {
                         if is_active {
                             painter.circle_stroke(
                                 rect.center(),
-                                15.5,
-                                Stroke::new(2.0_f32, Color32::WHITE),
+                                16.5,
+                                Stroke::new(2.5_f32, Color32::WHITE),
                             );
                         } else {
                             painter.circle_stroke(
                                 rect.center(),
-                                14.0,
-                                Stroke::new(1.0_f32, Color32::from_rgb(40, 50, 70)),
+                                15.0,
+                                Stroke::new(
+                                    1.0_f32,
+                                    Color32::from_rgba_premultiplied(70, 85, 120, 80),
+                                ),
                             );
                         }
 
@@ -575,15 +784,15 @@ impl PyxillumApp {
         });
     }
 
-    /// Renders the Dynamic Effects screen with pattern cards and flow controls.
+    /// Renders the Dynamic Effects screen with frosted pattern cards.
     fn render_tab_effects(&mut self, ui: &mut egui::Ui) {
-        ui.group(|ui| {
+        render_glass_card(ui, 420.0, |ui| {
             ui.horizontal(|ui| {
                 ui.label(
                     egui::RichText::new("Flow Dynamics & Direction Controls")
                         .strong()
                         .size(13.0)
-                        .color(Color32::from_rgb(200, 215, 235)),
+                        .color(Color32::from_rgb(215, 230, 250)),
                 );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button("Auto-Cycle Dynamic Mode").clicked() {
@@ -602,7 +811,7 @@ impl PyxillumApp {
             });
             ui.separator();
 
-            // Direction buttons and Speed Slider
+            // Direction Buttons and Speed Gauge
             ui.horizontal(|ui| {
                 ui.label("Pattern Direction:");
                 let dirs = [
@@ -633,7 +842,7 @@ impl PyxillumApp {
 
             ui.add_space(10.0);
             ui.label(
-                egui::RichText::new("Built-In Dynamic Pattern Library")
+                egui::RichText::new("Built-In Dynamic Flow Patterns")
                     .strong()
                     .size(12.0)
                     .color(Color32::from_rgb(180, 195, 215)),
@@ -691,101 +900,195 @@ impl PyxillumApp {
                 ),
             ];
 
-            // Render effect cards in 2 columns
             ui.columns(2, |cols| {
                 for (idx, (code, title, desc)) in effects.iter().enumerate() {
                     let col_idx = idx % 2;
                     let is_active = self.ui_effect == *code;
 
                     let bg_color = if is_active {
-                        Color32::from_rgb(26, 48, 75)
+                        Color32::from_rgba_premultiplied(0, 140, 220, 60)
                     } else {
-                        Color32::from_rgb(20, 25, 36)
+                        Color32::from_rgba_premultiplied(22, 28, 42, 190)
                     };
                     let border_color = if is_active {
-                        Color32::from_rgb(0, 210, 255)
+                        Color32::from_rgb(0, 215, 255)
                     } else {
-                        Color32::from_rgb(36, 44, 62)
+                        Color32::from_rgba_premultiplied(65, 85, 125, 75)
                     };
 
-                    cols[col_idx].group(|ui| {
-                        let (rect, response) = ui.allocate_exact_size(
-                            Vec2::new(ui.available_width(), 44.0),
-                            egui::Sense::click(),
-                        );
-                        let painter = ui.painter_at(rect);
-                        painter.rect_filled(rect, Rounding::same(6.0), bg_color);
-                        painter.rect_stroke(
-                            rect,
-                            Rounding::same(6.0),
-                            Stroke::new(1.0_f32, border_color),
-                        );
+                    let (rect, response) = cols[col_idx].allocate_exact_size(
+                        Vec2::new(cols[col_idx].available_width(), 46.0),
+                        egui::Sense::click(),
+                    );
+                    let painter = cols[col_idx].painter_at(rect);
 
-                        // Card Content
-                        let code_str = format!("[0x{:02X}]", code);
-                        painter.text(
-                            Pos2::new(rect.min.x + 8.0, rect.min.y + 6.0),
-                            egui::Align2::LEFT_TOP,
-                            code_str,
-                            egui::FontId::monospace(11.0),
-                            Color32::from_rgb(0, 210, 255),
-                        );
-                        painter.text(
-                            Pos2::new(rect.min.x + 60.0, rect.min.y + 6.0),
-                            egui::Align2::LEFT_TOP,
-                            *title,
-                            egui::FontId::proportional(12.0),
-                            Color32::WHITE,
-                        );
-                        painter.text(
-                            Pos2::new(rect.min.x + 8.0, rect.min.y + 24.0),
-                            egui::Align2::LEFT_TOP,
-                            *desc,
-                            egui::FontId::proportional(10.0),
-                            Color32::from_rgb(140, 155, 175),
-                        );
+                    painter.rect_filled(rect, Rounding::same(10.0), bg_color);
+                    painter.rect_stroke(
+                        rect,
+                        Rounding::same(10.0),
+                        Stroke::new(1.0_f32, border_color),
+                    );
 
-                        if response.clicked() {
-                            self.ui_effect = *code;
-                            let cmd = Command::SetEffect(*code);
-                            self.log(
-                                &format!("Selected dynamic effect: {}", title),
-                                &hex_string(&cmd.encode()),
-                            );
-                            self.send(GuiCommand::SendCommand(cmd));
-                        }
-                    });
+                    let code_str = format!("[0x{:02X}]", code);
+                    painter.text(
+                        Pos2::new(rect.min.x + 10.0, rect.min.y + 7.0),
+                        egui::Align2::LEFT_TOP,
+                        code_str,
+                        egui::FontId::monospace(11.0),
+                        Color32::from_rgb(0, 215, 255),
+                    );
+                    painter.text(
+                        Pos2::new(rect.min.x + 64.0, rect.min.y + 7.0),
+                        egui::Align2::LEFT_TOP,
+                        *title,
+                        egui::FontId::proportional(12.0),
+                        Color32::WHITE,
+                    );
+                    painter.text(
+                        Pos2::new(rect.min.x + 10.0, rect.min.y + 25.0),
+                        egui::Align2::LEFT_TOP,
+                        *desc,
+                        egui::FontId::proportional(10.0),
+                        Color32::from_rgb(140, 155, 175),
+                    );
+
+                    if response.clicked() {
+                        self.ui_effect = *code;
+                        let cmd = Command::SetEffect(*code);
+                        self.log(
+                            &format!("Selected dynamic effect: {}", title),
+                            &hex_string(&cmd.encode()),
+                        );
+                        self.send(GuiCommand::SendCommand(cmd));
+                    }
                 }
             });
         });
     }
 
-    /// Renders the Music & Sound Reactive screen.
+    /// Renders the Music & Sound screen with Windows Now Playing Media detection.
     fn render_tab_music(&mut self, ui: &mut egui::Ui) {
-        ui.group(|ui| {
+        render_glass_card(ui, 460.0, |ui| {
             ui.label(
-                egui::RichText::new("Audio Reactive Engine & Equalizer")
+                egui::RichText::new("Windows Audio Session & Sound-Reactive Engine")
                     .strong()
                     .size(13.0)
-                    .color(Color32::from_rgb(200, 215, 235)),
+                    .color(Color32::from_rgb(215, 230, 250)),
             );
             ui.separator();
 
-            // Audio Input Selection and Sensitivity
+            // Native Windows Now Playing Media Glass Card
+            let (np_rect, _) =
+                ui.allocate_exact_size(Vec2::new(ui.available_width(), 76.0), egui::Sense::hover());
+            let painter = ui.painter_at(np_rect);
+
+            painter.rect_filled(
+                np_rect,
+                Rounding::same(12.0),
+                Color32::from_rgba_premultiplied(18, 26, 42, 220),
+            );
+            painter.line_segment(
+                [
+                    Pos2::new(np_rect.min.x + 12.0, np_rect.min.y + 1.0),
+                    Pos2::new(np_rect.max.x - 12.0, np_rect.min.y + 1.0),
+                ],
+                Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(255, 255, 255, 40)),
+            );
+            painter.rect_stroke(
+                np_rect,
+                Rounding::same(12.0),
+                Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(0, 200, 255, 90)),
+            );
+
+            if !self.now_playing.title.is_empty() {
+                let status_lbl = if self.now_playing.is_playing {
+                    "PLAYING"
+                } else {
+                    "PAUSED"
+                };
+                let status_col = if self.now_playing.is_playing {
+                    Color32::from_rgb(52, 211, 153)
+                } else {
+                    Color32::from_rgb(251, 146, 60)
+                };
+
+                painter.text(
+                    Pos2::new(np_rect.min.x + 14.0, np_rect.min.y + 10.0),
+                    egui::Align2::LEFT_TOP,
+                    format!("NOW PLAYING: {}", self.now_playing.title),
+                    egui::FontId::proportional(14.0),
+                    Color32::WHITE,
+                );
+                painter.text(
+                    Pos2::new(np_rect.min.x + 14.0, np_rect.min.y + 32.0),
+                    egui::Align2::LEFT_TOP,
+                    format!(
+                        "Artist: {} | Source: {}",
+                        self.now_playing.artist, self.now_playing.app_name
+                    ),
+                    egui::FontId::proportional(11.0),
+                    Color32::from_rgb(175, 190, 215),
+                );
+                painter.text(
+                    Pos2::new(np_rect.max.x - 14.0, np_rect.min.y + 10.0),
+                    egui::Align2::RIGHT_TOP,
+                    status_lbl,
+                    egui::FontId::proportional(11.0),
+                    status_col,
+                );
+
+                // Audio peak meter level readout
+                let meter_pct = (self.live_audio_peak * 100.0) as u32;
+                painter.text(
+                    Pos2::new(np_rect.max.x - 14.0, np_rect.min.y + 32.0),
+                    egui::Align2::RIGHT_TOP,
+                    format!("Peak Volume: {}%", meter_pct),
+                    egui::FontId::proportional(11.0),
+                    Color32::from_rgb(0, 215, 255),
+                );
+
+                // Mini peak level progress bar
+                let meter_bar_rect = Rect::from_min_size(
+                    Pos2::new(np_rect.min.x + 14.0, np_rect.max.y - 14.0),
+                    Vec2::new((np_rect.width() - 28.0) * self.live_audio_peak, 4.0),
+                );
+                painter.rect_filled(
+                    meter_bar_rect,
+                    Rounding::same(2.0),
+                    Color32::from_rgb(0, 215, 255),
+                );
+            } else {
+                painter.text(
+                    np_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    "Listening for Windows Media Playback (Spotify, YouTube, Media Player)...",
+                    egui::FontId::proportional(12.0),
+                    Color32::from_rgb(140, 155, 180),
+                );
+            }
+
+            ui.add_space(10.0);
+
+            // Audio Routing and Sensitivity
             ui.horizontal(|ui| {
+                ui.checkbox(
+                    &mut self.sync_with_windows_audio,
+                    "Sync LED Pulse to Windows Media Audio",
+                );
+                ui.add_space(16.0);
                 ui.label("Audio Source:");
                 egui::ComboBox::from_id_source("audio_input_cb_music")
                     .selected_text(match self.ui_audio_input {
-                        AudioInput::InternalMic => "Controller Hardware Microphone",
-                        AudioInput::Player => "Host Software Audio Stream",
-                        AudioInput::ExternalMic => "External 3.5mm Aux Microphone",
+                        AudioInput::InternalMic => "Controller Hardware Mic",
+                        AudioInput::Player => "Host Software Audio",
+                        AudioInput::ExternalMic => "External 3.5mm Aux",
                     })
                     .show_ui(ui, |ui| {
                         if ui
                             .selectable_value(
                                 &mut self.ui_audio_input,
                                 AudioInput::InternalMic,
-                                "Controller Hardware Microphone",
+                                "Controller Hardware Mic",
                             )
                             .clicked()
                         {
@@ -797,7 +1100,7 @@ impl PyxillumApp {
                             .selectable_value(
                                 &mut self.ui_audio_input,
                                 AudioInput::Player,
-                                "Host Software Audio Stream",
+                                "Host Software Audio",
                             )
                             .clicked()
                         {
@@ -809,7 +1112,7 @@ impl PyxillumApp {
                             .selectable_value(
                                 &mut self.ui_audio_input,
                                 AudioInput::ExternalMic,
-                                "External 3.5mm Aux Microphone",
+                                "External 3.5mm Aux",
                             )
                             .clicked()
                         {
@@ -820,7 +1123,7 @@ impl PyxillumApp {
                     });
 
                 ui.add_space(16.0);
-                ui.label(format!("Gain Sensitivity: {}/16", self.ui_sensitivity));
+                ui.label(format!("Audio Sensitivity: {}/16", self.ui_sensitivity));
                 if ui
                     .add(egui::Slider::new(&mut self.ui_sensitivity, 1..=16))
                     .changed()
@@ -831,18 +1134,10 @@ impl PyxillumApp {
                 }
             });
 
-            ui.add_space(10.0);
+            ui.add_space(8.0);
 
-            // Animated Graphic Equalizer Visualizer
-            ui.group(|ui| {
-                ui.label(
-                    egui::RichText::new("Live Graphic Equalizer Spectrum")
-                        .size(11.0)
-                        .color(Color32::from_rgb(140, 155, 175)),
-                );
-                ui.add_space(4.0);
-                self.render_equalizer_bars(ui);
-            });
+            // Animated Equalizer Visualizer Bars
+            self.render_equalizer_bars(ui);
 
             ui.add_space(12.0);
             ui.label(
@@ -892,66 +1187,65 @@ impl PyxillumApp {
                     let is_active = self.ui_effect == *code;
 
                     let bg_color = if is_active {
-                        Color32::from_rgb(26, 48, 75)
+                        Color32::from_rgba_premultiplied(0, 140, 220, 60)
                     } else {
-                        Color32::from_rgb(20, 25, 36)
+                        Color32::from_rgba_premultiplied(22, 28, 42, 190)
                     };
                     let border_color = if is_active {
-                        Color32::from_rgb(0, 210, 255)
+                        Color32::from_rgb(0, 215, 255)
                     } else {
-                        Color32::from_rgb(36, 44, 62)
+                        Color32::from_rgba_premultiplied(65, 85, 125, 75)
                     };
 
-                    cols[col_idx].group(|ui| {
-                        let (rect, response) = ui.allocate_exact_size(
-                            Vec2::new(ui.available_width(), 44.0),
-                            egui::Sense::click(),
-                        );
-                        let painter = ui.painter_at(rect);
-                        painter.rect_filled(rect, Rounding::same(6.0), bg_color);
-                        painter.rect_stroke(
-                            rect,
-                            Rounding::same(6.0),
-                            Stroke::new(1.0_f32, border_color),
-                        );
+                    let (rect, response) = cols[col_idx].allocate_exact_size(
+                        Vec2::new(cols[col_idx].available_width(), 46.0),
+                        egui::Sense::click(),
+                    );
+                    let painter = cols[col_idx].painter_at(rect);
 
-                        let code_str = format!("[0x{:02X}]", code);
-                        painter.text(
-                            Pos2::new(rect.min.x + 8.0, rect.min.y + 6.0),
-                            egui::Align2::LEFT_TOP,
-                            code_str,
-                            egui::FontId::monospace(11.0),
-                            Color32::from_rgb(255, 160, 0),
-                        );
-                        painter.text(
-                            Pos2::new(rect.min.x + 60.0, rect.min.y + 6.0),
-                            egui::Align2::LEFT_TOP,
-                            *title,
-                            egui::FontId::proportional(12.0),
-                            Color32::WHITE,
-                        );
-                        painter.text(
-                            Pos2::new(rect.min.x + 8.0, rect.min.y + 24.0),
-                            egui::Align2::LEFT_TOP,
-                            *desc,
-                            egui::FontId::proportional(10.0),
-                            Color32::from_rgb(140, 155, 175),
-                        );
+                    painter.rect_filled(rect, Rounding::same(10.0), bg_color);
+                    painter.rect_stroke(
+                        rect,
+                        Rounding::same(10.0),
+                        Stroke::new(1.0_f32, border_color),
+                    );
 
-                        if response.clicked() {
-                            self.ui_effect = *code;
-                            let cmd = Command::SetEffect(*code);
-                            self.log(
-                                &format!("Selected rhythm effect: {}", title),
-                                &hex_string(&cmd.encode()),
-                            );
-                            self.send(GuiCommand::SendCommand(cmd));
-                        }
-                    });
+                    let code_str = format!("[0x{:02X}]", code);
+                    painter.text(
+                        Pos2::new(rect.min.x + 10.0, rect.min.y + 7.0),
+                        egui::Align2::LEFT_TOP,
+                        code_str,
+                        egui::FontId::monospace(11.0),
+                        Color32::from_rgb(255, 160, 0),
+                    );
+                    painter.text(
+                        Pos2::new(rect.min.x + 64.0, rect.min.y + 7.0),
+                        egui::Align2::LEFT_TOP,
+                        *title,
+                        egui::FontId::proportional(12.0),
+                        Color32::WHITE,
+                    );
+                    painter.text(
+                        Pos2::new(rect.min.x + 10.0, rect.min.y + 25.0),
+                        egui::Align2::LEFT_TOP,
+                        *desc,
+                        egui::FontId::proportional(10.0),
+                        Color32::from_rgb(140, 155, 175),
+                    );
+
+                    if response.clicked() {
+                        self.ui_effect = *code;
+                        let cmd = Command::SetEffect(*code);
+                        self.log(
+                            &format!("Selected rhythm effect: {}", title),
+                            &hex_string(&cmd.encode()),
+                        );
+                        self.send(GuiCommand::SendCommand(cmd));
+                    }
                 }
             });
 
-            ui.add_space(10.0);
+            ui.add_space(8.0);
             if ui.button("Activate Auto-Sound Cycle Mode").clicked() {
                 self.send(GuiCommand::SendCommand(Command::SetLightMode(
                     LightMode::AutoSound,
@@ -961,14 +1255,14 @@ impl PyxillumApp {
         });
     }
 
-    /// Renders the DIY custom scenes and mood transitions.
+    /// Renders curated ambient scenes and mood presets.
     fn render_tab_custom_scenes(&mut self, ui: &mut egui::Ui) {
-        ui.group(|ui| {
+        render_glass_card(ui, 380.0, |ui| {
             ui.label(
                 egui::RichText::new("Curated Ambient Scenes & Custom Palettes")
                     .strong()
                     .size(13.0)
-                    .color(Color32::from_rgb(200, 215, 235)),
+                    .color(Color32::from_rgb(215, 230, 250)),
             );
             ui.separator();
 
@@ -1026,101 +1320,113 @@ impl PyxillumApp {
             ui.columns(2, |cols| {
                 for (idx, (title, rgb_arr, eff, spd, br, desc)) in scenes.iter().enumerate() {
                     let col_idx = idx % 2;
-                    cols[col_idx].group(|ui| {
-                        let (rect, response) = ui.allocate_exact_size(
-                            Vec2::new(ui.available_width(), 52.0),
-                            egui::Sense::click(),
-                        );
-                        let painter = ui.painter_at(rect);
-                        painter.rect_filled(
-                            rect,
-                            Rounding::same(6.0),
-                            Color32::from_rgb(22, 28, 40),
-                        );
-                        painter.rect_stroke(
-                            rect,
-                            Rounding::same(6.0),
-                            Stroke::new(1.0_f32, Color32::from_rgb(40, 50, 72)),
-                        );
+                    let (rect, response) = cols[col_idx].allocate_exact_size(
+                        Vec2::new(cols[col_idx].available_width(), 54.0),
+                        egui::Sense::click(),
+                    );
+                    let painter = cols[col_idx].painter_at(rect);
 
-                        // Swatch dot
-                        let r = (rgb_arr[0] * 255.0) as u8;
-                        let g = (rgb_arr[1] * 255.0) as u8;
-                        let b = (rgb_arr[2] * 255.0) as u8;
-                        painter.circle_filled(
-                            Pos2::new(rect.min.x + 16.0, rect.min.y + 18.0),
-                            8.0,
-                            Color32::from_rgb(r, g, b),
-                        );
+                    painter.rect_filled(
+                        rect,
+                        Rounding::same(10.0),
+                        Color32::from_rgba_premultiplied(22, 28, 42, 190),
+                    );
+                    painter.rect_stroke(
+                        rect,
+                        Rounding::same(10.0),
+                        Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(65, 85, 125, 75)),
+                    );
 
-                        painter.text(
-                            Pos2::new(rect.min.x + 32.0, rect.min.y + 10.0),
-                            egui::Align2::LEFT_TOP,
-                            *title,
-                            egui::FontId::proportional(13.0),
-                            Color32::WHITE,
-                        );
-                        painter.text(
-                            Pos2::new(rect.min.x + 32.0, rect.min.y + 28.0),
-                            egui::Align2::LEFT_TOP,
-                            *desc,
-                            egui::FontId::proportional(10.0),
-                            Color32::from_rgb(140, 155, 175),
-                        );
+                    let r = (rgb_arr[0] * 255.0) as u8;
+                    let g = (rgb_arr[1] * 255.0) as u8;
+                    let b = (rgb_arr[2] * 255.0) as u8;
+                    painter.circle_filled(
+                        Pos2::new(rect.min.x + 18.0, rect.min.y + 20.0),
+                        9.0,
+                        Color32::from_rgb(r, g, b),
+                    );
 
-                        if response.clicked() {
-                            self.ui_color = *rgb_arr;
-                            self.ui_effect = *eff;
-                            self.ui_speed = *spd;
-                            self.ui_brightness = *br;
+                    painter.text(
+                        Pos2::new(rect.min.x + 36.0, rect.min.y + 10.0),
+                        egui::Align2::LEFT_TOP,
+                        *title,
+                        egui::FontId::proportional(13.0),
+                        Color32::WHITE,
+                    );
+                    painter.text(
+                        Pos2::new(rect.min.x + 36.0, rect.min.y + 29.0),
+                        egui::Align2::LEFT_TOP,
+                        *desc,
+                        egui::FontId::proportional(10.0),
+                        Color32::from_rgb(140, 155, 175),
+                    );
 
-                            self.send(GuiCommand::SendCommand(Command::SetEffect(*eff)));
-                            self.send(GuiCommand::SendCommand(Command::SetSpeed(*spd)));
-                            self.send(GuiCommand::SendCommand(Command::SetColor {
-                                color: RgbColor::new(r, g, b),
-                                level: *br,
-                            }));
-                            self.log(&format!("Applied scene preset '{}'", title), "");
-                        }
-                    });
+                    if response.clicked() {
+                        self.ui_color = *rgb_arr;
+                        self.ui_effect = *eff;
+                        self.ui_speed = *spd;
+                        self.ui_brightness = *br;
+
+                        self.send(GuiCommand::SendCommand(Command::SetEffect(*eff)));
+                        self.send(GuiCommand::SendCommand(Command::SetSpeed(*spd)));
+                        self.send(GuiCommand::SendCommand(Command::SetColor {
+                            color: RgbColor::new(r, g, b),
+                            level: *br,
+                        }));
+                        self.log(&format!("Applied scene preset '{}'", title), "");
+                    }
                 }
             });
         });
     }
 
-    /// Renders the Hardware Configuration screen with safety confirmation.
+    /// Renders the Hardware Configuration screen with EEPROM safety gate.
     fn render_tab_hardware(&mut self, ui: &mut egui::Ui) {
-        ui.group(|ui| {
+        render_glass_card(ui, 320.0, |ui| {
             ui.label(
                 egui::RichText::new("Physical Controller Hardware & EEPROM Configuration")
                     .strong()
                     .size(13.0)
-                    .color(Color32::from_rgb(200, 215, 235)),
+                    .color(Color32::from_rgb(215, 230, 250)),
             );
             ui.separator();
 
             // Safety Warning Banner
-            ui.group(|ui| {
-                ui.horizontal(|ui| {
-                    ui.label(
-                        egui::RichText::new("CAUTION: Hardware Safety Gate")
-                            .strong()
-                            .color(Color32::from_rgb(255, 160, 0)),
-                    );
-                });
-                ui.label(
-                    egui::RichText::new(
-                        "Writing out-of-range or incorrect parameters directly modifies non-volatile EEPROM registers. Ensure pixel count and channel order match your physical hardware strip before applying.",
-                    )
-                    .size(11.0)
-                    .color(Color32::from_rgb(220, 225, 235)),
-                );
-            });
+            let (warn_rect, _) =
+                ui.allocate_exact_size(Vec2::new(ui.available_width(), 48.0), egui::Sense::hover());
+            let painter = ui.painter_at(warn_rect);
+            painter.rect_filled(
+                warn_rect,
+                Rounding::same(8.0),
+                Color32::from_rgba_premultiplied(65, 45, 15, 180),
+            );
+            painter.rect_stroke(
+                warn_rect,
+                Rounding::same(8.0),
+                Stroke::new(1.0_f32, Color32::from_rgb(251, 146, 60)),
+            );
+            painter.text(
+                Pos2::new(warn_rect.min.x + 10.0, warn_rect.min.y + 8.0),
+                egui::Align2::LEFT_TOP,
+                "CAUTION: Hardware Safety Gate",
+                egui::FontId::proportional(12.0),
+                Color32::from_rgb(251, 146, 60),
+            );
+            painter.text(
+                Pos2::new(warn_rect.min.x + 10.0, warn_rect.min.y + 26.0),
+                egui::Align2::LEFT_TOP,
+                "Writing incorrect parameters directly modifies non-volatile EEPROM registers. Verify strip settings.",
+                egui::FontId::proportional(10.0),
+                Color32::from_rgb(230, 235, 245),
+            );
 
             ui.add_space(8.0);
 
             ui.horizontal(|ui| {
-                ui.label(format!("Pixel Count / Strip Length: {} pixels", self.ui_length));
+                ui.label(format!(
+                    "Pixel Count / Strip Length: {} pixels",
+                    self.ui_length
+                ));
                 ui.add(egui::Slider::new(&mut self.ui_length, 1..=150));
             });
 
@@ -1130,8 +1436,16 @@ impl PyxillumApp {
                 egui::ComboBox::from_id_source("chip_order_cb_hw")
                     .selected_text(format!("{:?}", self.ui_chip_order))
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut self.ui_chip_order, ChipOrder::Grb, "GRB (WS2812B standard)");
-                        ui.selectable_value(&mut self.ui_chip_order, ChipOrder::Rgb, "RGB (Standard)");
+                        ui.selectable_value(
+                            &mut self.ui_chip_order,
+                            ChipOrder::Grb,
+                            "GRB (WS2812B standard)",
+                        );
+                        ui.selectable_value(
+                            &mut self.ui_chip_order,
+                            ChipOrder::Rgb,
+                            "RGB (Standard)",
+                        );
                         ui.selectable_value(&mut self.ui_chip_order, ChipOrder::Rbg, "RBG");
                         ui.selectable_value(&mut self.ui_chip_order, ChipOrder::Gbr, "GBR");
                         ui.selectable_value(&mut self.ui_chip_order, ChipOrder::Brg, "BRG");
@@ -1139,7 +1453,7 @@ impl PyxillumApp {
                     });
             });
 
-            ui.add_space(12.0);
+            ui.add_space(10.0);
             ui.checkbox(
                 &mut self.ui_confirm_safety,
                 "I understand this modifies non-volatile controller registers (--i-understand-this-changes-the-device)",
@@ -1150,18 +1464,24 @@ impl PyxillumApp {
             let apply_btn = egui::Button::new(
                 egui::RichText::new("Apply Hardware Configuration")
                     .strong()
-                    .color(if btn_enabled { Color32::WHITE } else { Color32::GRAY }),
+                    .color(if btn_enabled {
+                        Color32::WHITE
+                    } else {
+                        Color32::GRAY
+                    }),
             )
             .fill(if btn_enabled {
                 Color32::from_rgb(16, 185, 129)
             } else {
-                Color32::from_rgb(35, 42, 58)
+                Color32::from_rgba_premultiplied(35, 42, 58, 160)
             })
-            .rounding(Rounding::same(6.0));
+            .rounding(Rounding::same(8.0));
 
             if ui.add_enabled(btn_enabled, apply_btn).clicked() {
                 self.send(GuiCommand::SendCommand(Command::SetLength(self.ui_length)));
-                self.send(GuiCommand::SendCommand(Command::SetChipOrder(self.ui_chip_order)));
+                self.send(GuiCommand::SendCommand(Command::SetChipOrder(
+                    self.ui_chip_order,
+                )));
                 self.log(
                     &format!(
                         "Reconfigured hardware: length={}, chip_order={:?}",
@@ -1173,15 +1493,15 @@ impl PyxillumApp {
         });
     }
 
-    /// Renders the real-time command hex trace.
+    /// Renders the real-time protocol trace log.
     fn render_tab_diagnostics(&mut self, ui: &mut egui::Ui) {
-        ui.group(|ui| {
+        render_glass_card(ui, 320.0, |ui| {
             ui.horizontal(|ui| {
                 ui.label(
                     egui::RichText::new("Live Protocol Hex Command Trace")
                         .strong()
                         .size(13.0)
-                        .color(Color32::from_rgb(200, 215, 235)),
+                        .color(Color32::from_rgb(215, 230, 250)),
                 );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.button("Clear Trace Log").clicked() {
@@ -1192,7 +1512,7 @@ impl PyxillumApp {
             ui.separator();
 
             egui::ScrollArea::vertical()
-                .max_height(260.0)
+                .max_height(250.0)
                 .show(ui, |ui| {
                     for entry in self.logs.iter().rev() {
                         ui.horizontal(|ui| {
@@ -1213,49 +1533,58 @@ impl PyxillumApp {
     /// Draws the bouncing 16-band graphic equalizer visualizer.
     fn render_equalizer_bars(&self, ui: &mut egui::Ui) {
         let (rect, _response) =
-            ui.allocate_exact_size(Vec2::new(ui.available_width(), 50.0), egui::Sense::hover());
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 52.0), egui::Sense::hover());
         let painter = ui.painter_at(rect);
 
-        painter.rect_filled(rect, Rounding::same(4.0), Color32::from_rgb(14, 18, 26));
+        painter.rect_filled(
+            rect,
+            Rounding::same(8.0),
+            Color32::from_rgba_premultiplied(14, 18, 28, 200),
+        );
         painter.rect_stroke(
             rect,
-            Rounding::same(4.0),
-            Stroke::new(1.0_f32, Color32::from_rgb(30, 38, 54)),
+            Rounding::same(8.0),
+            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(55, 75, 110, 75)),
         );
 
         let bars = 16;
         let spacing = rect.width() / (bars as f32);
-        let bar_width = spacing * 0.7;
+        let bar_width = spacing * 0.72;
 
         for i in 0..bars {
             let freq = i as f32 * 1.35;
             let height_factor = if self.ui_power {
-                let wave = ((self.audio_visualizer_timer * 8.0 + freq).sin() * 0.4 + 0.5)
-                    * ((self.audio_visualizer_timer * 3.7 + freq * 2.1).cos() * 0.3 + 0.7);
-                wave.clamp(0.1, 0.95)
+                if self.sync_with_windows_audio && self.live_audio_peak > 0.01 {
+                    // Modulate to live Windows audio peak meter + harmonic frequency
+                    let harmonic = (self.audio_visualizer_timer * 12.0 + freq).sin() * 0.35 + 0.65;
+                    (self.live_audio_peak * harmonic).clamp(0.08, 0.98)
+                } else {
+                    let wave = ((self.audio_visualizer_timer * 8.0 + freq).sin() * 0.4 + 0.5)
+                        * ((self.audio_visualizer_timer * 3.7 + freq * 2.1).cos() * 0.3 + 0.7);
+                    wave.clamp(0.1, 0.95)
+                }
             } else {
-                0.05
+                0.04
             };
 
             let bar_h = rect.height() * height_factor * (self.ui_sensitivity as f32 / 16.0);
             let bar_rect = Rect::from_min_size(
                 Pos2::new(
-                    rect.min.x + spacing * (i as f32 + 0.15),
+                    rect.min.x + spacing * (i as f32 + 0.14),
                     rect.max.y - bar_h - 2.0,
                 ),
                 Vec2::new(bar_width, bar_h),
             );
 
-            // Equalizer color gradient
             let col = if i < 6 {
-                Color32::from_rgb(0, 210, 255) // Cyan
+                Color32::from_rgb(0, 215, 255) // Electric Cyan
             } else if i < 11 {
-                Color32::from_rgb(255, 175, 0) // Amber
+                Color32::from_rgb(255, 180, 0) // Amber
             } else {
-                Color32::from_rgb(255, 50, 100) // Hot pink
+                Color32::from_rgb(255, 55, 115) // Hot pink
             };
 
-            painter.rect_filled(bar_rect, Rounding::same(2.0), col);
+            painter.rect_filled(bar_rect, Rounding::same(3.0), col);
         }
     }
 
@@ -1269,7 +1598,12 @@ impl PyxillumApp {
             return;
         }
 
-        let factor = (self.ui_brightness as f32) / 255.0;
+        let mut factor = (self.ui_brightness as f32) / 255.0;
+
+        // If synced with Windows audio and audio is playing, modulate brightness dynamically
+        if self.sync_with_windows_audio && self.live_audio_peak > 0.01 {
+            factor = (factor * (0.4 + 0.6 * self.live_audio_peak)).clamp(0.1, 1.0);
+        }
 
         match self.ui_effect {
             EFFECT_SOLID => {
@@ -1326,11 +1660,33 @@ impl PyxillumApp {
             }
             0xC9..=0xCC => {
                 // Sound Reactive Rhythm Modes
-                for _i in 0..num_pixels {
-                    let beat = ((self.animation_timer * 10.0).sin().abs()) * factor;
-                    let r = (self.ui_color[0] * 255.0 * beat) as u8;
-                    let g = (self.ui_color[1] * 255.0 * beat) as u8;
-                    let b = (self.ui_color[2] * 255.0 * beat) as u8;
+                for i in 0..num_pixels {
+                    let beat_intensity =
+                        if self.sync_with_windows_audio && self.live_audio_peak > 0.01 {
+                            self.live_audio_peak
+                        } else {
+                            (self.animation_timer * 10.0).sin().abs()
+                        };
+                    let beat = (beat_intensity * factor).clamp(0.05, 1.0);
+                    let (r, g, b) = if self.ui_effect == 0xCB {
+                        // VuMeter: green -> yellow -> red
+                        let norm = i as f32 / num_pixels as f32;
+                        if norm < beat * 0.6 {
+                            (0, 220, 100)
+                        } else if norm < beat * 0.85 {
+                            (255, 200, 0)
+                        } else if norm < beat {
+                            (255, 40, 40)
+                        } else {
+                            (15, 20, 30)
+                        }
+                    } else {
+                        (
+                            (self.ui_color[0] * 255.0 * beat) as u8,
+                            (self.ui_color[1] * 255.0 * beat) as u8,
+                            (self.ui_color[2] * 255.0 * beat) as u8,
+                        )
+                    };
                     self.strip_pixels.push(RgbColor::new(r, g, b));
                 }
             }
@@ -1347,57 +1703,40 @@ impl PyxillumApp {
             }
         }
     }
+}
 
-    /// Renders the individual physical LED diodes along the strip track.
-    fn render_virtual_strip(&self, ui: &mut egui::Ui) {
-        let (rect, _response) =
-            ui.allocate_exact_size(Vec2::new(ui.available_width(), 46.0), egui::Sense::hover());
-        let painter = ui.painter_at(rect);
+/// Helper that renders a frosted glass card container with specular bevel highlights.
+fn render_glass_card<R>(
+    ui: &mut egui::Ui,
+    min_height: f32,
+    add_contents: impl FnOnce(&mut egui::Ui) -> R,
+) -> R {
+    let frame = egui::Frame::none()
+        .fill(Color32::from_rgba_premultiplied(18, 24, 38, 215))
+        .rounding(Rounding::same(14.0))
+        .stroke(Stroke::new(
+            1.0_f32,
+            Color32::from_rgba_premultiplied(70, 90, 130, 75),
+        ))
+        .inner_margin(egui::Margin::same(14.0));
 
-        // Dark acrylic strip casing
-        painter.rect_filled(rect, Rounding::same(6.0), Color32::from_rgb(14, 17, 24));
-        painter.rect_stroke(
-            rect,
-            Rounding::same(6.0),
-            Stroke::new(1.0_f32, Color32::from_rgb(36, 44, 62)),
-        );
+    let response = frame.show(ui, |ui| {
+        ui.set_min_height(min_height);
+        add_contents(ui)
+    });
 
-        let count = self.strip_pixels.len();
-        if count == 0 {
-            return;
-        }
+    // Draw specular highlight along top edge of glass card
+    let rect = response.response.rect;
+    let painter = ui.painter();
+    painter.line_segment(
+        [
+            Pos2::new(rect.min.x + 14.0, rect.min.y + 1.0),
+            Pos2::new(rect.max.x - 14.0, rect.min.y + 1.0),
+        ],
+        Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(255, 255, 255, 38)),
+    );
 
-        let spacing = rect.width() / (count as f32);
-        let radius = (spacing * 0.36).clamp(3.0, 10.0);
-
-        for (i, p) in self.strip_pixels.iter().enumerate() {
-            let center = Pos2::new(
-                rect.min.x + spacing * (i as f32 + 0.5),
-                rect.min.y + rect.height() * 0.5,
-            );
-
-            let color = Color32::from_rgb(p.r, p.g, p.b);
-
-            // Outer diffusion aura glow
-            if self.ui_power && (p.r > 20 || p.g > 20 || p.b > 20) {
-                let glow_color = Color32::from_rgba_premultiplied(p.r / 3, p.g / 3, p.b / 3, 40);
-                painter.circle_filled(center, radius * 2.2, glow_color);
-            }
-
-            // Core LED diode
-            painter.circle_filled(center, radius, color);
-            painter.circle_stroke(
-                center,
-                radius,
-                Stroke::new(0.5_f32, Color32::from_black_alpha(100)),
-            );
-
-            // Center diode specular highlight
-            if self.ui_power && (p.r > 50 || p.g > 50 || p.b > 50) {
-                painter.circle_filled(center, radius * 0.35, Color32::from_white_alpha(120));
-            }
-        }
-    }
+    response.inner
 }
 
 /// Draws an interactive continuous radial Hue & Saturation color disc.
@@ -1439,11 +1778,11 @@ fn render_color_disc(ui: &mut egui::Ui, current_color: &mut [f32; 3], radius: f3
 
     painter.add(egui::Shape::mesh(mesh));
 
-    // Outer border ring
+    // Outer border ring with glass bevel
     painter.circle_stroke(
         center,
         radius,
-        Stroke::new(1.5_f32, Color32::from_rgb(60, 75, 105)),
+        Stroke::new(1.5_f32, Color32::from_rgba_premultiplied(75, 95, 140, 100)),
     );
 
     // Calculate indicator position from current RGB
@@ -1452,8 +1791,8 @@ fn render_color_disc(ui: &mut egui::Ui, current_color: &mut [f32; 3], radius: f3
     let indicator_pos = center + Vec2::new(curr_angle.cos(), curr_angle.sin()) * (curr_s * radius);
 
     // Draw crosshair thumb ring
-    painter.circle_stroke(indicator_pos, 8.0, Stroke::new(2.5_f32, Color32::WHITE));
-    painter.circle_stroke(indicator_pos, 9.5, Stroke::new(1.0_f32, Color32::BLACK));
+    painter.circle_stroke(indicator_pos, 8.5, Stroke::new(2.5_f32, Color32::WHITE));
+    painter.circle_stroke(indicator_pos, 10.0, Stroke::new(1.0_f32, Color32::BLACK));
 
     // Handle user drag or click on the disc
     let mut changed = false;
@@ -1543,7 +1882,6 @@ fn generate_window_icon() -> egui::IconData {
 fn main() -> eframe::Result<()> {
     tracing_subscriber::fmt::init();
 
-    // Spawn async background worker managing the device
     let (cmd_tx, mut cmd_rx) = mpsc::channel::<GuiCommand>(64);
 
     let sim = Arc::new(Mutex::new(DeviceSimulator::new()));
@@ -1557,7 +1895,6 @@ fn main() -> eframe::Result<()> {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async move {
             info!("Async DeviceManager worker started.");
-            // Default connect to simulator on startup for immediate out-of-the-box demo
             let _ = manager_clone.connect("SIM:00:11:22:33:44:55").await;
 
             while let Some(cmd) = cmd_rx.recv().await {
@@ -1581,9 +1918,9 @@ fn main() -> eframe::Result<()> {
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([780.0, 640.0])
-            .with_min_inner_size([560.0, 480.0])
-            .with_title("Pyxillum - Pixel LED Controller")
+            .with_inner_size([800.0, 660.0])
+            .with_min_inner_size([580.0, 500.0])
+            .with_title("Pyxillum - Pixel LED Studio")
             .with_icon(generate_window_icon()),
         ..Default::default()
     };
