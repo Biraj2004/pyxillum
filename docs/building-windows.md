@@ -131,10 +131,16 @@ cargo xtask package
 
 This command:
 1. Builds all workspace targets in `--release` profile.
-2. Creates the `dist/` directory.
-3. Stages `pyxillum-desktop.exe` and `pyxillum.exe`.
+2. Creates the `dist/` and `win-exe/` directories.
+3. Stages the latest `pyxillum-desktop.exe` and `pyxillum.exe` into both `dist/` and `win-exe/`.
 4. Copies `README.md` and `LICENSE`.
 5. Prints the size of each packaged artifact.
+
+To synchronise compiled executables to `win-exe/` at any time without a rebuild:
+
+```powershell
+cargo xtask sync-exe
+```
 
 ### Step 5: Building Windows MSI Installer via WiX (`cargo xtask msi`)
 

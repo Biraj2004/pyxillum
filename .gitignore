@@ -7,4 +7,4 @@ re-workspace/
 Thumbs.db
 hardware-verification-report.md
 dist/
-
+win-exe/*.exe

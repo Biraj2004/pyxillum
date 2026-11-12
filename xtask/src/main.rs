@@ -25,11 +25,14 @@ enum Commands {
         check: bool,
     },
 
-    /// Compile release binaries and package release artifacts.
+    /// Compile release binaries and package release artifacts into dist/ and win-exe/.
     Package,
 
     /// Build Windows MSI installer package using WiX Toolset.
     Msi,
+
+    /// Copy latest compiled release binaries into win-exe/ and dist/.
+    SyncExe,
 }
 
 fn main() -> Result<()> {
@@ -69,31 +72,18 @@ fn main() -> Result<()> {
         Commands::Package => {
             println!("=== [xtask] Building release artifacts ===");
             run_cargo(&["build", "--release", "--workspace"])?;
-
-            let dist_dir = std::path::Path::new("dist");
-            std::fs::create_dir_all(dist_dir)?;
-
-            let binaries = ["pyxillum-desktop.exe", "pyxillum.exe"];
-            for bin in binaries {
-                let src = std::path::Path::new("target/release").join(bin);
-                if src.exists() {
-                    let dst = dist_dir.join(bin);
-                    std::fs::copy(&src, &dst)?;
-                    let meta = std::fs::metadata(&dst)?;
-                    let size_mb = (meta.len() as f64) / (1024.0 * 1024.0);
-                    println!("Packaged {} -> dist/{} ({:.2} MB)", bin, bin, size_mb);
-                }
-            }
-            let _ = std::fs::copy("README.md", dist_dir.join("README.md"));
-            let _ = std::fs::copy("LICENSE", dist_dir.join("LICENSE"));
-            println!("=== [xtask] Packaging complete! Artifacts staged in dist/ ===");
+            stage_binaries(std::path::Path::new("target/release"))?;
+            println!("=== [xtask] Packaging complete! Artifacts staged in dist/ and win-exe/ ===");
+        }
+        Commands::SyncExe => {
+            println!("=== [xtask] Synchronising release binaries into win-exe/ and dist/ ===");
+            stage_binaries(std::path::Path::new("target/release"))?;
+            println!("=== [xtask] Synchronisation complete! ===");
         }
         Commands::Msi => {
             println!("=== [xtask] Packaging Windows MSI Installer ===");
             run_cargo(&["build", "--release", "--workspace"])?;
-
-            let dist_dir = std::path::Path::new("dist");
-            std::fs::create_dir_all(dist_dir)?;
+            stage_binaries(std::path::Path::new("target/release"))?;
 
             let wix_dir = std::path::Path::new("crates/app/windows");
             let candle_check = Command::new("candle.exe").arg("-?").output();
@@ -164,5 +154,39 @@ fn run_cargo(args: &[&str]) -> Result<()> {
         bail!("Cargo command failed with exit code: {:?}", status.code());
     }
 
+    Ok(())
+}
+
+fn stage_binaries(source_dir: &std::path::Path) -> Result<()> {
+    let destinations = [
+        std::path::Path::new("dist"),
+        std::path::Path::new("win-exe"),
+    ];
+    for d in &destinations {
+        std::fs::create_dir_all(d)?;
+    }
+
+    let binaries = ["pyxillum-desktop.exe", "pyxillum.exe"];
+    for bin in binaries {
+        let src = source_dir.join(bin);
+        if src.exists() {
+            for dst_dir in &destinations {
+                let dst = dst_dir.join(bin);
+                std::fs::copy(&src, &dst)?;
+                let meta = std::fs::metadata(&dst)?;
+                let size_mb = (meta.len() as f64) / (1024.0 * 1024.0);
+                println!(
+                    "Staged {} -> {}/{} ({:.2} MB)",
+                    bin,
+                    dst_dir.display(),
+                    bin,
+                    size_mb
+                );
+            }
+        }
+    }
+
+    let _ = std::fs::copy("README.md", "dist/README.md");
+    let _ = std::fs::copy("LICENSE", "dist/LICENSE");
     Ok(())
 }

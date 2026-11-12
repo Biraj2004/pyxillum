@@ -114,12 +114,18 @@ cargo xtask test
 # 3. Format code according to rustfmt standards
 cargo xtask fmt
 
-# 4. Build optimised release binaries and stage into dist/
+# 4. Build optimised release binaries and stage into dist/ and win-exe/
 cargo xtask package
 
 # 5. Build Windows MSI installer package via WiX Toolset
 cargo xtask msi
+
+# 6. Synchronise compiled release binaries directly to win-exe/ and dist/
+cargo xtask sync-exe
 ```
+
+> [!IMPORTANT]
+> **Executable Staging Rule (`win-exe/`)**: Whenever release binaries are compiled or updated, the latest built executables (`pyxillum-desktop.exe` and `pyxillum.exe`) must **always** be copied into the dedicated `win-exe/` folder. This ensures ready-to-run executables are always immediately available at the workspace root. This staging is automated via `cargo xtask package`, `cargo xtask msi`, and `cargo xtask sync-exe`.
 
 ---
 
