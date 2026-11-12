@@ -1,6 +1,25 @@
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Building and Optimising Pyxillum on Windows
 
-This guide provides technical instructions for compiling, optimising, packaging, and testing the native Windows desktop application (`pyxillum-desktop.exe`) and command-line tool (`pyxillum.exe`).
+**Technical guide for compiling, optimising, packaging, and testing native Windows binaries.**
+
+[![Target: Windows x86_64](https://img.shields.io/badge/Target-Windows%20x86__64-lightgrey?style=flat-square)](#2-prerequisites)
+[![Toolchains: GNU | MSVC](https://img.shields.io/badge/Toolchains-GNU%20%7C%20MSVC-informational?style=flat-square)](#supported-toolchains)
+[![Optimization: ThinLTO](https://img.shields.io/badge/Optimization-ThinLTO%20%2B%20Strip-brightgreen?style=flat-square)](#d-release-profile-optimisation)
+[![Subsystem: Windowed](https://img.shields.io/badge/Subsystem-Native%20Windowed-orange?style=flat-square)](#a-windowed-subsystem-suppression)
+[![Packaging: WiX Toolset MSI](https://img.shields.io/badge/Packaging-WiX%20Toolset%20MSI-blue?style=flat-square)](#step-5-building-windows-msi-installer-via-wix-cargo-xtask-msi)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="../win-exe/"><strong>Pre-Built Executables</strong></a> &bull;
+  <a href="architecture.md"><strong>Architecture</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
 
 ---
 

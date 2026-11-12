@@ -1,9 +1,24 @@
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Pyxillum System Architecture
 
-**Project**: Pyxillum  
-**Target Architecture**: Cross-Platform Native Desktop Application (Windows, macOS, Linux)  
-**Language & Toolchain**: Rust 1.99+ (MSRV: 1.80.0), Cargo Workspace  
-**Licence**: GNU Affero General Public License v3.0 (`AGPL-3.0-or-later`)  
+**Workspace topology, crate separation of concerns, and dataflow specifications.**
+
+[![Language: Rust 1.80+](https://img.shields.io/badge/Language-Rust%201.80%2B-orange?style=flat-square&logo=rust&logoColor=white)](https://github.com/rust-lang/rust)
+[![Workspace: 6 Crates](https://img.shields.io/badge/Workspace-6%20Crates-informational?style=flat-square)](#1-workspace-crate-layout-and-separation-of-concerns)
+[![Codec: Safe Rust](https://img.shields.io/badge/Codec-%23!%5Bforbid(unsafe__code)%5D-brightgreen?style=flat-square)](#cratesprotocol)
+[![Licence: AGPL-3.0-or-later](https://img.shields.io/badge/Licence-AGPL--3.0-blue?style=flat-square)](../LICENSE)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="protocol.md"><strong>Protocol Spec</strong></a> &bull;
+  <a href="building-windows.md"><strong>Windows Guide</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
 
 ---
 

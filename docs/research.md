@@ -1,4 +1,25 @@
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Phase 0 Research Report: Clean-Room BLE Pixel LED Desktop Controller
+
+**Ecosystem survey, GUI framework trade-off analysis, protocol corroboration, and naming verification.**
+
+[![Phase 0: Research Complete](https://img.shields.io/badge/Phase%200-Research%20Complete-brightgreen?style=flat-square)](#1-github-ecosystem-survey-last-12-months)
+[![Methodology: Clean--Room](https://img.shields.io/badge/Methodology-Clean--Room%20Reverse%20Engineering-blue?style=flat-square)](#date)
+[![Ecosystem Survey: 6 Projects](https://img.shields.io/badge/Survey-6%20Ecosystem%20Projects-informational?style=flat-square)](#1-github-ecosystem-survey-last-12-months)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="architecture.md"><strong>Architecture</strong></a> &bull;
+  <a href="protocol.md"><strong>Protocol Spec</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
 
 **Date**: 2026-11-12  
 **Target Hardware Family**: SP621E / SP6xxE Mini Bluetooth Pixel LED Controllers  

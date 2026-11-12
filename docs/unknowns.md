@@ -1,4 +1,24 @@
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Protocol Unknowns and Risk Register
+
+**Risk-graded catalogue of unverified protocol behaviours and hardware safety mitigations.**
+
+[![Protocol Risk Register: Active](https://img.shields.io/badge/Risk%20Register-Active-orange?style=flat-square)](#unknowns-categorised-by-risk)
+[![P0 Unknowns: Gated](https://img.shields.io/badge/P0%20Commands-Strictly%20Gated-red?style=flat-square)](#severity-p0-high-risk-hardware--nvram-corruption-risk)
+[![OTA Routines: Forbidden](https://img.shields.io/badge/OTA%20Updates-Strictly%20Forbidden-critical?style=flat-square)](#unk-p0-04)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="protocol.md"><strong>Protocol Spec</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
 
 This document tracks unresolved protocol behaviours that require confirmation on physical hardware or live Bluetooth HCI snoop captures. Items are prioritized by the operational risk they pose to physical controller hardware.
 

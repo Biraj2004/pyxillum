@@ -1,7 +1,28 @@
+<div align="center">
+
+<img src="../../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # ADR 0001: Selection of Desktop GUI Stack
 
+**Architectural decision record evaluating candidate desktop UI frameworks for Pyxillum.**
+
+[![ADR Status: Accepted](https://img.shields.io/badge/ADR%20Status-Accepted-brightgreen?style=flat-square)](#status)
+[![Selected Stack: egui / eframe](https://img.shields.io/badge/Decision-egui%20%2F%20eframe-blue?style=flat-square)](#decision)
+[![Rendering: Glow OpenGL (60 FPS)](https://img.shields.io/badge/Rendering-Glow%20OpenGL%20%2860%20FPS%29-orange?style=flat-square)](#decision)
+
+<p align="center">
+  <a href="../../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="../architecture.md"><strong>Architecture</strong></a> &bull;
+  <a href="0002-ble-library.md"><strong>ADR 0002 (BLE Stack)</strong></a> &bull;
+  <a href="../../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
+
 ## Status
-Proposed (Awaiting User Approval)
+Accepted
 
 ## Context
 The project requires an open-source, cross-platform desktop application (Windows, macOS, Linux) written in Rust to control Bluetooth Low Energy pixel LED controllers. The user interface must support:

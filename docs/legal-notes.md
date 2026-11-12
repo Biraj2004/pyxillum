@@ -1,4 +1,25 @@
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Legal and Interoperability Notes
+
+**Clean-room engineering rationale, statutory interoperability exemptions, and legal questions.**
+
+[![Licence: AGPL-3.0-or-later](https://img.shields.io/badge/Licence-AGPL--3.0-blue?style=flat-square)](../LICENSE)
+[![European Union: Directive 2009/24/EC](https://img.shields.io/badge/EU-Directive%202009%2F24%2FEC%20Art.%206-informational?style=flat-square)](#1-interoperability-rationale)
+[![United States: 17 U.S.C. § 1201(f)](https://img.shields.io/badge/US-17%20U.S.C.%20%C2%A7%201201(f)-informational?style=flat-square)](#1-interoperability-rationale)
+[![India: Copyright Act § 52(1)(ab)](https://img.shields.io/badge/India-Copyright%20Act%20%C2%A7%2052(1)(ab)-informational?style=flat-square)](#1-interoperability-rationale)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="protocol.md"><strong>Protocol Spec</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
 
 > [!WARNING]
 > **Disclaimer**: This document does not constitute formal legal advice. It outlines the engineering rationale for clean-room interoperability and identifies legal considerations that should be reviewed by a qualified legal professional in the appropriate jurisdiction.

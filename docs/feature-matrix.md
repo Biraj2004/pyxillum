@@ -1,9 +1,31 @@
-# Feature Matrix: Original Companion App vs Target Implementation
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
+# Feature Capability & Implementation Matrix
+
+**Full technical comparison, protocol command mapping, and confidence tagging.**
+
+[![Evaluation: Clean-Room Analysis](https://img.shields.io/badge/Evaluation-Clean--Room%20Analysis-informational?style=flat-square)](#detailed-capability-matrix)
+[![Hardware Confidence: Strictly Tagged](https://img.shields.io/badge/Confidence-Strictly%20Tagged-blue?style=flat-square)](#detailed-capability-matrix)
+[![Simulator: Verified](https://img.shields.io/badge/Simulator-VERIFIED--HW-brightgreen?style=flat-square)](#detailed-capability-matrix)
+[![Hardware: Untested](https://img.shields.io/badge/Hardware-Untested-yellow?style=flat-square)](#detailed-capability-matrix)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="protocol.md"><strong>Protocol Spec</strong></a> &bull;
+  <a href="architecture.md"><strong>Architecture</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
 
 Last updated: 2026-11-12
 
 Every protocol fact and feature capability is assigned an explicit confidence status:
-- **`OBSERVED-STATIC`**: Extracted directly from decompiled application bytecode or assets.
+- **`OBSERVED-STATIC`**: Extracted directly from static analysis or decompilation notes.
 - **`CORROBORATED`**: Confirmed independently across multiple open-source implementations or technical references.
 - **`VERIFIED-HW`**: Verified against physical controller hardware (initially none, hardware unavailable).
 - **`INFERRED`**: Logically deduced from related code paths or standard BLE GATT conventions.

@@ -1,4 +1,25 @@
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Project Status Tracker
+
+**Implementation progress, milestones, and hardware verification readiness.**
+
+[![Project Status: Complete](https://img.shields.io/badge/Project%20Status-Complete%20%28Ready%20for%20HW%29-brightgreen?style=flat-square)](#current-phase-complete-ready-for-physical-hardware-verification)
+[![Workspace Crates: 6 Built](https://img.shields.io/badge/Workspace-6%20Crates%20Built-blue?style=flat-square)](#done)
+[![Tests: 15 Passed](https://img.shields.io/badge/Tests-15%20Passed-success?style=flat-square)](#done)
+[![Verification: Simulator Verified](https://img.shields.io/badge/Simulator-VERIFIED--HW-blueviolet?style=flat-square)](#done)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="feature-matrix.md"><strong>Feature Matrix</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
 
 Last updated: 2026-11-12
 

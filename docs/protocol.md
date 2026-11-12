@@ -1,8 +1,30 @@
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Protocol Specification: SP621E Family BLE Protocol
 
-**Document Version**: 1.0.0  
-**Project**: Pyxillum  
-**Confidence Status**: Clean-room derived and corroborated against independent open-source implementations (`monty68/uniled`, `xevrion/wallglow`). Untested on physical hardware.
+**Clean-room functional specification for SP621E / SP6xxE Bluetooth Low Energy pixel LED controllers.**
+
+[![Protocol Family: SP6xxE](https://img.shields.io/badge/Protocol%20Family-SP6xxE%20Standard-informational?style=flat-square)](#1-physical-layer-and-bluetooth-low-energy-profile)
+[![GATT Service: 0xFFE0](https://img.shields.io/badge/GATT%20Service-0xFFE0-blue?style=flat-square)](#11-identifiers-and-service-topology)
+[![Frame Opcode: 0xA0](https://img.shields.io/badge/Frame%20Prefix-0xA0-orange?style=flat-square)](#2-command-packet-framing)
+[![Notification: 0x53 0x43](https://img.shields.io/badge/Notification%20Header-0x53%200x43-blueviolet?style=flat-square)](#3-notification-and-state-query-framing)
+[![Confidence: CORROBORATED](https://img.shields.io/badge/Confidence-CORROBORATED-brightgreen?style=flat-square)](#confidence-status)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="feature-matrix.md"><strong>Feature Matrix</strong></a> &bull;
+  <a href="architecture.md"><strong>Architecture</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
+
+### Confidence Status
+Clean-room derived from static analysis notes and corroborated against independent public reference implementations (`monty68/uniled`, `xevrion/wallglow`). Untested on physical hardware.
 
 ---
 

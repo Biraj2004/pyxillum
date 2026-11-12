@@ -1,4 +1,25 @@
+<div align="center">
+
+<img src="../../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Hardware Verification Plan (SP621E Controller)
+
+**Ordered, risk-graded test procedure and checklist for validating physical controller hardware.**
+
+[![Validation Suite: 7 Stages](https://img.shields.io/badge/Validation%20Suite-7%20Stages-informational?style=flat-square)](#1-test-execution-order-low-risk-to-high-risk)
+[![CLI Runner: pyxillum hwcheck](https://img.shields.io/badge/CLI%20Runner-pyxillum%20hwcheck-brightgreen?style=flat-square)](#running-the-automated-cli-hardware-verification-runner)
+[![Safety Safeguard: Gated Commands](https://img.shields.io/badge/Safety%20Safeguard-Gated%20EEPROM%20Writes-orange?style=flat-square)](#hw-06-pixel-count-and-color-order-gated-safety-command)
+[![Target Hardware: SP621E Family](https://img.shields.io/badge/Target%20Hardware-SP621E%20Family-blue?style=flat-square)](#hardware-verification-plan-sp621e-controller)
+
+<p align="center">
+  <a href="../../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="../../docs/protocol.md"><strong>Protocol Spec</strong></a> &bull;
+  <a href="../../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
 
 This guide provides an ordered, risk-graded test procedure to verify the Pyxillum client against physical controller hardware once available.
 

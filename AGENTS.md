@@ -1,6 +1,25 @@
+<div align="center">
+
+<img src="assets/icon.svg" alt="Pyxillum App Icon" width="120" height="120" />
+
 # Agent & Contributor Technical Guidelines
 
-This document provides complete technical context, architecture specifications, legal boundaries, and operational procedures for software agents, automated tools, and human contributors working on **Pyxillum**.
+**Complete technical context, architecture specifications, legal boundaries, and operational procedures for software agents, automated tools, and human contributors working on Pyxillum.**
+
+[![Audience: AI Agents & Human Contributors](https://img.shields.io/badge/Audience-Agents%20%26%20Contributors-informational?style=flat-square)](#1-project-purpose--scope)
+[![Development: Simulator--First](https://img.shields.io/badge/Development-Simulator--First-brightgreen?style=flat-square)](#7-testing-in-simulation-mode-zero-hardware)
+[![Quality: Zero Emojis & Clean Code](https://img.shields.io/badge/Tone-Zero%20Emojis%20%7C%20UK%20English-blue?style=flat-square)](#1-project-purpose--scope)
+[![Executable Staging: win--exe/](https://img.shields.io/badge/Staging-win--exe%2F%20Mandatory-orange?style=flat-square)](#6-development--quality-workflows)
+
+<p align="center">
+  <a href="README.md"><strong>Project Root</strong></a> &bull;
+  <a href="win-exe/"><strong>Executable Staging</strong></a> &bull;
+  <a href="docs/architecture.md"><strong>Architecture</strong></a> &bull;
+  <a href="docs/protocol.md"><strong>Protocol Spec</strong></a> &bull;
+  <a href="docs/building-windows.md"><strong>Windows Guide</strong></a>
+</p>
+
+</div>
 
 ---
 

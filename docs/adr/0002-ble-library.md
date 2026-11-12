@@ -1,7 +1,28 @@
+<div align="center">
+
+<img src="../../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # ADR 0002: Evaluation of Bluetooth Low Energy (BLE) Libraries
 
+**Architectural decision record evaluating cross-platform Bluetooth LE libraries for Rust.**
+
+[![ADR Status: Accepted](https://img.shields.io/badge/ADR%20Status-Accepted-brightgreen?style=flat-square)](#status)
+[![Selected BLE Stack: btleplug](https://img.shields.io/badge/Decision-btleplug%200.13-blue?style=flat-square)](#decision)
+[![Architecture: Transport Trait](https://img.shields.io/badge/Architecture-Transport%20Trait%20Decoupled-orange?style=flat-square)](#decision)
+
+<p align="center">
+  <a href="../../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="../architecture.md"><strong>Architecture</strong></a> &bull;
+  <a href="0001-gui-stack.md"><strong>ADR 0001 (GUI Stack)</strong></a> &bull;
+  <a href="../../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
+
 ## Status
-Proposed (Awaiting User Approval)
+Accepted
 
 ## Context
 The application must communicate with Bluetooth Low Energy (BLE) peripheral hardware across Windows, macOS, and Linux. The controller protocol runs over a standard GATT service (`0xFFE0` / `0xFFE1`), requiring:

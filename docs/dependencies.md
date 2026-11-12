@@ -1,4 +1,24 @@
+<div align="center">
+
+<img src="../assets/icon.svg" alt="Pyxillum App Icon" width="96" height="96" />
+
 # Workspace Dependency Audit and Justification
+
+**Catalogue of all third-party dependencies, rationale, footprint, and licence compatibility.**
+
+[![Audit: Zero Dependency Bloat](https://img.shields.io/badge/Audit-Zero%20Dependency%20Bloat-brightgreen?style=flat-square)](#1-core-dependencies-and-justifications)
+[![Licensing: MIT / Apache-2.0 Compatible](https://img.shields.io/badge/Licence%20Compatibility-MIT%20%2F%20Apache--2.0-blue?style=flat-square)](#1-core-dependencies-and-justifications)
+[![Unsafe Code: Safe Protocol](https://img.shields.io/badge/Protocol%20Crate-%23!%5Bforbid(unsafe__code)%5D-success?style=flat-square)](#1-core-dependencies-and-justifications)
+
+<p align="center">
+  <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="architecture.md"><strong>Architecture</strong></a> &bull;
+  <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
+</p>
+
+</div>
+
+---
 
 All dependencies are audited for minimal footprint, memory safety, permissive or compatible licensing, and absence of redundant bloat.
 
