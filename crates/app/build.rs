@@ -5,6 +5,7 @@ use std::process::Command;
 fn main() {
     println!("cargo:rerun-if-changed=windows/pyxillum.rc");
     println!("cargo:rerun-if-changed=windows/pyxillum.manifest");
+    println!("cargo:rerun-if-changed=windows/pyxillum.ico");
 
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     if target_os != "windows" {

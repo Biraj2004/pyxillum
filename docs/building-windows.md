@@ -136,9 +136,44 @@ This command:
 4. Copies `README.md` and `LICENSE`.
 5. Prints the size of each packaged artifact.
 
+### Step 5: Building Windows MSI Installer via WiX (`cargo xtask msi`)
+
+To compile a native Windows Installer (`.msi`) package with branded banners, desktop/start-menu shortcuts, and Add/Remove Programs icons:
+
+```powershell
+cargo xtask msi
+```
+
+If WiX Toolset is installed (`winget install WiX.Toolset`), this builds `dist/pyxillum-setup-0.1.0.msi` incorporating:
+- WiX definition: `crates/app/windows/pyxillum.wxs`
+- Application Icon: `crates/app/windows/pyxillum.ico`
+- Wizard Header Banner: `crates/app/windows/WixUIBannerBmp.bmp` (493 x 58 px)
+- Wizard Dialog Banner: `crates/app/windows/WixUIDialogBmp.bmp` (493 x 312 px)
+
 ---
 
-## 5. Testing and Validation on Windows
+## 5. Icon Assets & Visual Identity
+
+Pyxillum uses a clean, geometric, unslop icon mark representing interconnected addressable pixel nodes:
+
+| Asset Path | Format / Size | Purpose |
+| :--- | :--- | :--- |
+| `assets/icon.svg` | Vector SVG (512x512) | Scalable master vector mark |
+| `assets/icon-mono.svg` | Vector SVG (512x512) | High-contrast monochrome variant |
+| `assets/icons/icon-*.png` | PNG (16, 24, 32, 48, 64, 128, 256, 512) | Standard desktop, taskbar, and app store rasters |
+| `assets/pyxillum.ico` | Multi-layer ICO (16 to 256 px) | Embedded Windows PE application icon |
+| `assets/wix/WixUIBannerBmp.bmp` | 24-bit RGB BMP (493x58) | WiX MSI installer top header banner |
+| `assets/wix/WixUIDialogBmp.bmp` | 24-bit RGB BMP (493x312) | WiX MSI installer welcome/exit dialog sidebar |
+
+To regenerate all raster icons and MSI assets from the master SVG:
+
+```powershell
+python scripts/generate_assets.py
+```
+
+---
+
+## 6. Testing and Validation on Windows
 
 ### A. Running the Desktop Application
 
@@ -233,3 +268,4 @@ This runs test sequence `HW-01` through `HW-07`, confirms each visual state, and
   1. Open Windows **Settings** > **Bluetooth & devices** and ensure Bluetooth is toggled **On**.
   2. Verify that your Bluetooth adapter supports Bluetooth Low Energy (4.0+).
   3. Close any active companion mobile apps (the SP621E only permits one active Bluetooth connection).
+

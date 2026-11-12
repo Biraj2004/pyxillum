@@ -17,6 +17,8 @@ use std::time::Instant;
 use tokio::sync::{mpsc, Mutex};
 use tracing::info;
 
+mod icon_data;
+
 #[derive(Debug, Clone)]
 enum GuiCommand {
     Scan,
@@ -461,30 +463,10 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
 }
 
 fn generate_window_icon() -> egui::IconData {
-    let width = 32;
-    let height = 32;
-    let mut rgba = Vec::with_capacity(32 * 32 * 4);
-    for y in 0..height {
-        for x in 0..width {
-            let dx = (x as f32) - 15.5;
-            let dy = (y as f32) - 15.5;
-            let dist = (dx * dx + dy * dy).sqrt();
-            if dist <= 14.0 {
-                // Amber-violet glow gradient
-                let t = (x as f32) / 31.0;
-                let r = ((1.0 - t) * 255.0 + t * 140.0) as u8;
-                let g = ((1.0 - t) * 120.0 + t * 40.0) as u8;
-                let b = (t * 240.0) as u8;
-                rgba.extend_from_slice(&[r, g, b, 255]);
-            } else {
-                rgba.extend_from_slice(&[0, 0, 0, 0]);
-            }
-        }
-    }
     egui::IconData {
-        rgba,
-        width,
-        height,
+        rgba: icon_data::APP_ICON_RGBA_32.to_vec(),
+        width: 32,
+        height: 32,
     }
 }
 

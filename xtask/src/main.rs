@@ -27,6 +27,9 @@ enum Commands {
 
     /// Compile release binaries and package release artifacts.
     Package,
+
+    /// Build Windows MSI installer package using WiX Toolset.
+    Msi,
 }
 
 fn main() -> Result<()> {
@@ -84,6 +87,67 @@ fn main() -> Result<()> {
             let _ = std::fs::copy("README.md", dist_dir.join("README.md"));
             let _ = std::fs::copy("LICENSE", dist_dir.join("LICENSE"));
             println!("=== [xtask] Packaging complete! Artifacts staged in dist/ ===");
+        }
+        Commands::Msi => {
+            println!("=== [xtask] Packaging Windows MSI Installer ===");
+            run_cargo(&["build", "--release", "--workspace"])?;
+
+            let dist_dir = std::path::Path::new("dist");
+            std::fs::create_dir_all(dist_dir)?;
+
+            let wix_dir = std::path::Path::new("crates/app/windows");
+            let candle_check = Command::new("candle.exe").arg("-?").output();
+
+            match candle_check {
+                Ok(_) => {
+                    println!("Found WiX Toolset (candle.exe). Compiling MSI package...");
+                    let obj = wix_dir.join("pyxillum.wixobj");
+                    let status = Command::new("candle.exe")
+                        .args([
+                            "-arch",
+                            "x64",
+                            "pyxillum.wxs",
+                            "-out",
+                            obj.to_str().unwrap(),
+                        ])
+                        .current_dir(wix_dir)
+                        .status()?;
+                    if !status.success() {
+                        bail!("candle.exe compilation failed.");
+                    }
+
+                    let out_msi = std::env::current_dir()?
+                        .join("dist")
+                        .join("pyxillum-setup-0.1.0.msi");
+                    let light_status = Command::new("light.exe")
+                        .args([
+                            "-ext",
+                            "WixUIExtension",
+                            "-out",
+                            out_msi.to_str().unwrap(),
+                            obj.to_str().unwrap(),
+                        ])
+                        .current_dir(wix_dir)
+                        .status()?;
+
+                    if !light_status.success() {
+                        bail!("light.exe linking failed.");
+                    }
+                    println!("Successfully built MSI installer: dist/pyxillum-setup-0.1.0.msi");
+                }
+                Err(_) => {
+                    println!("WiX Toolset (candle.exe / light.exe) was not found on PATH.");
+                    println!("Installer definitions and branded icon/banner assets are staged in:");
+                    println!("  - WiX Manifest: crates/app/windows/pyxillum.wxs");
+                    println!("  - Application Icon: crates/app/windows/pyxillum.ico");
+                    println!("  - Header Banner: crates/app/windows/WixUIBannerBmp.bmp (493x58)");
+                    println!("  - Dialog Banner: crates/app/windows/WixUIDialogBmp.bmp (493x312)");
+                    println!();
+                    println!("To build the MSI installer on Windows:");
+                    println!("  1. Install WiX: winget install WiX.Toolset");
+                    println!("  2. Run: cargo xtask msi");
+                }
+            }
         }
     }
 

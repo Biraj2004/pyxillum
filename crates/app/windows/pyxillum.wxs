@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product
+    Id="*"
+    Name="Pyxillum"
+    Language="1033"
+    Version="0.1.0"
+    Manufacturer="Pyxillum Contributors"
+    UpgradeCode="B58C92DF-472E-4F3D-94B6-9E492B1C6420">
+
+    <Package
+      InstallerVersion="405"
+      Compressed="yes"
+      InstallScope="perMachine"
+      Description="Pyxillum Desktop and CLI Pixel LED Controller"
+      Comments="Clean-room open-source Bluetooth Low Energy LED controller" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Application and Installer Icons -->
+    <Icon Id="PyxillumIcon" SourceFile="pyxillum.ico" />
+    <Property Id="ARPPRODUCTICON" Value="PyxillumIcon" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/example/pyxillum" />
+
+    <!-- WiX Standard UI Custom Bitmaps -->
+    <WixVariable Id="WixUIBannerBmp" Value="WixUIBannerBmp.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="WixUIDialogBmp.bmp" />
+
+    <!-- Directory Layout -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="Pyxillum" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Pyxillum" />
+      </Directory>
+      <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+
+    <!-- Components -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExecutable" Guid="3E47D556-32E1-4478-857A-DF0A31D02641">
+        <File
+          Id="PyxillumDesktopExe"
+          Name="pyxillum-desktop.exe"
+          Source="..\..\..\target\release\pyxillum-desktop.exe"
+          KeyPath="yes">
+          <!-- Desktop Shortcut -->
+          <Shortcut
+            Id="DesktopShortcut"
+            Directory="DesktopFolder"
+            Name="Pyxillum"
+            Description="Launch Pyxillum Pixel LED Controller"
+            WorkingDirectory="INSTALLFOLDER"
+            Icon="PyxillumIcon"
+            Advertise="yes" />
+          <!-- Start Menu Shortcut -->
+          <Shortcut
+            Id="StartMenuShortcut"
+            Directory="ApplicationProgramsFolder"
+            Name="Pyxillum"
+            Description="Launch Pyxillum Pixel LED Controller"
+            WorkingDirectory="INSTALLFOLDER"
+            Icon="PyxillumIcon"
+            Advertise="yes" />
+        </File>
+        <File Id="PyxillumCliExe" Name="pyxillum.exe" Source="..\..\..\target\release\pyxillum.exe" />
+        <File Id="LicenseFile" Name="LICENSE" Source="..\..\..\LICENSE" />
+        <File Id="ReadmeFile" Name="README.md" Source="..\..\..\README.md" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Start Menu Folder Cleanup -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="729315D3-8984-4822-B971-46FFBF87CD74">
+        <RemoveFolder Id="CleanUpShortCut" On="uninstall" />
+        <RegistryValue
+          Root="HKCU"
+          Key="Software\Pyxillum\Pyxillum"
+          Name="installed"
+          Type="integer"
+          Value="1"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Feature Definition -->
+    <Feature Id="ProductFeature" Title="Pyxillum" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+
+    <!-- Standard Minimal UI Flow -->
+    <UIRef Id="WixUI_Minimal" />
+  </Product>
+</Wix>

@@ -1,2 +1,4 @@
+1 ICON "pyxillum.ico"
+
 #define RT_MANIFEST 24
 1 RT_MANIFEST "pyxillum.manifest"
