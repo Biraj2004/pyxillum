@@ -31,3 +31,4 @@ Please mark verified items from `tests/hardware/PLAN.md`:
 
 ### Visual Observations & Anomalies
 Describe any unexpected behavior, timing issues, or flickering.
+

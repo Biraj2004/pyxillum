@@ -111,3 +111,4 @@ Submit completed results as an issue using `.github/ISSUE_TEMPLATE/hardware_trac
 - Hardware revision number
 - Pass/Fail for tests `HW-01` through `HW-07`
 - Raw Wireshark hex dump (with personal MAC addresses scrubbed).
+

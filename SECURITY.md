@@ -20,3 +20,4 @@ If you discover a security vulnerability or potential hardware risk (such as a p
    - Affected controller hardware and firmware versions.
 3. You will receive an acknowledgment within 48 hours, followed by an assessment and patch timeline.
 4. Public disclosure will occur responsibly after a fix is merged.
+

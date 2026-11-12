@@ -38,3 +38,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation & Verification Pack**:
   - Protocol specification (`docs/protocol.md`), architecture guide (`docs/architecture.md`), risk register (`docs/unknowns.md`), and legal notes (`docs/legal-notes.md`).
   - Hardware verification plan (`tests/hardware/PLAN.md`).
+

@@ -38,6 +38,7 @@ In accordance with strict verification criteria, features are marked as **`VERIF
 ### Prerequisites
 - Rust 1.80.0 or later (MSRV)
 - Windows 10/11, macOS 12+, or Linux with BlueZ D-Bus development headers
+- Detailed Windows setup and optimization guide: [docs/building-windows.md](docs/building-windows.md)
 
 ### 1. Launch the Desktop GUI in Simulator Demo Mode
 ```bash
@@ -117,3 +118,4 @@ All brand names, trademarks, and model designations (such as "SP621E", "SceneX",
 ## Licence
 
 Pyxillum is licensed under the **GNU Affero General Public License v3.0** (`AGPL-3.0-or-later`). See the [LICENSE](LICENSE) file for details.
+

@@ -27,3 +27,4 @@ All dependencies are audited for minimal footprint, memory safety, permissive or
 ## 2. Pinned Minimum Supported Rust Version (MSRV)
 
 The project pins its Minimum Supported Rust Version (MSRV) to **Rust 1.80.0**. This guarantees compatibility across major Linux distributions, macOS package managers, and standard Windows toolchains.
+

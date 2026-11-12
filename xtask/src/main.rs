@@ -66,7 +66,24 @@ fn main() -> Result<()> {
         Commands::Package => {
             println!("=== [xtask] Building release artifacts ===");
             run_cargo(&["build", "--release", "--workspace"])?;
-            println!("Release binaries available in target/release/");
+
+            let dist_dir = std::path::Path::new("dist");
+            std::fs::create_dir_all(dist_dir)?;
+
+            let binaries = ["pyxillum-desktop.exe", "pyxillum.exe"];
+            for bin in binaries {
+                let src = std::path::Path::new("target/release").join(bin);
+                if src.exists() {
+                    let dst = dist_dir.join(bin);
+                    std::fs::copy(&src, &dst)?;
+                    let meta = std::fs::metadata(&dst)?;
+                    let size_mb = (meta.len() as f64) / (1024.0 * 1024.0);
+                    println!("Packaged {} -> dist/{} ({:.2} MB)", bin, bin, size_mb);
+                }
+            }
+            let _ = std::fs::copy("README.md", dist_dir.join("README.md"));
+            let _ = std::fs::copy("LICENSE", dist_dir.join("LICENSE"));
+            println!("=== [xtask] Packaging complete! Artifacts staged in dist/ ===");
         }
     }
 

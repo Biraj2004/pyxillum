@@ -6,4 +6,5 @@ re-workspace/
 .DS_Store
 Thumbs.db
 hardware-verification-report.md
+dist/
 

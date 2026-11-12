@@ -39,3 +39,4 @@ This document tracks unresolved protocol behaviours that require confirmation on
 | :---: | :--- | :--- |
 | **UNK-P3-01** | **Trailing Firmware Bytes Semantics** | Exact decoding of bytes 12..21 in status payloads (hardware revision codes vs calibration numbers). | Display as hexadecimal raw bytes in debug panels. |
 | **UNK-P3-02** | **Built-in Microphone AGC (Automatic Gain Control) Curve** | Exact mapping of sensitivity values 1..16 to dB gain thresholds. | Map linearly in the UI. |
+

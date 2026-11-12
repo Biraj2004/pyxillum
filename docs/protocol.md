@@ -158,3 +158,4 @@ Peripheral -> Host (Chunk 2): 53 43 02 17 08 1a 32 37 53 73 85 1b 00
   - Length: `10` (16 pixels)
   - RGB: `#FF005E`
   - Audio Input: `01` (Player), Sensitivity: `10` (16)
+

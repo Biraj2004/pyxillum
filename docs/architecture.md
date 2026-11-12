@@ -95,3 +95,4 @@ graph TD
 
 1. **Async Quarantine**: The Tokio asynchronous runtime is confined to `crates/transport` and the background workers in `crates/core`.
 2. **Channel-Based Decoupling**: The GUI main thread runs an immediate-mode loop and never awaits async futures directly. Commands are dispatched via unbounded/bounded mpsc channels, and state snapshots are received via non-blocking channel polling.
+

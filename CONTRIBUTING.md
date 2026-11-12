@@ -78,3 +78,4 @@ We enforce the [Conventional Commits](https://www.conventionalcommits.org/) spec
 - `test:` Unit tests, property tests, or test vectors
 - `refactor:` Code restructuring without behavior changes
 - `ci:` CI workflow modifications
+

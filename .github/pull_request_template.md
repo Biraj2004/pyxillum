@@ -10,3 +10,4 @@ Describe the purpose and scope of your pull request.
 - [ ] `cargo xtask check` runs cleanly (formatting, clippy `-D warnings`, all tests passing).
 - [ ] Unit tests, property tests, or static vectors added for new features.
 - [ ] Documentation updated in `docs/` and `README.md`.
+
