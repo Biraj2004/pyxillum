@@ -42,7 +42,7 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                     .fill(if is_all {
                         Theme::ACCENT_BLUE
                     } else {
-                        Color32::from_rgb(241, 245, 249)
+                        Color32::from_rgb(23, 32, 54)
                     })
                     .rounding(Rounding::same(12.0)),
                 );
@@ -63,7 +63,7 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                     .fill(if is_sel {
                         Theme::ACCENT_BLUE
                     } else {
-                        Color32::from_rgb(241, 245, 249)
+                        Color32::from_rgb(23, 32, 54)
                     })
                     .rounding(Rounding::same(12.0)),
                 );
@@ -115,16 +115,16 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
 
                     let row_resp = egui::Frame::none()
                         .fill(if is_active {
-                            Color32::from_rgb(239, 246, 255)
+                            Color32::from_rgb(30, 58, 138)
                         } else {
-                            Color32::from_rgb(255, 255, 255)
+                            Color32::from_rgb(19, 27, 46)
                         })
                         .stroke(Stroke::new(
                             1.0_f32,
                             if is_active {
-                                Theme::ACCENT_BLUE
+                                Theme::ACCENT_CYAN
                             } else {
-                                Color32::from_rgb(241, 245, 249)
+                                Theme::BORDER_LIGHT
                             },
                         ))
                         .rounding(Rounding::same(8.0))
@@ -134,16 +134,16 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                                 // Code Badge
                                 let badge_text = format!("{:03}", style.code);
                                 let (badge_rect, _) = ui.allocate_exact_size(
-                                    Vec2::new(32.0, 22.0),
+                                    Vec2::new(34.0, 22.0),
                                     egui::Sense::hover(),
                                 );
                                 ui.painter_at(badge_rect).rect_filled(
                                     badge_rect,
                                     Rounding::same(5.0),
                                     if is_active {
-                                        Theme::ACCENT_BLUE
+                                        Theme::ACCENT_CYAN
                                     } else {
-                                        Color32::from_rgb(226, 238, 252)
+                                        Color32::from_rgb(30, 41, 59)
                                     },
                                 );
                                 ui.painter_at(badge_rect).text(
@@ -152,9 +152,9 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                                     badge_text,
                                     egui::FontId::proportional(11.0),
                                     if is_active {
-                                        Color32::WHITE
+                                        Color32::BLACK
                                     } else {
-                                        Theme::ACCENT_BLUE
+                                        Theme::TEXT_PRIMARY
                                     },
                                 );
 

@@ -41,7 +41,7 @@ pub fn render_music_mode(
         bp.rect_filled(
             banner_rect,
             Rounding::same(10.0),
-            Color32::from_rgb(241, 245, 249),
+            Color32::from_rgb(23, 32, 54),
         );
         bp.rect_stroke(
             banner_rect,
@@ -148,7 +148,7 @@ fn render_equalizer_bars(ui: &mut egui::Ui, state: &AppState) {
     let (rect, _) = ui.allocate_exact_size(Vec2::new(eq_w, 60.0), egui::Sense::hover());
     let painter = ui.painter_at(rect);
 
-    painter.rect_filled(rect, Rounding::same(10.0), Color32::from_rgb(248, 250, 252));
+    painter.rect_filled(rect, Rounding::same(10.0), Color32::from_rgb(17, 24, 39));
     painter.rect_stroke(
         rect,
         Rounding::same(10.0),

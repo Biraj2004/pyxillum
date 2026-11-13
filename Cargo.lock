@@ -3065,12 +3065,14 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "btleplug",
+ "futures",
  "pyxillum-protocol",
  "pyxillum-sim",
  "serde",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]

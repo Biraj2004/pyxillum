@@ -121,18 +121,21 @@ pub fn render_dynamic_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                 EffectCategory::Gradient,
             ] {
                 let is_sel = state.effect_category_filter == Some(*cat);
-                if ui
-                    .add(
-                        egui::Button::new(egui::RichText::new(cat.name()).size(11.0))
-                            .fill(if is_sel {
-                                Theme::ACCENT_BLUE
-                            } else {
-                                Color32::from_rgb(241, 245, 249)
-                            })
-                            .rounding(egui::Rounding::same(12.0)),
-                    )
-                    .clicked()
-                {
+                let btn = egui::Button::new(egui::RichText::new(cat.name()).size(11.5).color(
+                    if is_sel {
+                        Color32::WHITE
+                    } else {
+                        Theme::TEXT_SECONDARY
+                    },
+                ))
+                .fill(if is_sel {
+                    Theme::ACCENT_BLUE
+                } else {
+                    Color32::from_rgb(23, 32, 54)
+                })
+                .rounding(egui::Rounding::same(12.0));
+
+                if ui.add(btn).clicked() {
                     state.effect_category_filter = Some(*cat);
                     state.show_effect_drawer = true;
                 }

@@ -10,7 +10,7 @@ pub mod music_mode;
 pub mod settings_modal;
 pub mod solid_mode;
 
-pub use device_hub::render_device_hub;
+pub use device_hub::{render_device_hub, DeviceHubAction};
 pub use diy_mode::render_diy_mode;
 pub use dynamic_mode::render_dynamic_mode;
 pub use music_mode::render_music_mode;

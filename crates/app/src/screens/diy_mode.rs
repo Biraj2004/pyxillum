@@ -29,7 +29,7 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                 tp.rect_filled(
                     tog_rect,
                     Rounding::same(16.0),
-                    Color32::from_rgb(241, 245, 249),
+                    Color32::from_rgb(23, 32, 54),
                 );
 
                 let half_w = tog_rect.width() / 2.0;
@@ -41,18 +41,26 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                 );
 
                 if !is_grad {
-                    tp.rect_filled(solid_rect, Rounding::same(16.0), Color32::WHITE);
+                    tp.rect_filled(
+                        solid_rect,
+                        Rounding::same(16.0),
+                        Color32::from_rgb(30, 58, 138),
+                    );
                     tp.rect_stroke(
                         solid_rect,
                         Rounding::same(16.0),
-                        Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
+                        Stroke::new(1.0_f32, Theme::ACCENT_CYAN),
                     );
                 } else {
-                    tp.rect_filled(grad_rect, Rounding::same(16.0), Color32::WHITE);
+                    tp.rect_filled(
+                        grad_rect,
+                        Rounding::same(16.0),
+                        Color32::from_rgb(30, 58, 138),
+                    );
                     tp.rect_stroke(
                         grad_rect,
                         Rounding::same(16.0),
-                        Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
+                        Stroke::new(1.0_f32, Theme::ACCENT_CYAN),
                     );
                 }
 
@@ -141,11 +149,7 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
         let (mode_rect, _) =
             ui.allocate_exact_size(Vec2::new(ui.available_width(), 48.0), egui::Sense::hover());
         let mp = ui.painter_at(mode_rect);
-        mp.rect_filled(
-            mode_rect,
-            Rounding::same(12.0),
-            Color32::from_rgb(248, 250, 252),
-        );
+        mp.rect_filled(mode_rect, Rounding::same(12.0), Theme::CARD_BG);
         mp.rect_stroke(
             mode_rect,
             Rounding::same(12.0),

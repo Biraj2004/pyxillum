@@ -9,13 +9,15 @@
 use async_trait::async_trait;
 #[allow(unused_imports)]
 use btleplug as _;
-use pyxillum_protocol::{MANUFACTURER_ID_ALT, MANUFACTURER_ID_SP, SERVICE_UUID};
+use pyxillum_protocol::{
+    DATA_CHARACTERISTIC_UUID, MANUFACTURER_ID_ALT, MANUFACTURER_ID_SP, SERVICE_UUID,
+};
 use pyxillum_sim::{DeviceSimulator, SimError};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::sync::{mpsc, Mutex};
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 /// Errors encountered in the transport layer.
 #[derive(Debug, Error)]
@@ -169,10 +171,19 @@ impl Transport for SimTransport {
     }
 }
 
+use btleplug::api::{
+    Central, CharPropFlags, Characteristic, Manager as _, Peripheral as _, ScanFilter, WriteType,
+};
+use btleplug::platform::{Adapter, Manager, Peripheral};
+use futures::stream::StreamExt;
+use uuid::Uuid;
+
 /// Real Bluetooth Low Energy transport backend powered by `btleplug`.
 pub struct BtleplugTransport {
+    adapter: Arc<tokio::sync::Mutex<Option<Adapter>>>,
     connected_address: Option<String>,
-    _notify_rx: Option<mpsc::Receiver<Vec<u8>>>,
+    connected_peripheral: Option<Peripheral>,
+    write_characteristic: Option<Characteristic>,
 }
 
 impl Default for BtleplugTransport {
@@ -185,13 +196,19 @@ impl BtleplugTransport {
     /// Constructs a new real Bluetooth transport instance.
     pub fn new() -> Self {
         Self {
+            adapter: Arc::new(tokio::sync::Mutex::new(None)),
             connected_address: None,
-            _notify_rx: None,
+            connected_peripheral: None,
+            write_characteristic: None,
         }
     }
 
     /// Evaluates whether an advertised BLE device matches the SP6xxE controller family.
-    pub fn is_sp6xx_advertisement(manufacturer_ids: &[u16], service_uuids: &[String]) -> bool {
+    pub fn is_sp6xx_advertisement(
+        name: Option<&str>,
+        manufacturer_ids: &[u16],
+        service_uuids: &[String],
+    ) -> bool {
         let has_manufacturer = manufacturer_ids
             .iter()
             .any(|&id| id == MANUFACTURER_ID_SP || id == MANUFACTURER_ID_ALT);
@@ -200,46 +217,256 @@ impl BtleplugTransport {
             .iter()
             .any(|uuid| uuid.to_lowercase() == SERVICE_UUID.to_lowercase());
 
-        has_manufacturer || has_service
+        let has_name = if let Some(n) = name {
+            let lower = n.to_lowercase();
+            lower.contains("sp6")
+                || lower.contains("sp5")
+                || lower.contains("sp8")
+                || lower.contains("banlan")
+                || lower.contains("pixel")
+                || lower.contains("led")
+        } else {
+            false
+        };
+
+        has_manufacturer || has_service || has_name
+    }
+
+    async fn get_adapter(&self) -> Result<Adapter, TransportError> {
+        let mut adapter_guard = self.adapter.lock().await;
+        if let Some(adapter) = adapter_guard.as_ref() {
+            return Ok(adapter.clone());
+        }
+
+        let manager = Manager::new()
+            .await
+            .map_err(|e| TransportError::Bluetooth(e.to_string()))?;
+        let adapters = manager
+            .adapters()
+            .await
+            .map_err(|e| TransportError::Bluetooth(e.to_string()))?;
+        let adapter = adapters.into_iter().next().ok_or_else(|| {
+            TransportError::Bluetooth(
+                "No Bluetooth Low Energy adapter detected on host system".to_string(),
+            )
+        })?;
+
+        *adapter_guard = Some(adapter.clone());
+        Ok(adapter)
     }
 }
 
 #[async_trait]
 impl Transport for BtleplugTransport {
     async fn scan(&self) -> Result<Vec<DiscoveredDevice>, TransportError> {
-        // Unfiltered native scan, followed by software-level filtering to avoid OS-specific btleplug filter bugs
-        debug!("Scanning for BLE peripherals (unfiltered native adapter scan)");
-        // In real execution, uses btleplug Manager and Adapter.
-        // If no hardware Bluetooth adapter is present on host, returns cleanly.
-        Ok(Vec::new())
+        info!("Scanning for nearby BLE pixel LED controllers...");
+        let adapter = match self.get_adapter().await {
+            Ok(a) => a,
+            Err(e) => {
+                warn!("Bluetooth adapter unavailable: {}", e);
+                return Err(e);
+            }
+        };
+
+        // Start scanning
+        adapter
+            .start_scan(ScanFilter::default())
+            .await
+            .map_err(|e| TransportError::Bluetooth(e.to_string()))?;
+
+        // Allow scan to gather advertisements over 2.5 seconds
+        tokio::time::sleep(std::time::Duration::from_millis(2500)).await;
+
+        let _ = adapter.stop_scan().await;
+
+        let peripherals = adapter
+            .peripherals()
+            .await
+            .map_err(|e| TransportError::Bluetooth(e.to_string()))?;
+
+        let mut results = Vec::new();
+        for peripheral in peripherals {
+            let address = peripheral.address().to_string();
+            let props = peripheral.properties().await.ok().flatten();
+
+            let name = props.as_ref().and_then(|p| p.local_name.clone());
+            let rssi = props.as_ref().and_then(|p| p.rssi);
+
+            // Extract manufacturer IDs and service UUIDs for sorting & classification
+            let mfg_ids: Vec<u16> = props
+                .as_ref()
+                .map(|p| p.manufacturer_data.keys().copied().collect())
+                .unwrap_or_default();
+            let srv_uuids: Vec<String> = props
+                .as_ref()
+                .map(|p| p.services.iter().map(|u| u.to_string()).collect())
+                .unwrap_or_default();
+
+            let is_compatible = Self::is_sp6xx_advertisement(name.as_deref(), &mfg_ids, &srv_uuids);
+
+            // Include if compatible or if device has a local name
+            if is_compatible || name.is_some() {
+                results.push(DiscoveredDevice {
+                    address,
+                    name,
+                    rssi,
+                    is_simulated: false,
+                });
+            }
+        }
+
+        // Sort compatible and stronger RSSI devices first
+        results.sort_by_key(|a| std::cmp::Reverse(a.rssi.unwrap_or(-100)));
+
+        info!("BLE scan completed. Found {} devices.", results.len());
+        Ok(results)
     }
 
     async fn connect(&mut self, address: &str) -> Result<(), TransportError> {
-        info!("Connecting to BLE peripheral at {}", address);
+        info!("Attempting BLE connection to target: {}", address);
+        let adapter = self.get_adapter().await?;
+
+        // 1. Check existing peripherals
+        let mut target_peripheral = None;
+        if let Ok(peripherals) = adapter.peripherals().await {
+            for p in peripherals {
+                if p.address().to_string().eq_ignore_ascii_case(address) {
+                    target_peripheral = Some(p);
+                    break;
+                }
+            }
+        }
+
+        // 2. If not found in current cache, perform targeted 1.5s discovery
+        if target_peripheral.is_none() {
+            let _ = adapter.start_scan(ScanFilter::default()).await;
+            tokio::time::sleep(std::time::Duration::from_millis(1500)).await;
+            let _ = adapter.stop_scan().await;
+
+            if let Ok(peripherals) = adapter.peripherals().await {
+                for p in peripherals {
+                    if p.address().to_string().eq_ignore_ascii_case(address) {
+                        target_peripheral = Some(p);
+                        break;
+                    }
+                }
+            }
+        }
+
+        let peripheral =
+            target_peripheral.ok_or_else(|| TransportError::DeviceNotFound(address.to_string()))?;
+
+        peripheral
+            .connect()
+            .await
+            .map_err(|e| TransportError::ConnectionFailed(e.to_string()))?;
+
+        peripheral
+            .discover_services()
+            .await
+            .map_err(|e| TransportError::ConnectionFailed(e.to_string()))?;
+
+        // Look for 0xFFE1 data characteristic
+        let target_uuid = Uuid::parse_str(DATA_CHARACTERISTIC_UUID).unwrap_or_default();
+        let mut write_char = None;
+
+        for c in peripheral.characteristics() {
+            if c.uuid == target_uuid || c.uuid.to_string().to_lowercase().contains("ffe1") {
+                write_char = Some(c);
+                break;
+            }
+        }
+
+        // Fallback: look for any characteristic that supports Write
+        if write_char.is_none() {
+            for c in peripheral.characteristics() {
+                if c.properties.contains(CharPropFlags::WRITE_WITHOUT_RESPONSE)
+                    || c.properties.contains(CharPropFlags::WRITE)
+                {
+                    write_char = Some(c);
+                    break;
+                }
+            }
+        }
+
+        self.write_characteristic = write_char;
+        self.connected_peripheral = Some(peripheral);
         self.connected_address = Some(address.to_string());
+
+        info!(
+            "Successfully connected to BLE device: {}. Characteristic ready: {}",
+            address,
+            self.write_characteristic.is_some()
+        );
         Ok(())
     }
 
     async fn disconnect(&mut self) -> Result<(), TransportError> {
+        info!("Disconnecting active BLE connection");
+        if let Some(peripheral) = self.connected_peripheral.take() {
+            let _ = peripheral.disconnect().await;
+        }
+        self.write_characteristic = None;
         self.connected_address = None;
         Ok(())
     }
 
-    async fn write(&mut self, _data: &[u8]) -> Result<(), TransportError> {
-        if self.connected_address.is_none() {
-            return Err(TransportError::NotConnected);
+    async fn write(&mut self, data: &[u8]) -> Result<(), TransportError> {
+        let peripheral = self
+            .connected_peripheral
+            .as_ref()
+            .ok_or(TransportError::NotConnected)?;
+        let characteristic = self
+            .write_characteristic
+            .as_ref()
+            .ok_or(TransportError::NotConnected)?;
+
+        if characteristic
+            .properties
+            .contains(CharPropFlags::WRITE_WITHOUT_RESPONSE)
+        {
+            peripheral
+                .write(characteristic, data, WriteType::WithoutResponse)
+                .await
+                .map_err(|e| TransportError::WriteFailed(e.to_string()))?;
+        } else {
+            peripheral
+                .write(characteristic, data, WriteType::WithResponse)
+                .await
+                .map_err(|e| TransportError::WriteFailed(e.to_string()))?;
         }
+
         Ok(())
     }
 
     async fn subscribe(&mut self) -> Result<mpsc::Receiver<Vec<u8>>, TransportError> {
-        let (tx, rx) = mpsc::channel(32);
-        drop(tx);
+        let (tx, rx) = mpsc::channel(64);
+
+        if let (Some(peripheral), Some(characteristic)) =
+            (&self.connected_peripheral, &self.write_characteristic)
+        {
+            if characteristic.properties.contains(CharPropFlags::NOTIFY)
+                || characteristic.properties.contains(CharPropFlags::INDICATE)
+            {
+                if let Err(e) = peripheral.subscribe(characteristic).await {
+                    warn!("Failed to subscribe to characteristic notifications: {}", e);
+                } else if let Ok(mut stream) = peripheral.notifications().await {
+                    tokio::spawn(async move {
+                        while let Some(notif) = stream.next().await {
+                            if tx.send(notif.value).await.is_err() {
+                                break;
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
         Ok(rx)
     }
 
     fn is_connected(&self) -> bool {
-        self.connected_address.is_some()
+        self.connected_address.is_some() && self.connected_peripheral.is_some()
     }
 }
 

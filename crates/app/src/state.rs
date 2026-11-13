@@ -3,7 +3,8 @@
 //! Strongly typed definitions for GUI navigation, device representation,
 //! command routing channels, and interactive control states.
 
-use pyxillum_protocol::{AudioInput, ChipOrder, Command, RgbColor};
+use pyxillum_protocol::{AudioInput, ChipOrder, Command, DeviceStatus, RgbColor};
+use pyxillum_transport::DiscoveredDevice;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -12,6 +13,17 @@ pub enum GuiCommand {
     Connect(String),
     Disconnect,
     SendCommand(Command),
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub enum GuiEvent {
+    ScanStarted,
+    ScanFinished(Vec<DiscoveredDevice>),
+    Connected { address: String, name: String },
+    Disconnected,
+    StatusUpdated(DeviceStatus),
+    Error(String),
 }
 
 #[derive(Debug, Clone)]
@@ -73,6 +85,7 @@ pub struct AppState {
     // Navigation
     pub current_screen: AppScreen,
     pub dashboard_mode: DashboardMode,
+    #[allow(dead_code)]
     pub hub_tab_devices: bool,
     pub active_device_id: String,
 
@@ -120,6 +133,11 @@ pub struct AppState {
     pub animation_timer: f32,
     pub audio_visualizer_timer: f32,
     pub live_audio_peak: f32,
+
+    // Real BLE Connection & Scanning Status
+    pub is_connected: bool,
+    pub is_scanning: bool,
+    pub status_message: String,
 }
 
 impl Default for AppState {
@@ -151,10 +169,10 @@ impl Default for AppState {
             .collect();
 
         Self {
-            current_screen: AppScreen::Dashboard("00:1A:7D:DA:71:09".to_string()),
+            current_screen: AppScreen::DeviceHub,
             dashboard_mode: DashboardMode::Dynamic,
             hub_tab_devices: true,
-            active_device_id: "00:1A:7D:DA:71:09".to_string(),
+            active_device_id: String::new(),
 
             show_settings_modal: false,
             show_help_modal: false,
@@ -193,6 +211,11 @@ impl Default for AppState {
             animation_timer: 0.0,
             audio_visualizer_timer: 0.0,
             live_audio_peak: 0.0,
+
+            is_connected: false,
+            is_scanning: false,
+            status_message: "Ready to scan for nearby Bluetooth Low Energy LED controllers."
+                .to_string(),
         }
     }
 }

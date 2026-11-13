@@ -46,8 +46,8 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
 
             // Safety Warning Box
             egui::Frame::none()
-                .fill(Color32::from_rgb(254, 242, 242))
-                .stroke(Stroke::new(1.0_f32, Color32::from_rgb(254, 202, 202)))
+                .fill(Color32::from_rgb(45, 10, 15))
+                .stroke(Stroke::new(1.0_f32, Color32::from_rgb(153, 27, 27)))
                 .rounding(Rounding::same(8.0))
                 .inner_margin(egui::Margin::symmetric(12.0, 10.0))
                 .show(ui, |ui| {
@@ -55,15 +55,20 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                         egui::RichText::new("Hardware Safety Gate")
                             .strong()
                             .size(12.0)
-                            .color(Color32::from_rgb(185, 28, 28)),
+                            .color(Color32::from_rgb(252, 165, 165)),
                     );
                     ui.label(
-                        egui::RichText::new("Modifying chip order or length writes directly to non-volatile EEPROM. Please verify parameters before applying.")
-                            .size(11.0)
-                            .color(Color32::from_rgb(153, 27, 27)),
+                        egui::RichText::new(
+                            "Modifying chip order or length writes directly to non-volatile EEPROM registers. Please verify parameters before applying.",
+                        )
+                        .size(11.0)
+                        .color(Color32::from_rgb(248, 113, 113)),
                     );
                     ui.add_space(6.0);
-                    ui.checkbox(&mut state.ui_confirm_safety, "I understand this mutates hardware registers");
+                    ui.checkbox(
+                        &mut state.ui_confirm_safety,
+                        "I understand this mutates hardware registers",
+                    );
                 });
 
             ui.add_space(16.0);
