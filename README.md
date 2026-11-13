@@ -162,8 +162,8 @@ pyxillum/
 │   ├── transport/     Transport trait with SimTransport and BtleplugTransport
 │   ├── core/          Device coordination, effects engine, and scene persistence
 │   ├── cli/           Command-line application and hwcheck verification runner
-│   └── app/           Native desktop GUI presentation layer (eframe/egui)
-├── xtask/             Repository check and packaging automation
+│   └── app/           Native desktop GUI (component-based, screen-wise, 146+ lighting styles)
+├── docs/              Architecture, protocol, modular GUI spec, ADRs, Windows build guide
 ├── assets/            Vector SVGs, high-resolution PNGs, Windows .ico, and WiX MSI bitmaps
 ├── win-exe/           Dedicated staging directory for latest Windows release executables
 ├── tests/

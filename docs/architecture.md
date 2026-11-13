@@ -13,6 +13,7 @@
 
 <p align="center">
   <a href="../README.md"><strong>Project Root</strong></a> &bull;
+  <a href="modular-desktop-architecture.md"><strong>Desktop Architecture</strong></a> &bull;
   <a href="protocol.md"><strong>Protocol Spec</strong></a> &bull;
   <a href="building-windows.md"><strong>Windows Guide</strong></a> &bull;
   <a href="../AGENTS.md"><strong>Agent Guidelines</strong></a>
