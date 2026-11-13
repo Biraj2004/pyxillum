@@ -7,6 +7,8 @@
 //! and `BtleplugTransport` (real Bluetooth Low Energy interface with software filtering).
 
 use async_trait::async_trait;
+#[allow(unused_imports)]
+use btleplug as _;
 use pyxillum_protocol::{MANUFACTURER_ID_ALT, MANUFACTURER_ID_SP, SERVICE_UUID};
 use pyxillum_sim::{DeviceSimulator, SimError};
 use serde::{Deserialize, Serialize};

@@ -10,7 +10,6 @@ description = "Virtual device simulator for SP621E-family BLE controllers"
 pyxillum-protocol = { path = "../protocol" }
 thiserror.workspace = true
 serde.workspace = true
-tracing.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

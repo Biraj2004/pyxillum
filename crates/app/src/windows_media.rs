@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports)]
+
 //! # Windows Native Media and System Audio Capture
 //!
 //! Provides integration with Windows System Media Transport Controls (GSMTC)
