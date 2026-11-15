@@ -5,7 +5,7 @@
 
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 use pyxillum_core::DeviceState;
-use pyxillum_protocol::{Command, LightMode, RgbColor};
+use pyxillum_protocol::{AudioInput, Command, LightMode, RgbColor};
 use pyxillum_sim::DeviceSimulator;
 use std::sync::Arc;
 use std::time::Instant;
@@ -38,6 +38,10 @@ pub struct PyxillumApp {
     last_sent_speed: u8,
     last_sent_brightness: u8,
     last_sent_loop_all: bool,
+    last_sent_color: [u8; 3],
+    last_sent_audio_input: AudioInput,
+    last_sent_sensitivity: u8,
+    last_sent_music_mode: u8,
 }
 
 impl PyxillumApp {
@@ -99,6 +103,10 @@ impl PyxillumApp {
             last_sent_speed: 5,
             last_sent_brightness: 255,
             last_sent_loop_all: false,
+            last_sent_color: [255, 120, 0],
+            last_sent_audio_input: AudioInput::InternalMic,
+            last_sent_sensitivity: 8,
+            last_sent_music_mode: 1,
         }
     }
 
@@ -131,19 +139,47 @@ impl PyxillumApp {
                 }
             }
             DashboardMode::Diy => {
-                let offset = (self.state.animation_timer * (self.state.diy_speed as f32 * 0.5))
-                    as usize
-                    % 14;
+                let speed_mult = self.state.diy_speed as f32 * 0.5;
+                let float_offset = self.state.animation_timer * speed_mult * 2.5;
+                let node_count = self.state.diy_nodes.len().max(1);
+
                 for i in 0..num_pixels {
-                    let node_idx = match self.state.diy_chase_mode {
-                        crate::state::DiyChaseMode::Backward => (14 + offset - (i % 14)) % 14,
-                        _ => (i + offset) % 14,
+                    let float_idx = match self.state.diy_chase_mode {
+                        crate::state::DiyChaseMode::Forward => {
+                            ((i as f32 * 0.5) + float_offset).abs()
+                        }
+                        crate::state::DiyChaseMode::Backward => {
+                            (1000.0 * node_count as f32 - ((i as f32 * 0.5) - float_offset)).abs()
+                        }
+                        crate::state::DiyChaseMode::Middle => {
+                            let mid = num_pixels as f32 * 0.5;
+                            let dist = (i as f32 - mid).abs();
+                            (dist * 0.6 + float_offset).abs()
+                        }
+                        crate::state::DiyChaseMode::Out => {
+                            let mid = num_pixels as f32 * 0.5;
+                            let dist = (i as f32 - mid).abs();
+                            (1000.0 * node_count as f32 - (dist * 0.6 - float_offset)).abs()
+                        }
                     };
-                    let n = &self.state.diy_nodes[node_idx];
-                    let r = ((n.color.r as f32) * brightness_factor) as u8;
-                    let g = ((n.color.g as f32) * brightness_factor) as u8;
-                    let b = ((n.color.b as f32) * brightness_factor) as u8;
-                    self.state.strip_pixels.push(RgbColor::new(r, g, b));
+
+                    let idx1 = (float_idx as usize) % node_count;
+                    let idx2 = (idx1 + 1) % node_count;
+                    let frac = float_idx.fract();
+
+                    let n1 = &self.state.diy_nodes[idx1];
+                    let raw_color =
+                        if self.state.diy_effect_type == crate::state::DiyEffectType::Gradient {
+                            let n2 = &self.state.diy_nodes[idx2];
+                            pyxillum_sim::render::lerp_color(n1.color, n2.color, frac)
+                        } else {
+                            n1.color
+                        };
+
+                    let weight_scale = (n1.value as f32 / 255.0).clamp(0.0, 1.0);
+                    let final_scale = brightness_factor * weight_scale;
+                    let scaled = pyxillum_sim::render::scale_color(raw_color, final_scale);
+                    self.state.strip_pixels.push(scaled);
                 }
             }
             DashboardMode::Dynamic => {
@@ -163,18 +199,89 @@ impl PyxillumApp {
                     (self.state.audio_visualizer_timer * 6.0).sin() * 0.4 + 0.6
                 };
 
-                let active_count = ((num_pixels as f32 * peak) as usize).min(num_pixels);
-                for i in 0..num_pixels {
-                    if i < active_count && self.state.ui_power {
-                        let ratio = i as f32 / num_pixels as f32;
-                        let hue = ratio * 240.0;
-                        let (r, g, b) = crate::widgets::color_disc::hsv_to_rgb(hue, 1.0, 1.0);
-                        let r = (r * 255.0 * brightness_factor) as u8;
-                        let g = (g * 255.0 * brightness_factor) as u8;
-                        let b = (b * 255.0 * brightness_factor) as u8;
-                        self.state.strip_pixels.push(RgbColor::new(r, g, b));
-                    } else {
-                        self.state.strip_pixels.push(RgbColor::new(26, 26, 26));
+                let t = self.state.audio_visualizer_timer;
+
+                match self.state.music_mode_index {
+                    // Mode 5: Strip Music Mode 5 (Energy Gradient expanding symmetrically from center)
+                    5 => {
+                        let mid = num_pixels as f32 * 0.5;
+                        let max_extent = (mid * peak).max(1.0);
+                        for i in 0..num_pixels {
+                            let dist = (i as f32 - mid).abs();
+                            if dist <= max_extent && self.state.ui_power {
+                                let ratio = dist / mid;
+                                let hue = (180.0 + ratio * 160.0) % 360.0;
+                                let col = pyxillum_sim::render::hsv_to_rgb(hue, 1.0, 1.0);
+                                self.state
+                                    .strip_pixels
+                                    .push(pyxillum_sim::render::scale_color(
+                                        col,
+                                        brightness_factor,
+                                    ));
+                            } else {
+                                self.state.strip_pixels.push(RgbColor::new(26, 26, 26));
+                            }
+                        }
+                    }
+                    // Modes 3, 4: Rhythm Stars
+                    3 | 4 => {
+                        for i in 0..num_pixels {
+                            let sparkle = ((i as f32 * 17.3 + t * 8.0).sin() * 0.5 + 0.5).powi(4);
+                            if sparkle > 0.3 && peak > 0.25 && self.state.ui_power {
+                                let hue = if self.state.music_mode_index == 3 {
+                                    (i as f32 * 45.0) % 360.0
+                                } else {
+                                    195.0
+                                };
+                                let col =
+                                    pyxillum_sim::render::hsv_to_rgb(hue, 1.0, sparkle * peak);
+                                self.state
+                                    .strip_pixels
+                                    .push(pyxillum_sim::render::scale_color(
+                                        col,
+                                        brightness_factor,
+                                    ));
+                            } else {
+                                self.state.strip_pixels.push(RgbColor::new(26, 26, 26));
+                            }
+                        }
+                    }
+                    // Modes 7, 8: Pulse / Energy breathing with music volume
+                    7 | 8 => {
+                        let intensity = (peak * brightness_factor).clamp(0.0, 1.0);
+                        let hue = if self.state.music_mode_index == 7 {
+                            (t * 40.0) % 360.0
+                        } else {
+                            210.0
+                        };
+                        let col = pyxillum_sim::render::hsv_to_rgb(hue, 1.0, 1.0);
+                        let scaled = pyxillum_sim::render::scale_color(col, intensity);
+                        for _ in 0..num_pixels {
+                            self.state.strip_pixels.push(if self.state.ui_power {
+                                scaled
+                            } else {
+                                RgbColor::new(26, 26, 26)
+                            });
+                        }
+                    }
+                    // Default / Modes 1, 2, 6, 9..18: Rhythm VU Spectrum
+                    _ => {
+                        let active_count = ((num_pixels as f32 * peak) as usize).min(num_pixels);
+                        for i in 0..num_pixels {
+                            if i < active_count && self.state.ui_power {
+                                let ratio = i as f32 / num_pixels as f32;
+                                let hue = (120.0 - ratio * 120.0).max(0.0); // Green to Red VU
+                                let col = pyxillum_sim::render::hsv_to_rgb(hue, 1.0, 1.0);
+                                self.state
+                                    .strip_pixels
+                                    .push(pyxillum_sim::render::scale_color(
+                                        col,
+                                        brightness_factor,
+                                    ));
+                            } else {
+                                self.state.strip_pixels.push(RgbColor::new(26, 26, 26));
+                            }
+                        }
                     }
                 }
             }
@@ -631,30 +738,64 @@ impl PyxillumApp {
                         let r = (self.state.ui_color[0] * 255.0) as u8;
                         let g = (self.state.ui_color[1] * 255.0) as u8;
                         let b = (self.state.ui_color[2] * 255.0) as u8;
-                        self.send(GuiCommand::SendCommand(Command::SetColor {
-                            color: RgbColor::new(r, g, b),
-                            level: self.state.ui_brightness,
-                        }));
+                        if [r, g, b] != self.last_sent_color
+                            || self.state.ui_brightness != self.last_sent_brightness
+                        {
+                            self.last_sent_color = [r, g, b];
+                            self.last_sent_brightness = self.state.ui_brightness;
+                            self.send(GuiCommand::SendCommand(Command::SetColor {
+                                color: RgbColor::new(r, g, b),
+                                level: self.state.ui_brightness,
+                            }));
+                        }
                     }
                 }
                 DashboardMode::Music => {
                     if render_music_mode(ui, &mut self.state, &self.now_playing) {
-                        self.send(GuiCommand::SendCommand(Command::SetAudioInput(
-                            self.state.ui_audio_input,
-                        )));
-                        self.send(GuiCommand::SendCommand(Command::SetSensitivity(
-                            self.state.ui_sensitivity,
-                        )));
+                        if self.state.music_mode_index != self.last_sent_music_mode {
+                            self.last_sent_music_mode = self.state.music_mode_index;
+                            let eff_code = pyxillum_protocol::EFFECT_SOUND_BASE
+                                + self.state.music_mode_index
+                                - 1;
+                            self.send(GuiCommand::SendCommand(Command::SetEffect(eff_code)));
+                            self.send(GuiCommand::SendCommand(Command::SetLightMode(
+                                LightMode::AutoSound,
+                            )));
+                        }
+                        if self.state.ui_audio_input != self.last_sent_audio_input {
+                            self.last_sent_audio_input = self.state.ui_audio_input;
+                            self.send(GuiCommand::SendCommand(Command::SetAudioInput(
+                                self.state.ui_audio_input,
+                            )));
+                        }
+                        if self.state.ui_sensitivity != self.last_sent_sensitivity {
+                            self.last_sent_sensitivity = self.state.ui_sensitivity;
+                            self.send(GuiCommand::SendCommand(Command::SetSensitivity(
+                                self.state.ui_sensitivity,
+                            )));
+                        }
+                        if self.state.ui_brightness != self.last_sent_brightness {
+                            self.last_sent_brightness = self.state.ui_brightness;
+                            self.send(GuiCommand::SendCommand(Command::SetBrightness(
+                                self.state.ui_brightness,
+                            )));
+                        }
                     }
                 }
                 DashboardMode::Diy => {
                     if render_diy_mode(ui, &mut self.state) {
-                        self.send(GuiCommand::SendCommand(Command::SetSpeed(
-                            self.state.diy_speed,
-                        )));
-                        self.send(GuiCommand::SendCommand(Command::SetBrightness(
-                            self.state.diy_brightness,
-                        )));
+                        if self.state.diy_speed != self.last_sent_speed {
+                            self.last_sent_speed = self.state.diy_speed;
+                            self.send(GuiCommand::SendCommand(Command::SetSpeed(
+                                self.state.diy_speed,
+                            )));
+                        }
+                        if self.state.diy_brightness != self.last_sent_brightness {
+                            self.last_sent_brightness = self.state.diy_brightness;
+                            self.send(GuiCommand::SendCommand(Command::SetBrightness(
+                                self.state.diy_brightness,
+                            )));
+                        }
                     }
                 }
             },
