@@ -107,6 +107,7 @@ pub fn render_hero_play_button(ui: &mut egui::Ui, is_playing: bool) -> egui::Res
 }
 
 /// Helper that renders a styled pill action button with optional icon and text.
+#[allow(dead_code)]
 pub fn render_pill_action_button(
     ui: &mut egui::Ui,
     icon: &str,
@@ -158,6 +159,93 @@ pub fn render_pill_action_button(
         egui::FontId::proportional(11.5),
         txt_col,
     );
+
+    resp
+}
+
+/// Helper that renders a styled pill action button with resolution-independent vector icon and text.
+pub fn render_action_pill(
+    ui: &mut egui::Ui,
+    icon: crate::widgets::ActionIcon,
+    text: &str,
+    is_active: bool,
+    width: f32,
+) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(width, 34.0), egui::Sense::click());
+    let p = ui.painter_at(rect);
+
+    let is_hovered = resp.hovered();
+    let bg = if is_active {
+        Theme::ACCENT_BLUE
+    } else if is_hovered {
+        Theme::CARD_HOVER
+    } else {
+        Theme::WELL_BG
+    };
+
+    let border = if is_active {
+        Theme::ACCENT_BLUE_HOVER
+    } else if is_hovered {
+        Theme::BORDER_HOVER
+    } else {
+        Theme::BORDER_LIGHT
+    };
+
+    let col = if is_active {
+        Color32::WHITE
+    } else if is_hovered {
+        Theme::TEXT_PRIMARY
+    } else {
+        Theme::TEXT_SECONDARY
+    };
+
+    p.rect_filled(rect, Rounding::same(17.0), bg);
+    p.rect_stroke(rect, Rounding::same(17.0), Stroke::new(1.0_f32, border));
+
+    match icon {
+        crate::widgets::ActionIcon::None => {
+            p.text(
+                rect.center(),
+                egui::Align2::CENTER_CENTER,
+                text,
+                egui::FontId::proportional(11.5),
+                col,
+            );
+        }
+        crate::widgets::ActionIcon::Loop(is_loop_all) => {
+            let icon_center = Pos2::new(rect.min.x + 19.0, rect.center().y);
+            crate::widgets::paint_loop_icon(&p, icon_center, 14.0, is_loop_all, col);
+            p.text(
+                Pos2::new(rect.min.x + 31.0, rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                text,
+                egui::FontId::proportional(11.5),
+                col,
+            );
+        }
+        crate::widgets::ActionIcon::Star(filled) => {
+            let icon_center = Pos2::new(rect.min.x + 18.0, rect.center().y);
+            crate::widgets::paint_star_icon(&p, icon_center, 14.0, filled, col);
+            p.text(
+                Pos2::new(rect.min.x + 29.0, rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                text,
+                egui::FontId::proportional(11.5),
+                col,
+            );
+        }
+        crate::widgets::ActionIcon::List => {
+            let icon_center = Pos2::new(rect.min.x + 19.0, rect.center().y);
+            crate::widgets::paint_list_icon(&p, icon_center, 13.0, col);
+            p.text(
+                Pos2::new(rect.min.x + 30.0, rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                text,
+                egui::FontId::proportional(11.5),
+                col,
+            );
+        }
+    }
 
     resp
 }

@@ -89,13 +89,7 @@ pub fn render_music_mode(
                 Vec2::splat(20.0),
             );
             bp.rect_filled(icon_rect, Rounding::same(4.0), Theme::ACCENT_BLUE);
-            bp.text(
-                icon_rect.center(),
-                egui::Align2::CENTER_CENTER,
-                "M",
-                egui::FontId::proportional(11.0),
-                Color32::WHITE,
-            );
+            crate::widgets::paint_equalizer_icon(&bp, icon_rect.center(), 14.0, Color32::WHITE);
 
             let track_text = if !now_playing.title.is_empty() {
                 format!(

@@ -5,8 +5,8 @@
 
 use crate::catalog::{get_lighting_style, get_lighting_title};
 use crate::state::AppState;
-use crate::theme::{render_card, render_hero_play_button, render_pill_action_button, Theme};
-use crate::widgets::ArcDial;
+use crate::theme::{render_action_pill, render_card, render_hero_play_button, Theme};
+use crate::widgets::{ActionIcon, ArcDial};
 use eframe::egui;
 
 pub fn render_dynamic_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
@@ -49,20 +49,14 @@ pub fn render_dynamic_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                     // Refined Action Bar: [Loop/Once Pill] [Play Hero Button] [Fav Pill] [Presets Pill]
                     ui.horizontal(|ui| {
                         let bar_w = ui.available_width();
-                        // Total bar width: 76 + 12 + 44 + 12 + 70 + 12 + 84 = 310
-                        ui.add_space(((bar_w - 310.0) / 2.0).max(0.0));
+                        // Total bar width: 78 + 12 + 44 + 12 + 74 + 12 + 86 = 318
+                        ui.add_space(((bar_w - 318.0) / 2.0).max(0.0));
 
                         // Loop Mode Toggle Pill
-                        let loop_icon = if state.is_loop_all { "⟲" } else { "↻" };
+                        let loop_act = ActionIcon::Loop(state.is_loop_all);
                         let loop_text = if state.is_loop_all { "Loop" } else { "Once" };
-                        if render_pill_action_button(
-                            ui,
-                            loop_icon,
-                            loop_text,
-                            state.is_loop_all,
-                            76.0,
-                        )
-                        .clicked()
+                        if render_action_pill(ui, loop_act, loop_text, state.is_loop_all, 78.0)
+                            .clicked()
                         {
                             state.is_loop_all = !state.is_loop_all;
                             state_changed = true;
@@ -77,28 +71,22 @@ pub fn render_dynamic_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                         ui.add_space(12.0);
 
                         // Favourite Toggle Pill
-                        let fav_icon = if state.is_favourite { "★" } else { "☆" };
+                        let fav_act = ActionIcon::Star(state.is_favourite);
                         let fav_text = if state.is_favourite { "Saved" } else { "Fav" };
-                        if render_pill_action_button(
-                            ui,
-                            fav_icon,
-                            fav_text,
-                            state.is_favourite,
-                            70.0,
-                        )
-                        .clicked()
+                        if render_action_pill(ui, fav_act, fav_text, state.is_favourite, 74.0)
+                            .clicked()
                         {
                             state.is_favourite = !state.is_favourite;
                         }
                         ui.add_space(12.0);
 
                         // Preset Catalog Drawer Toggle Pill
-                        if render_pill_action_button(
+                        if render_action_pill(
                             ui,
-                            "☰",
+                            ActionIcon::List,
                             "Presets",
                             state.show_effect_drawer,
-                            84.0,
+                            86.0,
                         )
                         .clicked()
                         {

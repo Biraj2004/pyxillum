@@ -6,11 +6,13 @@
 pub mod arc_dial;
 pub mod color_disc;
 pub mod effect_drawer;
+pub mod icons;
 pub mod neon_strip;
 pub mod sidebar;
 
 pub use arc_dial::ArcDial;
 pub use color_disc::render_color_disc;
 pub use effect_drawer::render_effect_drawer;
+pub use icons::*;
 pub use neon_strip::render_neon_strip;
 pub use sidebar::render_sidebar;

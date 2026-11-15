@@ -14,8 +14,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
         ui.horizontal(|ui| {
             let (icon_rect, _) = ui.allocate_exact_size(Vec2::splat(28.0), egui::Sense::hover());
             let ip = ui.painter_at(icon_rect);
-            ip.rect_filled(icon_rect, Rounding::same(6.0), Theme::ACCENT_BLUE);
-            ip.circle_filled(icon_rect.center(), 5.0, Color32::WHITE);
+            crate::widgets::paint_pyxillum_logo(&ip, icon_rect);
 
             ui.add_space(8.0);
             ui.vertical(|ui| {
@@ -127,15 +126,30 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
         ui.add_space(4.0);
 
         let nav_items = [
-            ("✦", "Dynamic FX", "146 Presets", DashboardMode::Dynamic),
             (
-                "◉",
+                crate::widgets::NavIcon::DynamicFx,
+                "Dynamic FX",
+                "146 Presets",
+                DashboardMode::Dynamic,
+            ),
+            (
+                crate::widgets::NavIcon::SolidColour,
                 "Solid Colour",
                 "Custom & Dynamic",
                 DashboardMode::Solid,
             ),
-            ("♫", "Music Rhythm", "18 Audio Styles", DashboardMode::Music),
-            ("𝌆", "DIY Custom", "14-Node Sequencer", DashboardMode::Diy),
+            (
+                crate::widgets::NavIcon::MusicRhythm,
+                "Music Rhythm",
+                "18 Audio Styles",
+                DashboardMode::Music,
+            ),
+            (
+                crate::widgets::NavIcon::DiyCustom,
+                "DIY Custom",
+                "14-Node Sequencer",
+                DashboardMode::Diy,
+            ),
         ];
 
         for (icon, title, sub, mode) in nav_items {
@@ -168,7 +182,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
                 p.rect_filled(pill_rect, Rounding::same(1.5), Theme::ACCENT_BLUE);
             }
 
-            // Mode Icon
+            // Resolution-Independent Vector Mode Icon (Immune to Font Tofu)
             let icon_col = if is_selected {
                 Theme::ACCENT_CYAN
             } else if is_hovered {
@@ -176,13 +190,8 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
             } else {
                 Theme::TEXT_MUTED
             };
-            p.text(
-                Pos2::new(item_rect.min.x + 14.0, item_rect.center().y),
-                egui::Align2::LEFT_CENTER,
-                icon,
-                egui::FontId::proportional(14.0),
-                icon_col,
-            );
+            let icon_center = Pos2::new(item_rect.min.x + 20.0, item_rect.center().y);
+            crate::widgets::paint_nav_icon(&p, icon, icon_center, 18.0, icon_col);
 
             // Mode Label & Sub-label
             let text_x = item_rect.min.x + 36.0;
@@ -252,13 +261,8 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
         } else {
             Theme::TEXT_MUTED
         };
-        hp.text(
-            Pos2::new(hub_rect.min.x + 14.0, hub_rect.center().y),
-            egui::Align2::LEFT_CENTER,
-            "📶",
-            egui::FontId::proportional(13.0),
-            hub_icon_col,
-        );
+        let hub_icon_center = Pos2::new(hub_rect.min.x + 20.0, hub_rect.center().y);
+        crate::widgets::paint_bluetooth_icon(&hp, hub_icon_center, 18.0, hub_icon_col);
 
         hp.text(
             Pos2::new(hub_rect.min.x + 36.0, hub_rect.center().y),
@@ -294,21 +298,55 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
 
             ui.add_space(6.0);
 
-            // Hardware Settings Button (Safety Gated)
-            if ui
-                .add(
-                    egui::Button::new(
-                        egui::RichText::new("⚙ Settings & Hardware")
-                            .size(11.5)
-                            .color(Theme::TEXT_SECONDARY),
-                    )
-                    .fill(Color32::from_rgb(34, 34, 34))
-                    .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                    .rounding(Rounding::same(6.0))
-                    .min_size(Vec2::new(ui.available_width(), 32.0)),
-                )
-                .clicked()
-            {
+            // Hardware Settings Button with Vector Gear Icon (Safety Gated)
+            let (btn_rect, btn_resp) =
+                ui.allocate_exact_size(Vec2::new(ui.available_width(), 34.0), egui::Sense::click());
+            let bp = ui.painter_at(btn_rect);
+            let btn_hovered = btn_resp.hovered();
+            let btn_bg = if btn_hovered {
+                Color32::from_rgb(42, 42, 42)
+            } else {
+                Color32::from_rgb(34, 34, 34)
+            };
+            bp.rect_filled(btn_rect, Rounding::same(6.0), btn_bg);
+            bp.rect_stroke(
+                btn_rect,
+                Rounding::same(6.0),
+                Stroke::new(
+                    1.0_f32,
+                    if btn_hovered {
+                        Theme::BORDER_HOVER
+                    } else {
+                        Theme::BORDER_LIGHT
+                    },
+                ),
+            );
+
+            let gear_col = if btn_hovered {
+                Theme::TEXT_PRIMARY
+            } else {
+                Theme::TEXT_SECONDARY
+            };
+            crate::widgets::paint_gear_icon(
+                &bp,
+                Pos2::new(btn_rect.min.x + 18.0, btn_rect.center().y),
+                15.0,
+                gear_col,
+            );
+
+            bp.text(
+                Pos2::new(btn_rect.min.x + 32.0, btn_rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                "Settings & Hardware",
+                egui::FontId::proportional(11.5),
+                if btn_hovered {
+                    Theme::TEXT_PRIMARY
+                } else {
+                    Theme::TEXT_SECONDARY
+                },
+            );
+
+            if btn_resp.clicked() {
                 state.show_settings_modal = true;
             }
 

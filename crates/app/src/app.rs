@@ -752,19 +752,47 @@ impl PyxillumApp {
                 egui::Layout::left_to_right(egui::Align::Center),
                 |left_ui| {
                     if let AppScreen::Dashboard(_) = &self.state.current_screen {
-                        if left_ui
-                            .add(
-                                egui::Button::new(
-                                    egui::RichText::new("‹ Devices")
-                                        .size(12.0)
-                                        .color(Theme::TEXT_SECONDARY),
-                                )
-                                .fill(Theme::WELL_BG)
-                                .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                                .rounding(Rounding::same(6.0)),
-                            )
-                            .clicked()
-                        {
+                        let (bc_rect, bc_resp) = left_ui
+                            .allocate_exact_size(Vec2::new(82.0, 30.0), egui::Sense::click());
+                        let bcp = left_ui.painter_at(bc_rect);
+                        let bc_hovered = bc_resp.hovered();
+                        let bc_bg = if bc_hovered {
+                            Theme::CARD_HOVER
+                        } else {
+                            Theme::WELL_BG
+                        };
+                        bcp.rect_filled(bc_rect, Rounding::same(6.0), bc_bg);
+                        bcp.rect_stroke(
+                            bc_rect,
+                            Rounding::same(6.0),
+                            Stroke::new(
+                                1.0_f32,
+                                if bc_hovered {
+                                    Theme::BORDER_HOVER
+                                } else {
+                                    Theme::BORDER_LIGHT
+                                },
+                            ),
+                        );
+                        let bc_col = if bc_hovered {
+                            Theme::TEXT_PRIMARY
+                        } else {
+                            Theme::TEXT_SECONDARY
+                        };
+                        crate::widgets::paint_chevron_left(
+                            &bcp,
+                            Pos2::new(bc_rect.min.x + 14.0, bc_rect.center().y),
+                            11.0,
+                            bc_col,
+                        );
+                        bcp.text(
+                            Pos2::new(bc_rect.min.x + 24.0, bc_rect.center().y),
+                            egui::Align2::LEFT_CENTER,
+                            "Devices",
+                            egui::FontId::proportional(12.0),
+                            bc_col,
+                        );
+                        if bc_resp.clicked() {
                             self.state.current_screen = AppScreen::DeviceHub;
                         }
 
@@ -844,20 +872,48 @@ impl PyxillumApp {
 
                     right_ui.add_space(14.0);
 
-                    // Settings Icon Button
-                    if right_ui
-                        .add(
-                            egui::Button::new(
-                                egui::RichText::new("⚙ Settings")
-                                    .size(11.5)
-                                    .color(Theme::TEXT_SECONDARY),
-                            )
-                            .fill(Theme::WELL_BG)
-                            .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                            .rounding(Rounding::same(6.0)),
-                        )
-                        .clicked()
-                    {
+                    // Settings Icon Button with Vector Gear
+                    let (st_rect, st_resp) =
+                        right_ui.allocate_exact_size(Vec2::new(92.0, 30.0), egui::Sense::click());
+                    let stp = right_ui.painter_at(st_rect);
+                    let st_hovered = st_resp.hovered();
+                    let st_bg = if st_hovered {
+                        Theme::CARD_HOVER
+                    } else {
+                        Theme::WELL_BG
+                    };
+                    stp.rect_filled(st_rect, Rounding::same(6.0), st_bg);
+                    stp.rect_stroke(
+                        st_rect,
+                        Rounding::same(6.0),
+                        Stroke::new(
+                            1.0_f32,
+                            if st_hovered {
+                                Theme::BORDER_HOVER
+                            } else {
+                                Theme::BORDER_LIGHT
+                            },
+                        ),
+                    );
+                    let st_col = if st_hovered {
+                        Theme::TEXT_PRIMARY
+                    } else {
+                        Theme::TEXT_SECONDARY
+                    };
+                    crate::widgets::paint_gear_icon(
+                        &stp,
+                        Pos2::new(st_rect.min.x + 14.0, st_rect.center().y),
+                        13.0,
+                        st_col,
+                    );
+                    stp.text(
+                        Pos2::new(st_rect.min.x + 26.0, st_rect.center().y),
+                        egui::Align2::LEFT_CENTER,
+                        "Settings",
+                        egui::FontId::proportional(11.5),
+                        st_col,
+                    );
+                    if st_resp.clicked() {
                         self.state.show_settings_modal = true;
                     }
                 },
