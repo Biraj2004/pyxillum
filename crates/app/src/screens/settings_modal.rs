@@ -4,7 +4,7 @@
 //! and colour channel sequence, guarded behind explicit safety verification.
 
 use crate::state::AppState;
-use crate::theme::Theme;
+use crate::theme::{render_primary_button, render_secondary_button, Theme};
 use eframe::egui::{self, Color32, Rounding, Stroke, Vec2};
 use pyxillum_protocol::ChipOrder;
 
@@ -72,36 +72,23 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                     );
                 });
 
-            ui.add_space(18.0);
+            ui.add_space(20.0);
+            ui.separator();
+            ui.add_space(14.0);
 
-            // Action Buttons
-            ui.horizontal(|ui| {
-                if ui
-                    .add(
-                        egui::Button::new(egui::RichText::new("Cancel").color(Theme::TEXT_SECONDARY))
-                            .fill(Color32::from_rgb(44, 44, 44))
-                            .rounding(Rounding::same(4.0)),
-                    )
-                    .clicked()
-                {
+            // Standardized Modal Footer: Consistent 34px height, grouped right-aligned
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let can_apply = state.ui_confirm_safety;
+                if render_primary_button(ui, "Apply Configuration", can_apply, 150.0).clicked() {
+                    commit_changes = true;
                     state.show_settings_modal = false;
                 }
 
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let can_apply = state.ui_confirm_safety;
-                    let apply_btn = ui.add_enabled(
-                        can_apply,
-                        egui::Button::new(egui::RichText::new("Apply Configuration").strong().color(Color32::WHITE))
-                            .fill(if can_apply { Theme::ACCENT_BLUE } else { Color32::from_rgb(48, 48, 48) })
-                            .rounding(Rounding::same(4.0))
-                            .min_size(Vec2::new(140.0, 30.0)),
-                    );
+                ui.add_space(10.0);
 
-                    if apply_btn.clicked() {
-                        commit_changes = true;
-                        state.show_settings_modal = false;
-                    }
-                });
+                if render_secondary_button(ui, "Cancel", 90.0).clicked() {
+                    state.show_settings_modal = false;
+                }
             });
         });
 

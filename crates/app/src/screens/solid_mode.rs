@@ -6,7 +6,7 @@
 
 use crate::catalog::find_closest_hardware_effect;
 use crate::state::{AppState, CustomColorEffect, DashboardMode};
-use crate::theme::{render_card, Theme};
+use crate::theme::{render_card, render_primary_button, Theme};
 use crate::widgets::render_color_disc;
 use eframe::egui::{self, Color32, Rounding, Stroke, Vec2};
 
@@ -375,16 +375,7 @@ pub fn render_solid_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                                 );
                                 ui.add_space(4.0);
 
-                                if ui
-                                    .add(
-                                        egui::Button::new(
-                                            egui::RichText::new("Sync Directly to Chip")
-                                                .size(11.5)
-                                                .color(Color32::WHITE),
-                                        )
-                                        .fill(Theme::ACCENT_BLUE)
-                                        .rounding(Rounding::same(6.0)),
-                                    )
+                                if render_primary_button(ui, "Sync Directly to Chip", true, 160.0)
                                     .clicked()
                                 {
                                     state.ui_effect = chip_code;

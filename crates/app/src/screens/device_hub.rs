@@ -4,8 +4,10 @@
 //! live BLE scanning controls, and responsive grid of hardware controller cards.
 
 use crate::state::{AppState, DeviceCardInfo};
-use crate::theme::{render_card, render_signal_bars, Theme};
-use eframe::egui::{self, Color32, Rounding, Stroke, Vec2};
+use crate::theme::{
+    render_card, render_danger_button, render_primary_button, render_signal_bars, Theme,
+};
+use eframe::egui::{self, Rounding, Stroke, Vec2};
 
 /// Actions originating from the Device Hub interface.
 #[derive(Debug, Clone)]
@@ -61,21 +63,7 @@ pub fn render_device_hub(
                             "Scan for Controllers"
                         };
 
-                        let scan_btn = egui::Button::new(
-                            egui::RichText::new(scan_text)
-                                .strong()
-                                .size(12.5)
-                                .color(Color32::WHITE),
-                        )
-                        .fill(if state.is_scanning {
-                            Theme::ACCENT_BLUE_ACTIVE
-                        } else {
-                            Theme::ACCENT_BLUE
-                        })
-                        .rounding(Rounding::same(6.0))
-                        .min_size(Vec2::new(140.0, 32.0));
-
-                        if ui.add_enabled(!state.is_scanning, scan_btn).clicked() {
+                        if render_primary_button(ui, scan_text, !state.is_scanning, 150.0).clicked() {
                             triggered_action = Some(DeviceHubAction::Scan);
                         }
                     });
@@ -132,18 +120,7 @@ pub fn render_device_hub(
                         );
                         ui.add_space(14.0);
 
-                        if ui
-                            .add(
-                                egui::Button::new(
-                                    egui::RichText::new("Scan Nearby Controllers")
-                                        .strong()
-                                        .size(13.0)
-                                        .color(Color32::WHITE),
-                                )
-                                .fill(Theme::ACCENT_BLUE)
-                                .rounding(Rounding::same(6.0))
-                                .min_size(Vec2::new(180.0, 36.0)),
-                            )
+                        if render_primary_button(ui, "Scan for Controllers", !state.is_scanning, 180.0)
                             .clicked()
                         {
                             triggered_action = Some(DeviceHubAction::Scan);
@@ -243,24 +220,8 @@ pub fn render_device_hub(
                                         ui.with_layout(
                                             egui::Layout::right_to_left(egui::Align::Center),
                                             |ui| {
-                                                if ui
-                                                    .add(
-                                                        egui::Button::new(
-                                                            egui::RichText::new("Disconnect")
-                                                                .size(11.5)
-                                                                .color(Theme::TEXT_SECONDARY),
-                                                        )
-                                                        .fill(Color32::from_rgb(48, 48, 48))
-                                                        .stroke(Stroke::new(
-                                                            1.0_f32,
-                                                            Theme::BORDER_LIGHT,
-                                                        ))
-                                                        .rounding(Rounding::same(4.0)),
-                                                    )
-                                                    .clicked()
-                                                {
-                                                    triggered_action =
-                                                        Some(DeviceHubAction::Disconnect);
+                                                if render_danger_button(ui, "Disconnect", 96.0).clicked() {
+                                                    triggered_action = Some(DeviceHubAction::Disconnect);
                                                 }
                                             },
                                         );
@@ -268,24 +229,8 @@ pub fn render_device_hub(
                                         ui.with_layout(
                                             egui::Layout::right_to_left(egui::Align::Center),
                                             |ui| {
-                                                if ui
-                                                    .add(
-                                                        egui::Button::new(
-                                                            egui::RichText::new("Connect")
-                                                                .strong()
-                                                                .size(12.0)
-                                                                .color(Color32::WHITE),
-                                                        )
-                                                        .fill(Theme::ACCENT_BLUE)
-                                                        .rounding(Rounding::same(4.0))
-                                                        .min_size(Vec2::new(80.0, 28.0)),
-                                                    )
-                                                    .clicked()
-                                                {
-                                                    triggered_action =
-                                                        Some(DeviceHubAction::Connect(
-                                                            dev.id.clone(),
-                                                        ));
+                                                if render_primary_button(ui, "Connect", true, 96.0).clicked() {
+                                                    triggered_action = Some(DeviceHubAction::Connect(dev.id.clone()));
                                                 }
                                             },
                                         );

@@ -250,6 +250,159 @@ pub fn render_action_pill(
     resp
 }
 
+/// Renders a standardized WinUI 3 primary action button with elevation shadow and feedback states.
+pub fn render_primary_button(
+    ui: &mut egui::Ui,
+    text: &str,
+    enabled: bool,
+    min_width: f32,
+) -> egui::Response {
+    let height = 34.0_f32;
+    let (rect, resp) = ui.allocate_exact_size(
+        Vec2::new(min_width.max(80.0), height),
+        if enabled {
+            egui::Sense::click()
+        } else {
+            egui::Sense::hover()
+        },
+    );
+    let p = ui.painter_at(rect);
+    let is_hovered = enabled && resp.hovered();
+    let is_active = enabled && resp.is_pointer_button_down_on();
+
+    let bg = if !enabled {
+        Color32::from_rgb(38, 38, 38)
+    } else if is_active {
+        Theme::ACCENT_BLUE_ACTIVE
+    } else if is_hovered {
+        Theme::ACCENT_BLUE_HOVER
+    } else {
+        Theme::ACCENT_BLUE
+    };
+
+    let border = if !enabled {
+        Theme::BORDER_LIGHT
+    } else if is_hovered {
+        Theme::ACCENT_CYAN
+    } else {
+        Theme::ACCENT_BLUE_HOVER
+    };
+
+    let text_col = if !enabled {
+        Theme::TEXT_DISABLED
+    } else {
+        Color32::WHITE
+    };
+
+    if enabled {
+        let shadow_rect = Rect::from_min_size(Pos2::new(rect.min.x, rect.min.y + 1.2), rect.size());
+        p.rect_filled(
+            shadow_rect,
+            Rounding::same(6.0),
+            Color32::from_black_alpha(45),
+        );
+    }
+
+    p.rect_filled(rect, Rounding::same(6.0), bg);
+    p.rect_stroke(rect, Rounding::same(6.0), Stroke::new(1.0_f32, border));
+
+    p.text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::proportional(12.5),
+        text_col,
+    );
+
+    resp
+}
+
+/// Renders a standardized WinUI 3 secondary / neutral button with consistent height and padding.
+pub fn render_secondary_button(ui: &mut egui::Ui, text: &str, min_width: f32) -> egui::Response {
+    let height = 34.0_f32;
+    let (rect, resp) =
+        ui.allocate_exact_size(Vec2::new(min_width.max(80.0), height), egui::Sense::click());
+    let p = ui.painter_at(rect);
+    let is_hovered = resp.hovered();
+    let is_active = resp.is_pointer_button_down_on();
+
+    let bg = if is_active {
+        Theme::CARD_ACTIVE
+    } else if is_hovered {
+        Theme::CARD_HOVER
+    } else {
+        Theme::WELL_BG
+    };
+
+    let border = if is_hovered {
+        Theme::BORDER_HOVER
+    } else {
+        Theme::BORDER_LIGHT
+    };
+
+    let text_col = if is_hovered {
+        Theme::TEXT_PRIMARY
+    } else {
+        Theme::TEXT_SECONDARY
+    };
+
+    p.rect_filled(rect, Rounding::same(6.0), bg);
+    p.rect_stroke(rect, Rounding::same(6.0), Stroke::new(1.0_f32, border));
+
+    p.text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::proportional(12.0),
+        text_col,
+    );
+
+    resp
+}
+
+/// Renders a standardized WinUI 3 danger / disconnect button with consistent geometry.
+pub fn render_danger_button(ui: &mut egui::Ui, text: &str, min_width: f32) -> egui::Response {
+    let height = 34.0_f32;
+    let (rect, resp) =
+        ui.allocate_exact_size(Vec2::new(min_width.max(80.0), height), egui::Sense::click());
+    let p = ui.painter_at(rect);
+    let is_hovered = resp.hovered();
+    let is_active = resp.is_pointer_button_down_on();
+
+    let bg = if is_active {
+        Color32::from_rgb(80, 20, 24)
+    } else if is_hovered {
+        Color32::from_rgb(64, 22, 26)
+    } else {
+        Color32::from_rgb(44, 22, 24)
+    };
+
+    let border = if is_hovered {
+        Color32::from_rgb(140, 40, 45)
+    } else {
+        Color32::from_rgb(90, 32, 36)
+    };
+
+    let text_col = if is_hovered {
+        Color32::WHITE
+    } else {
+        Color32::from_rgb(255, 170, 170)
+    };
+
+    p.rect_filled(rect, Rounding::same(6.0), bg);
+    p.rect_stroke(rect, Rounding::same(6.0), Stroke::new(1.0_f32, border));
+
+    p.text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::proportional(12.0),
+        text_col,
+    );
+
+    resp
+}
+
 /// Helper that renders a circular action button (backward compatibility).
 #[allow(dead_code)]
 pub fn render_round_action_button(

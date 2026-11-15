@@ -18,7 +18,7 @@ use crate::screens::{
 use crate::state::{
     AppScreen, AppState, CustomColorEffect, DashboardMode, DeviceCardInfo, GuiCommand, GuiEvent,
 };
-use crate::theme::{render_card, render_toggle_switch, Theme};
+use crate::theme::{render_card, render_secondary_button, render_toggle_switch, Theme};
 use crate::widgets::{render_effect_drawer, render_neon_strip, render_sidebar};
 use crate::windows_media::{NowPlayingInfo, WindowsAudioService};
 
@@ -1076,11 +1076,15 @@ impl PyxillumApp {
                 ui.label("- Write Pacing: 30 ms automatic delay between outbound GATT frames.");
                 ui.label("- Clean-Room Interoperability: Direct implementation of unencrypted GATT framing.");
                 ui.label("- Hardware Safety: EEPROM register updates are gated behind safety flags.");
-                ui.add_space(14.0);
+                ui.add_space(18.0);
+                ui.separator();
+                ui.add_space(12.0);
 
-                if ui.button("Close").clicked() {
-                    self.state.show_help_modal = false;
-                }
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if render_secondary_button(ui, "Close", 96.0).clicked() {
+                        self.state.show_help_modal = false;
+                    }
+                });
             });
     }
 }
