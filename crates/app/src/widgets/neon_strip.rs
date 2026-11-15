@@ -188,81 +188,41 @@ pub fn render_neon_strip(ui: &mut egui::Ui, pixels: &[RgbColor], power: bool) {
         );
     }
 
-    // 5. Pixel Diodes & Continuous Diffuser Light Guide
+    // 5. Pixel Diodes (Clean, Non-Straining Smooth Luminous Circles)
     let usable_w = track_rect.width() - 44.0;
     let start_x = track_rect.min.x + 22.0;
 
     if pixels.is_empty() {
-        // Standby unlit SMD beads
+        // Standby indicators
         let dot_count = (usable_w / 24.0) as usize;
         let spacing = usable_w / (dot_count + 1) as f32;
         for i in 1..=dot_count {
             let cx = start_x + (i as f32) * spacing;
-            let pos = Pos2::new(cx, cy);
-            painter.circle_filled(pos, 3.2, Color32::from_rgb(34, 34, 34));
-            painter.circle_stroke(
-                pos,
-                3.2,
-                Stroke::new(0.8_f32, Color32::from_rgb(46, 46, 46)),
-            );
+            painter.circle_filled(Pos2::new(cx, cy), 3.2, Color32::from_rgb(44, 44, 44));
         }
         return;
     }
 
     let step = usable_w / count as f32;
-    let radius = (step * 0.40).clamp(2.8, 5.2);
-
-    // Continuous frosted light guide glow when powered
-    if power {
-        let guide_rect = Rect::from_center_size(
-            Pos2::new(track_rect.center().x, cy),
-            Vec2::new(usable_w + radius * 2.0, radius * 2.6),
-        );
-        painter.rect_filled(
-            guide_rect,
-            Rounding::same(radius * 1.3),
-            Color32::from_white_alpha(10),
-        );
-    }
+    let radius = (step * 0.38).clamp(2.5, 5.0);
 
     for (i, p) in pixels.iter().take(count).enumerate() {
         let cx = start_x + (i as f32 + 0.5) * step;
         let pos = Pos2::new(cx, cy);
 
-        if power {
-            let col = Color32::from_rgb(p.r, p.g, p.b);
-
-            // Layer 1: Ambient soft bloom halo
-            if p.r > 15 || p.g > 15 || p.b > 15 {
-                let bloom_col = Color32::from_rgba_premultiplied(p.r / 7, p.g / 7, p.b / 7, 24);
-                painter.circle_filled(pos, radius * 2.3, bloom_col);
-            }
-
-            // Layer 2: Frosted silicone dome lens
-            let lens_col = Color32::from_rgba_premultiplied(
-                (p.r as u16 + 50).min(255) as u8,
-                (p.g as u16 + 50).min(255) as u8,
-                (p.b as u16 + 50).min(255) as u8,
-                80,
-            );
-            painter.circle_filled(pos, radius * 1.25, lens_col);
-
-            // Layer 3: Core Phosphor Diode Bead
-            painter.circle_filled(pos, radius, col);
-
-            // Layer 4: 3D Dome Specular Highlight
-            let glint_pos = Pos2::new(cx - radius * 0.28, cy - radius * 0.28);
-            painter.circle_filled(glint_pos, radius * 0.32, Color32::from_white_alpha(165));
+        let col = if power {
+            Color32::from_rgb(p.r, p.g, p.b)
         } else {
-            // Unlit physical SMD pixel diode
-            painter.circle_filled(pos, radius, Color32::from_rgb(34, 34, 34));
-            painter.circle_stroke(
-                pos,
-                radius,
-                Stroke::new(0.8_f32, Color32::from_rgb(48, 48, 48)),
-            );
-            let glint_pos = Pos2::new(cx - radius * 0.25, cy - radius * 0.25);
-            painter.circle_filled(glint_pos, radius * 0.28, Color32::from_white_alpha(35));
+            Color32::from_rgb(44, 44, 44)
+        };
+
+        // Gentle soft ambient glow halo
+        if power && (p.r > 20 || p.g > 20 || p.b > 20) {
+            let glow_col = Color32::from_rgba_premultiplied(p.r / 4, p.g / 4, p.b / 4, 30);
+            painter.circle_filled(pos, radius * 1.8, glow_col);
         }
+
+        // Clean solid diode circle (no white specular dots or visual glare)
+        painter.circle_filled(pos, radius, col);
     }
 }

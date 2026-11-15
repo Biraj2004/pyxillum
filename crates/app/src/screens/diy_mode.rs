@@ -81,7 +81,8 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                                 );
                                 let btn_resp =
                                     btn_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-                                let btn_resp = btn_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+                                let btn_resp =
+                                    btn_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                                 let p = ui.painter_at(btn_rect);
 
                                 let chip_center =
