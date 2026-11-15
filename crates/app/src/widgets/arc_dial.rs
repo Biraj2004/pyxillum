@@ -33,6 +33,13 @@ impl ArcDial {
             ui.allocate_exact_size(Vec2::new(total_w, total_h), egui::Sense::click_and_drag());
         let painter = ui.painter_at(rect);
 
+        // Tactile cursor feedback for radial gauge
+        if resp.dragged() || resp.is_pointer_button_down_on() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
+        } else if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::Grab);
+        }
+
         let center = Pos2::new(rect.center().x, rect.min.y + self.radius + 18.0);
         let radius = self.radius;
         let track_thickness = 11.0_f32;
@@ -150,11 +157,13 @@ impl ArcDial {
         let btn_size = Vec2::splat(34.0);
         let left_btn_rect =
             Rect::from_center_size(Pos2::new(rect.min.x + 18.0, center.y), btn_size);
-        let left_btn_resp = ui.interact(
-            left_btn_rect,
-            ui.id().with("dial_left"),
-            egui::Sense::click(),
-        );
+        let left_btn_resp = ui
+            .interact(
+                left_btn_rect,
+                ui.id().with("dial_left"),
+                egui::Sense::click(),
+            )
+            .on_hover_cursor(egui::CursorIcon::PointingHand);
         let lb_hovered = left_btn_resp.hovered();
         painter.circle_filled(
             left_btn_rect.center(),
@@ -204,11 +213,13 @@ impl ArcDial {
         // 8. Right Stepper Button (›)
         let right_btn_rect =
             Rect::from_center_size(Pos2::new(rect.max.x - 18.0, center.y), btn_size);
-        let right_btn_resp = ui.interact(
-            right_btn_rect,
-            ui.id().with("dial_right"),
-            egui::Sense::click(),
-        );
+        let right_btn_resp = ui
+            .interact(
+                right_btn_rect,
+                ui.id().with("dial_right"),
+                egui::Sense::click(),
+            )
+            .on_hover_cursor(egui::CursorIcon::PointingHand);
         let rb_hovered = right_btn_resp.hovered();
         painter.circle_filled(
             right_btn_rect.center(),

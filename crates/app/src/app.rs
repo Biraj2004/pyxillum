@@ -754,6 +754,7 @@ impl PyxillumApp {
                     if let AppScreen::Dashboard(_) = &self.state.current_screen {
                         let (bc_rect, bc_resp) = left_ui
                             .allocate_exact_size(Vec2::new(82.0, 30.0), egui::Sense::click());
+                        let bc_resp = bc_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                         let bcp = left_ui.painter_at(bc_rect);
                         let bc_hovered = bc_resp.hovered();
                         let bc_bg = if bc_hovered {
@@ -875,6 +876,7 @@ impl PyxillumApp {
                     // Settings Icon Button with Vector Gear
                     let (st_rect, st_resp) =
                         right_ui.allocate_exact_size(Vec2::new(92.0, 30.0), egui::Sense::click());
+                    let st_resp = st_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                     let stp = right_ui.painter_at(st_rect);
                     let st_hovered = st_resp.hovered();
                     let st_bg = if st_hovered {

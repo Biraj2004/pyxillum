@@ -69,7 +69,8 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                     ui.checkbox(
                         &mut state.ui_confirm_safety,
                         "I understand this mutates hardware registers",
-                    );
+                    )
+                    .on_hover_cursor(egui::CursorIcon::PointingHand);
                 });
 
             ui.add_space(20.0);

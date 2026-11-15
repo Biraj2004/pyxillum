@@ -199,6 +199,7 @@ pub fn render_solid_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                             for col in &swatches {
                                 let (s_rect, s_resp) =
                                     ui.allocate_exact_size(Vec2::splat(26.0), egui::Sense::click());
+                                let s_resp = s_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                                 let p = ui.painter_at(s_rect);
                                 let r = (col[0] * 255.0) as u8;
                                 let g = (col[1] * 255.0) as u8;
@@ -271,6 +272,7 @@ pub fn render_solid_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                             let is_active = state.custom_color_effect == *eff;
                             let (pill_rect, resp) =
                                 ui.allocate_exact_size(Vec2::new(76.0, 28.0), egui::Sense::click());
+                            let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                             let pp = ui.painter_at(pill_rect);
 
                             let bg = if is_active {

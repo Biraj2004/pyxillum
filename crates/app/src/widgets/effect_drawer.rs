@@ -30,8 +30,8 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
         // Category Filter Pills
         ui.horizontal_wrapped(|ui| {
             let is_all = state.effect_category_filter.is_none();
-            let all_btn =
-                ui.add(
+            let all_btn = ui
+                .add(
                     egui::Button::new(egui::RichText::new("All (146)").size(11.0).color(
                         if is_all {
                             Color32::WHITE
@@ -53,36 +53,39 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                         },
                     ))
                     .rounding(Rounding::same(12.0)),
-                );
+                )
+                .on_hover_cursor(egui::CursorIcon::PointingHand);
             if all_btn.clicked() {
                 state.effect_category_filter = None;
             }
 
             for cat in EffectCategory::all() {
                 let is_sel = state.effect_category_filter == Some(*cat);
-                let btn = ui.add(
-                    egui::Button::new(egui::RichText::new(cat.name()).size(11.0).color(
-                        if is_sel {
-                            Color32::WHITE
+                let btn = ui
+                    .add(
+                        egui::Button::new(egui::RichText::new(cat.name()).size(11.0).color(
+                            if is_sel {
+                                Color32::WHITE
+                            } else {
+                                Theme::TEXT_SECONDARY
+                            },
+                        ))
+                        .fill(if is_sel {
+                            Theme::ACCENT_BLUE
                         } else {
-                            Theme::TEXT_SECONDARY
-                        },
-                    ))
-                    .fill(if is_sel {
-                        Theme::ACCENT_BLUE
-                    } else {
-                        Theme::WELL_BG
-                    })
-                    .stroke(Stroke::new(
-                        1.0_f32,
-                        if is_sel {
-                            Theme::ACCENT_BLUE_HOVER
-                        } else {
-                            Theme::BORDER_LIGHT
-                        },
-                    ))
-                    .rounding(Rounding::same(12.0)),
-                );
+                            Theme::WELL_BG
+                        })
+                        .stroke(Stroke::new(
+                            1.0_f32,
+                            if is_sel {
+                                Theme::ACCENT_BLUE_HOVER
+                            } else {
+                                Theme::BORDER_LIGHT
+                            },
+                        ))
+                        .rounding(Rounding::same(12.0)),
+                    )
+                    .on_hover_cursor(egui::CursorIcon::PointingHand);
                 if btn.clicked() {
                     state.effect_category_filter = Some(*cat);
                 }
@@ -134,6 +137,7 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                         Vec2::new(ui.available_width() - 8.0, item_h),
                         egui::Sense::click(),
                     );
+                    let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                     let p = ui.painter_at(item_rect);
 
                     let is_hovered = resp.hovered();

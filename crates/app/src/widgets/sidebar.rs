@@ -80,6 +80,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
                         ))
                         .fill(Color32::TRANSPARENT),
                     )
+                    .on_hover_cursor(egui::CursorIcon::PointingHand)
                     .clicked()
                 {
                     state.current_screen = AppScreen::DeviceHub;
@@ -159,6 +160,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
                 Vec2::new(ui.available_width(), item_h),
                 egui::Sense::click(),
             );
+            let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
 
             let is_hovered = resp.hovered();
             let p = ui.painter_at(item_rect);
@@ -233,6 +235,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
         let hub_h = 38.0;
         let (hub_rect, hub_resp) =
             ui.allocate_exact_size(Vec2::new(ui.available_width(), hub_h), egui::Sense::click());
+        let hub_resp = hub_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
         let hp = ui.painter_at(hub_rect);
         let hub_hovered = hub_resp.hovered();
 
@@ -301,6 +304,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
             // Hardware Settings Button with Vector Gear Icon (Safety Gated)
             let (btn_rect, btn_resp) =
                 ui.allocate_exact_size(Vec2::new(ui.available_width(), 34.0), egui::Sense::click());
+            let btn_resp = btn_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
             let bp = ui.painter_at(btn_rect);
             let btn_hovered = btn_resp.hovered();
             let btn_bg = if btn_hovered {

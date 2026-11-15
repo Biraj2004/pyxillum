@@ -103,7 +103,7 @@ pub fn render_hero_play_button(ui: &mut egui::Ui, is_playing: bool) -> egui::Res
         p.add(shape);
     }
 
-    resp
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Helper that renders a styled pill action button with optional icon and text.
@@ -247,7 +247,7 @@ pub fn render_action_pill(
         }
     }
 
-    resp
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Renders a standardized WinUI 3 primary action button with elevation shadow and feedback states.
@@ -314,7 +314,11 @@ pub fn render_primary_button(
         text_col,
     );
 
-    resp
+    if enabled {
+        resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+    } else {
+        resp.on_hover_cursor(egui::CursorIcon::NotAllowed)
+    }
 }
 
 /// Renders a standardized WinUI 3 secondary / neutral button with consistent height and padding.
@@ -357,7 +361,7 @@ pub fn render_secondary_button(ui: &mut egui::Ui, text: &str, min_width: f32) ->
         text_col,
     );
 
-    resp
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Renders a standardized WinUI 3 danger / disconnect button with consistent geometry.
@@ -400,7 +404,7 @@ pub fn render_danger_button(ui: &mut egui::Ui, text: &str, min_width: f32) -> eg
         text_col,
     );
 
-    resp
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Helper that renders a circular action button (backward compatibility).
@@ -448,7 +452,7 @@ pub fn render_round_action_button(
         txt_col,
     );
 
-    resp
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Helper that renders a segmented pill or source switcher tab.
@@ -491,7 +495,7 @@ pub fn render_source_pill(ui: &mut egui::Ui, text: &str, is_selected: bool) -> e
         txt_col,
     );
 
-    resp
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Helper to render a desktop card container with subtle 1px border and rounding.
@@ -574,7 +578,7 @@ pub fn render_toggle_switch(ui: &mut egui::Ui, state: &mut bool) -> egui::Respon
     };
     p.circle_filled(knob_center, knob_r, knob_col);
 
-    resp
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Helper that renders a segmented two-option sliding pill toggle (e.g. Solid vs Gradient).
@@ -623,16 +627,20 @@ pub fn render_segmented_toggle(
     );
     p.rect_filled(thumb_rect, Rounding::same(14.0), Theme::ACCENT_BLUE);
 
-    let resp_solid = ui.interact(
-        solid_rect,
-        ui.id().with(format!("{}_1", id_salt)),
-        egui::Sense::click(),
-    );
-    let resp_grad = ui.interact(
-        grad_rect,
-        ui.id().with(format!("{}_2", id_salt)),
-        egui::Sense::click(),
-    );
+    let resp_solid = ui
+        .interact(
+            solid_rect,
+            ui.id().with(format!("{}_1", id_salt)),
+            egui::Sense::click(),
+        )
+        .on_hover_cursor(egui::CursorIcon::PointingHand);
+    let resp_grad = ui
+        .interact(
+            grad_rect,
+            ui.id().with(format!("{}_2", id_salt)),
+            egui::Sense::click(),
+        )
+        .on_hover_cursor(egui::CursorIcon::PointingHand);
 
     let mut selection = None;
     if resp_solid.clicked() && is_opt2 {

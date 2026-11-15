@@ -44,6 +44,10 @@ pub fn render_color_disc(ui: &mut egui::Ui, current_color: &mut [f32; 3], radius
     painter.circle_stroke(indicator_pos, 10.0, Stroke::new(1.0_f32, Color32::BLACK));
 
     let mut changed = false;
+    if response.hovered() || response.dragged() {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::Crosshair);
+    }
+
     if response.dragged() || response.clicked() {
         if let Some(pos) = response.interact_pointer_pos() {
             let offset = pos - center;
