@@ -1,10 +1,10 @@
-//! # Reusable Scalable Arc Dial Widget
+//! # Scalable Windows 11 Arc Dial Widget
 //!
-//! Provides the signature 270-degree radial arc gauge with inner skyline artwork,
-//! draggable thumb indicator, center numeric readout, and flanking step buttons.
+//! Provides the signature 270-degree radial arc gauge with authentic
+//! Windows 11 Fluent dark styling, interactive draggable thumb, and center readout.
 
 use crate::theme::Theme;
-use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
+use eframe::egui::{self, Color32, Pos2, Rect, Stroke, Vec2};
 
 pub struct ArcDial {
     pub current_value: u32,
@@ -19,25 +19,62 @@ impl ArcDial {
             current_value,
             max_value,
             title: title.into(),
-            radius: 86.0,
+            radius: 80.0,
         }
     }
 
     /// Renders the arc dial and returns an optional step delta: -1 for left, +1 for right.
     pub fn show(&mut self, ui: &mut egui::Ui) -> Option<i32> {
-        let size = Vec2::new(self.radius * 2.0 + 90.0, self.radius * 2.0 + 70.0);
-        let (rect, _) = ui.allocate_exact_size(size, egui::Sense::hover());
+        let mut delta = None;
+
+        let total_w = self.radius * 2.0 + 96.0;
+        let total_h = self.radius * 2.0 + 64.0;
+        let (rect, resp) =
+            ui.allocate_exact_size(Vec2::new(total_w, total_h), egui::Sense::click_and_drag());
         let painter = ui.painter_at(rect);
-        let center = Pos2::new(rect.center().x, rect.min.y + self.radius + 20.0);
+
+        let center = Pos2::new(rect.center().x, rect.min.y + self.radius + 18.0);
         let radius = self.radius;
-        let track_thickness = 13.0_f32;
+        let track_thickness = 11.0_f32;
 
         let start_deg = 135.0f32;
         let sweep_deg = 270.0f32;
         let progress = (self.current_value as f32 / self.max_value as f32).clamp(0.01, 1.0);
 
-        // 1. Inactive Background Arc Track (Dark Fluent Track)
-        let segments = 50;
+        // Handle dragging on the arc dial
+        if resp.dragged() || resp.clicked() {
+            if let Some(mouse_pos) = resp.interact_pointer_pos() {
+                let vec = mouse_pos - center;
+                let mut angle_deg = vec.y.atan2(vec.x).to_degrees();
+                if angle_deg < 0.0 {
+                    angle_deg += 360.0;
+                }
+
+                let norm_angle = if angle_deg >= 135.0 {
+                    angle_deg - 135.0
+                } else if angle_deg <= 45.0 {
+                    angle_deg + 225.0
+                } else {
+                    // In dead zone at bottom
+                    if angle_deg > 90.0 {
+                        0.0
+                    } else {
+                        270.0
+                    }
+                };
+
+                let new_pct = (norm_angle / 270.0).clamp(0.0, 1.0);
+                let target_val = (new_pct * (self.max_value - 1) as f32 + 1.0).round() as u32;
+                if target_val > self.current_value {
+                    delta = Some(1);
+                } else if target_val < self.current_value {
+                    delta = Some(-1);
+                }
+            }
+        }
+
+        // 1. Inactive Background Track (Neutral Dark Windows Track)
+        let segments = 54;
         for i in 0..segments {
             let a1 = (start_deg + sweep_deg * (i as f32 / segments as f32)).to_radians();
             let a2 = (start_deg + sweep_deg * ((i + 1) as f32 / segments as f32)).to_radians();
@@ -45,11 +82,11 @@ impl ArcDial {
             let p2 = center + Vec2::new(a2.cos(), a2.sin()) * radius;
             painter.line_segment(
                 [p1, p2],
-                Stroke::new(track_thickness, Color32::from_rgb(30, 41, 59)),
+                Stroke::new(track_thickness, Color32::from_rgb(52, 52, 52)),
             );
         }
 
-        // 2. Active Gradient Arc Track (Electric Blue to Bright Cyan Neon)
+        // 2. Active Arc Track (Microsoft Fluent Blue #0078D4 to #389BF2)
         let active_segments = ((segments as f32 * progress) as usize).max(1);
         for i in 0..active_segments {
             let f = i as f32 / segments as f32;
@@ -58,142 +95,147 @@ impl ArcDial {
             let p1 = center + Vec2::new(a1.cos(), a1.sin()) * radius;
             let p2 = center + Vec2::new(a2.cos(), a2.sin()) * radius;
 
-            let r = (37.0 * (1.0 - f) + 56.0 * f) as u8;
-            let g = (99.0 * (1.0 - f) + 189.0 * f) as u8;
-            let b = (235.0 * (1.0 - f) + 248.0 * f) as u8;
+            let r = (0.0 * (1.0 - f) + 56.0 * f) as u8;
+            let g = (120.0 * (1.0 - f) + 155.0 * f) as u8;
+            let b = (212.0 * (1.0 - f) + 242.0 * f) as u8;
             let col = Color32::from_rgb(r, g, b);
             painter.line_segment([p1, p2], Stroke::new(track_thickness, col));
         }
 
-        // 3. Thumb Indicator Cap
+        // 3. Thumb Indicator
         let thumb_angle = (start_deg + sweep_deg * progress).to_radians();
         let thumb_pos = center + Vec2::new(thumb_angle.cos(), thumb_angle.sin()) * radius;
-        painter.circle_filled(thumb_pos, track_thickness * 0.72, Color32::WHITE);
+        painter.circle_filled(thumb_pos, track_thickness * 0.75, Color32::WHITE);
         painter.circle_stroke(
             thumb_pos,
-            track_thickness * 0.72,
-            Stroke::new(2.5_f32, Theme::ACCENT_CYAN),
+            track_thickness * 0.75,
+            Stroke::new(2.0_f32, Theme::ACCENT_BLUE),
         );
 
         // 4. Inner Disc
         let inner_r = radius - track_thickness - 6.0;
-        painter.circle_filled(center, inner_r, Color32::from_rgb(17, 24, 39));
-
-        // Draw geometric architectural skyline silhouette
-        let base_y = center.y + inner_r * 0.52;
-
-        let b1 = Rect::from_min_max(
-            Pos2::new(center.x - 42.0, base_y - 48.0),
-            Pos2::new(center.x - 22.0, base_y),
-        );
-        let b2 = Rect::from_min_max(
-            Pos2::new(center.x - 18.0, base_y - 62.0),
-            Pos2::new(center.x + 4.0, base_y),
-        );
-        let b3 = Rect::from_min_max(
-            Pos2::new(center.x + 8.0, base_y - 42.0),
-            Pos2::new(center.x + 28.0, base_y),
+        painter.circle_filled(center, inner_r, Color32::from_rgb(34, 34, 34));
+        painter.circle_stroke(
+            center,
+            inner_r,
+            Stroke::new(1.0_f32, Color32::from_rgb(46, 46, 46)),
         );
 
-        painter.rect_filled(b1, Rounding::same(2.0), Color32::from_rgb(30, 41, 59));
-        painter.rect_filled(b2, Rounding::same(2.0), Color32::from_rgb(51, 65, 85));
-        painter.rect_filled(b3, Rounding::same(2.0), Color32::from_rgb(30, 41, 59));
-
-        // Small warm lighted windows on tallest tower
-        for row in 0..4 {
-            let wy = b2.min.y + 10.0 + (row as f32) * 11.0;
-            let w1 = Rect::from_min_size(Pos2::new(b2.min.x + 4.0, wy), Vec2::new(4.0, 5.0));
-            let w2 = Rect::from_min_size(Pos2::new(b2.min.x + 12.0, wy), Vec2::new(4.0, 5.0));
-            painter.rect_filled(w1, Rounding::same(1.0), Color32::from_rgb(253, 224, 71));
-            painter.rect_filled(w2, Rounding::same(1.0), Color32::from_rgb(253, 224, 71));
-        }
-
-        // Horizon curve line
-        let p_start = Pos2::new(center.x - inner_r * 0.85, base_y);
-        let p_end = Pos2::new(center.x + inner_r * 0.85, base_y);
-        painter.line_segment(
-            [p_start, p_end],
-            Stroke::new(1.5_f32, Color32::from_rgb(51, 65, 85)),
-        );
-
-        // 5. Center Number Display
+        // 5. Center Number Display (Segoe UI Bold)
         painter.text(
             Pos2::new(center.x, center.y - 4.0),
             egui::Align2::CENTER_CENTER,
             format!("{}", self.current_value),
-            egui::FontId::proportional(36.0),
+            egui::FontId::proportional(32.0),
             Theme::TEXT_PRIMARY,
         );
 
-        // 6. Flanking Left & Right Step Buttons
-        let mut delta = None;
-        let left_rect = Rect::from_center_size(
-            Pos2::new(center.x - radius - 24.0, center.y),
-            Vec2::splat(32.0),
-        );
-        let right_rect = Rect::from_center_size(
-            Pos2::new(center.x + radius + 24.0, center.y),
-            Vec2::splat(32.0),
-        );
-
-        let left_resp = ui.interact(left_rect, ui.id().with("dial_prev"), egui::Sense::click());
-        let right_resp = ui.interact(right_rect, ui.id().with("dial_next"), egui::Sense::click());
-
-        let lp = ui.painter_at(left_rect);
-        let left_bg = if left_resp.hovered() {
-            Theme::CARD_HOVER
+        // 6. Sub-title Label Below Number
+        let max_label_len = 24;
+        let display_title = if self.title.len() > max_label_len {
+            format!("{}...", &self.title[..max_label_len - 3])
         } else {
-            Color32::from_rgb(30, 41, 59)
+            self.title.clone()
         };
-        lp.circle_filled(left_rect.center(), 15.0, left_bg);
-        lp.circle_stroke(
-            left_rect.center(),
-            15.0,
-            Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
+
+        painter.text(
+            Pos2::new(center.x, rect.max.y - 14.0),
+            egui::Align2::CENTER_BOTTOM,
+            display_title,
+            egui::FontId::proportional(12.5),
+            Theme::TEXT_SECONDARY,
         );
-        lp.text(
-            left_rect.center(),
+
+        // 7. Left Stepper Button (<)
+        let btn_size = Vec2::splat(32.0);
+        let left_btn_rect =
+            Rect::from_center_size(Pos2::new(rect.min.x + 18.0, center.y), btn_size);
+        let left_btn_resp = ui.interact(
+            left_btn_rect,
+            ui.id().with("dial_left"),
+            egui::Sense::click(),
+        );
+        let lb_hovered = left_btn_resp.hovered();
+        painter.circle_filled(
+            left_btn_rect.center(),
+            15.0,
+            if lb_hovered {
+                Theme::CARD_HOVER
+            } else {
+                Color32::from_rgb(42, 42, 42)
+            },
+        );
+        painter.circle_stroke(
+            left_btn_rect.center(),
+            15.0,
+            Stroke::new(
+                1.0_f32,
+                if lb_hovered {
+                    Theme::BORDER_HOVER
+                } else {
+                    Theme::BORDER_LIGHT
+                },
+            ),
+        );
+        painter.text(
+            left_btn_rect.center(),
             egui::Align2::CENTER_CENTER,
             "<",
-            egui::FontId::proportional(16.0),
-            Theme::TEXT_PRIMARY,
+            egui::FontId::proportional(14.0),
+            if lb_hovered {
+                Theme::TEXT_PRIMARY
+            } else {
+                Theme::TEXT_SECONDARY
+            },
         );
-
-        let rp = ui.painter_at(right_rect);
-        let right_bg = if right_resp.hovered() {
-            Theme::CARD_HOVER
-        } else {
-            Color32::from_rgb(30, 41, 59)
-        };
-        rp.circle_filled(right_rect.center(), 15.0, right_bg);
-        rp.circle_stroke(
-            right_rect.center(),
-            15.0,
-            Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
-        );
-        rp.text(
-            right_rect.center(),
-            egui::Align2::CENTER_CENTER,
-            ">",
-            egui::FontId::proportional(16.0),
-            Theme::TEXT_PRIMARY,
-        );
-
-        if left_resp.clicked() {
+        if left_btn_resp.clicked() {
             delta = Some(-1);
         }
-        if right_resp.clicked() {
+
+        // 8. Right Stepper Button (>)
+        let right_btn_rect =
+            Rect::from_center_size(Pos2::new(rect.max.x - 18.0, center.y), btn_size);
+        let right_btn_resp = ui.interact(
+            right_btn_rect,
+            ui.id().with("dial_right"),
+            egui::Sense::click(),
+        );
+        let rb_hovered = right_btn_resp.hovered();
+        painter.circle_filled(
+            right_btn_rect.center(),
+            15.0,
+            if rb_hovered {
+                Theme::CARD_HOVER
+            } else {
+                Color32::from_rgb(42, 42, 42)
+            },
+        );
+        painter.circle_stroke(
+            right_btn_rect.center(),
+            15.0,
+            Stroke::new(
+                1.0_f32,
+                if rb_hovered {
+                    Theme::BORDER_HOVER
+                } else {
+                    Theme::BORDER_LIGHT
+                },
+            ),
+        );
+        painter.text(
+            right_btn_rect.center(),
+            egui::Align2::CENTER_CENTER,
+            ">",
+            egui::FontId::proportional(14.0),
+            if rb_hovered {
+                Theme::TEXT_PRIMARY
+            } else {
+                Theme::TEXT_SECONDARY
+            },
+        );
+        if right_btn_resp.clicked() {
             delta = Some(1);
         }
-
-        // 7. Title Below Dial
-        painter.text(
-            Pos2::new(center.x, rect.max.y - 6.0),
-            egui::Align2::CENTER_BOTTOM,
-            &self.title,
-            egui::FontId::proportional(17.0),
-            Theme::ACCENT_CYAN,
-        );
 
         delta
     }

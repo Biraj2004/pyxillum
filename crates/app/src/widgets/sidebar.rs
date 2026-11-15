@@ -1,11 +1,11 @@
 //! # Desktop Left Navigation Rail (Sidebar)
 //!
 //! Provides the persistent desktop sidebar for device selection,
-//! real-time BLE connection status, and mode switching.
+//! real-time BLE connection status, and mode switching matching Windows 11 Fluent Design.
 
 use crate::state::{AppScreen, AppState, DashboardMode};
 use crate::theme::Theme;
-use eframe::egui::{self, Color32, Rounding, Stroke, Vec2};
+use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 
 /// Renders the left-hand navigation sidebar.
 pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
@@ -14,15 +14,15 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
         ui.horizontal(|ui| {
             let (icon_rect, _) = ui.allocate_exact_size(Vec2::splat(28.0), egui::Sense::hover());
             let ip = ui.painter_at(icon_rect);
-            ip.circle_filled(icon_rect.center(), 13.0, Theme::ACCENT_BLUE);
-            ip.circle_filled(icon_rect.center(), 6.0, Color32::WHITE);
+            ip.rect_filled(icon_rect, Rounding::same(6.0), Theme::ACCENT_BLUE);
+            ip.circle_filled(icon_rect.center(), 5.0, Color32::WHITE);
 
-            ui.add_space(6.0);
+            ui.add_space(8.0);
             ui.vertical(|ui| {
                 ui.label(
                     egui::RichText::new("PYXILLUM")
                         .strong()
-                        .size(15.0)
+                        .size(14.0)
                         .color(Theme::TEXT_PRIMARY),
                 );
                 ui.label(
@@ -35,33 +35,24 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
 
         ui.add_space(16.0);
         ui.separator();
-        ui.add_space(12.0);
+        ui.add_space(10.0);
 
-        // 2. Hardware Controller Status Section
-        ui.label(
-            egui::RichText::new("HARDWARE CONTROLLER")
-                .size(10.0)
-                .strong()
-                .color(Theme::TEXT_MUTED),
-        );
-        ui.add_space(6.0);
-
+        // 2. Hardware Controller Status Card
         let is_hub = matches!(state.current_screen, AppScreen::DeviceHub);
 
-        // Controller Card in Sidebar
-        let ctrl_bg = if is_hub {
-            Color32::from_rgb(30, 58, 138)
+        let dev_card_bg = if is_hub {
+            Color32::from_rgb(38, 38, 38)
         } else {
-            Color32::from_rgb(19, 27, 46)
+            Theme::WELL_BG
         };
 
         egui::Frame::none()
-            .fill(ctrl_bg)
-            .rounding(Rounding::same(8.0))
+            .fill(dev_card_bg)
+            .rounding(Rounding::same(6.0))
             .stroke(Stroke::new(
                 1.0_f32,
                 if is_hub {
-                    Theme::ACCENT_CYAN
+                    Theme::BORDER_FOCUS
                 } else {
                     Theme::BORDER_LIGHT
                 },
@@ -69,18 +60,23 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
             .inner_margin(egui::Margin::symmetric(10.0, 8.0))
             .show(ui, |ui| {
                 let dev_name = if state.is_connected && !state.active_device_id.is_empty() {
-                    format!("Controller ({})", state.active_device_id)
+                    let short_id = if state.active_device_id.len() >= 8 {
+                        &state.active_device_id[..8]
+                    } else {
+                        &state.active_device_id
+                    };
+                    format!("SP621E ({})", short_id)
                 } else {
                     "No Device Connected".to_string()
                 };
 
                 if ui
                     .add(
-                        egui::Button::new(egui::RichText::new(dev_name).strong().size(12.0).color(
-                            if is_hub {
-                                Color32::WHITE
-                            } else {
+                        egui::Button::new(egui::RichText::new(dev_name).strong().size(11.5).color(
+                            if state.is_connected {
                                 Theme::TEXT_PRIMARY
+                            } else {
+                                Theme::TEXT_SECONDARY
                             },
                         ))
                         .fill(Color32::TRANSPARENT),
@@ -99,153 +95,189 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
                         Theme::TEXT_MUTED
                     };
 
-                    let (dot_rect, _) =
-                        ui.allocate_exact_size(Vec2::splat(10.0), egui::Sense::hover());
-                    ui.painter().circle_filled(dot_rect.center(), 4.0, dot_col);
+                    let (d_rect, _) =
+                        ui.allocate_exact_size(Vec2::splat(8.0), egui::Sense::hover());
+                    ui.painter().circle_filled(d_rect.center(), 3.0, dot_col);
 
-                    let status_lbl = if state.is_connected {
-                        "BLE Link Active"
+                    let status_txt = if state.is_connected {
+                        "Connected (BLE)"
                     } else if state.is_scanning {
-                        "Scanning BLE..."
+                        "Scanning..."
                     } else {
-                        "Offline / Standby"
+                        "Click to Pair"
                     };
 
                     ui.label(
-                        egui::RichText::new(status_lbl)
-                            .size(10.5)
-                            .color(Theme::TEXT_SECONDARY),
+                        egui::RichText::new(status_txt)
+                            .size(10.0)
+                            .color(Theme::TEXT_MUTED),
                     );
                 });
             });
 
-        ui.add_space(8.0);
-
-        // Quick Device Hub shortcut
-        if ui
-            .add(
-                egui::Button::new(
-                    egui::RichText::new("Discovered Controllers")
-                        .size(12.0)
-                        .color(if is_hub {
-                            Theme::ACCENT_CYAN
-                        } else {
-                            Theme::TEXT_SECONDARY
-                        }),
-                )
-                .fill(if is_hub {
-                    Color32::from_rgb(23, 32, 54)
-                } else {
-                    Color32::TRANSPARENT
-                })
-                .rounding(Rounding::same(6.0))
-                .min_size(Vec2::new(ui.available_width(), 28.0)),
-            )
-            .clicked()
-        {
-            state.current_screen = AppScreen::DeviceHub;
-        }
-
         ui.add_space(14.0);
-        ui.separator();
-        ui.add_space(10.0);
 
         // 3. Navigation Modes Section
         ui.label(
-            egui::RichText::new("LIGHTING MODES")
+            egui::RichText::new("STUDIO MODES")
                 .size(10.0)
                 .strong()
                 .color(Theme::TEXT_MUTED),
         );
-        ui.add_space(6.0);
+        ui.add_space(4.0);
 
-        let modes = [
-            (DashboardMode::Dynamic, "Dynamic Patterns (146)"),
-            (DashboardMode::Solid, "Solid Chromatic Wheel"),
-            (DashboardMode::Music, "Music Reactive Spectrum"),
-            (DashboardMode::Diy, "DIY 14-Node Sequencer"),
+        let nav_items = [
+            ("Dynamic FX", "146 Presets", DashboardMode::Dynamic),
+            ("Solid Colour", "CCT & Palette", DashboardMode::Solid),
+            ("Music Rhythm", "18 Audio Styles", DashboardMode::Music),
+            ("DIY Custom", "14-Node Sequencer", DashboardMode::Diy),
         ];
 
-        for (m, label) in modes {
-            let is_sel = !is_hub && state.dashboard_mode == m;
-            let btn = ui.add(
-                egui::Button::new(egui::RichText::new(label).size(12.5).color(if is_sel {
-                    Theme::ACCENT_CYAN
-                } else {
-                    Theme::TEXT_PRIMARY
-                }))
-                .fill(if is_sel {
-                    Color32::from_rgb(30, 58, 138)
-                } else {
-                    Color32::TRANSPARENT
-                })
-                .rounding(Rounding::same(8.0))
-                .min_size(Vec2::new(ui.available_width(), 32.0)),
+        for (title, sub, mode) in nav_items {
+            let is_selected = !is_hub && state.dashboard_mode == mode;
+            let item_h = 40.0;
+            let (item_rect, resp) = ui.allocate_exact_size(
+                Vec2::new(ui.available_width(), item_h),
+                egui::Sense::click(),
             );
 
-            if btn.clicked() {
-                state.current_screen = AppScreen::Dashboard(state.active_device_id.clone());
-                state.dashboard_mode = m;
+            let is_hovered = resp.hovered();
+            let p = ui.painter_at(item_rect);
+
+            let bg = if is_selected {
+                Theme::CARD_BG
+            } else if is_hovered {
+                Color32::from_rgb(34, 34, 34)
+            } else {
+                Color32::TRANSPARENT
+            };
+
+            p.rect_filled(item_rect, Rounding::same(6.0), bg);
+
+            if is_selected {
+                // Windows 11 Fluent Active Indicator (Left Accent Pill)
+                let pill_rect = Rect::from_min_size(
+                    Pos2::new(item_rect.min.x + 2.0, item_rect.center().y - 9.0),
+                    Vec2::new(3.0, 18.0),
+                );
+                p.rect_filled(pill_rect, Rounding::same(1.5), Theme::ACCENT_BLUE);
             }
+
+            // Mode Label & Sub-label
+            let text_x = item_rect.min.x + 14.0;
+            p.text(
+                Pos2::new(text_x, item_rect.min.y + 11.0),
+                egui::Align2::LEFT_CENTER,
+                title,
+                egui::FontId::proportional(12.5),
+                if is_selected {
+                    Theme::TEXT_PRIMARY
+                } else {
+                    Theme::TEXT_SECONDARY
+                },
+            );
+
+            p.text(
+                Pos2::new(text_x, item_rect.min.y + 26.0),
+                egui::Align2::LEFT_CENTER,
+                sub,
+                egui::FontId::proportional(10.0),
+                Theme::TEXT_MUTED,
+            );
+
+            if resp.clicked() {
+                state.dashboard_mode = mode;
+                if is_hub {
+                    state.current_screen = AppScreen::Dashboard(state.active_device_id.clone());
+                }
+            }
+
+            ui.add_space(2.0);
         }
 
-        ui.add_space(14.0);
+        ui.add_space(8.0);
         ui.separator();
-        ui.add_space(10.0);
-
-        // 4. Configuration Utilities
-        ui.label(
-            egui::RichText::new("CONFIGURATION")
-                .size(10.0)
-                .strong()
-                .color(Theme::TEXT_MUTED),
-        );
         ui.add_space(6.0);
 
-        if ui
-            .add(
-                egui::Button::new(
-                    egui::RichText::new("Hardware EEPROM Settings")
-                        .size(12.0)
-                        .color(Theme::TEXT_SECONDARY),
-                )
-                .fill(Color32::TRANSPARENT)
-                .rounding(Rounding::same(6.0))
-                .min_size(Vec2::new(ui.available_width(), 28.0)),
-            )
-            .clicked()
-        {
-            state.show_settings_modal = true;
+        // 4. Device Hub Navigation Item
+        let hub_h = 36.0;
+        let (hub_rect, hub_resp) =
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), hub_h), egui::Sense::click());
+        let hp = ui.painter_at(hub_rect);
+        let hub_hovered = hub_resp.hovered();
+
+        let hub_bg = if is_hub {
+            Theme::CARD_BG
+        } else if hub_hovered {
+            Color32::from_rgb(34, 34, 34)
+        } else {
+            Color32::TRANSPARENT
+        };
+
+        hp.rect_filled(hub_rect, Rounding::same(6.0), hub_bg);
+
+        if is_hub {
+            let pill_rect = Rect::from_min_size(
+                Pos2::new(hub_rect.min.x + 2.0, hub_rect.center().y - 8.0),
+                Vec2::new(3.0, 16.0),
+            );
+            hp.rect_filled(pill_rect, Rounding::same(1.5), Theme::ACCENT_BLUE);
         }
 
-        if ui
-            .add(
-                egui::Button::new(
-                    egui::RichText::new("Documentation & Protocol")
-                        .size(12.0)
-                        .color(Theme::TEXT_SECONDARY),
-                )
-                .fill(Color32::TRANSPARENT)
-                .rounding(Rounding::same(6.0))
-                .min_size(Vec2::new(ui.available_width(), 28.0)),
-            )
-            .clicked()
-        {
-            state.show_help_modal = true;
+        hp.text(
+            Pos2::new(hub_rect.min.x + 14.0, hub_rect.center().y),
+            egui::Align2::LEFT_CENTER,
+            "Devices & Pairing",
+            egui::FontId::proportional(12.5),
+            if is_hub {
+                Theme::TEXT_PRIMARY
+            } else {
+                Theme::TEXT_SECONDARY
+            },
+        );
+
+        if hub_resp.clicked() {
+            state.current_screen = AppScreen::DeviceHub;
         }
 
+        // 5. Spacer & Bottom Controls
         ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+            ui.add_space(6.0);
+
+            // Diagnostics / Status Line
+            let short_status = if state.status_message.len() > 32 {
+                format!("{}...", &state.status_message[..29])
+            } else {
+                state.status_message.clone()
+            };
+            ui.label(
+                egui::RichText::new(short_status)
+                    .size(9.5)
+                    .color(Theme::TEXT_MUTED),
+            );
+
+            ui.add_space(6.0);
+
+            // Hardware Settings Button (Safety Gated)
+            if ui
+                .add(
+                    egui::Button::new(
+                        egui::RichText::new("Settings & Hardware")
+                            .size(11.5)
+                            .color(Theme::TEXT_SECONDARY),
+                    )
+                    .fill(Color32::from_rgb(34, 34, 34))
+                    .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
+                    .rounding(Rounding::same(6.0))
+                    .min_size(Vec2::new(ui.available_width(), 32.0)),
+                )
+                .clicked()
+            {
+                state.show_settings_modal = true;
+            }
+
             ui.add_space(8.0);
-            ui.label(
-                egui::RichText::new("v0.1.0 Native Windows Engine")
-                    .size(9.5)
-                    .color(Theme::TEXT_MUTED),
-            );
-            ui.label(
-                egui::RichText::new("SP621E / SP6xxE Hardware")
-                    .size(9.5)
-                    .color(Theme::TEXT_MUTED),
-            );
+            ui.separator();
         });
     });
 }

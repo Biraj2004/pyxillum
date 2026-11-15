@@ -16,7 +16,7 @@ use crate::screens::{
     render_settings_modal, render_solid_mode, DeviceHubAction,
 };
 use crate::state::{AppScreen, AppState, DashboardMode, DeviceCardInfo, GuiCommand, GuiEvent};
-use crate::theme::Theme;
+use crate::theme::{render_card, render_toggle_switch, Theme};
 use crate::widgets::{render_effect_drawer, render_neon_strip, render_sidebar};
 use crate::windows_media::{NowPlayingInfo, WindowsAudioService};
 
@@ -42,23 +42,36 @@ impl PyxillumApp {
         state_reader: Arc<tokio::sync::RwLock<DeviceState>>,
         simulator_ref: Option<Arc<Mutex<DeviceSimulator>>>,
     ) -> Self {
-        // Configure modern dark theme visuals
+        // Configure authentic Windows 11 Dark Mica visuals
         let mut visuals = egui::Visuals::dark();
         visuals.panel_fill = Theme::CANVAS_BG;
         visuals.window_fill = Theme::CARD_BG;
         visuals.window_stroke = Stroke::new(1.0_f32, Theme::BORDER_LIGHT);
+        visuals.window_rounding = Rounding::same(8.0);
         visuals.widgets.noninteractive.bg_fill = Theme::CARD_BG;
         visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0_f32, Theme::BORDER_LIGHT);
         visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0_f32, Theme::TEXT_PRIMARY);
-        visuals.widgets.inactive.bg_fill = Color32::from_rgb(23, 32, 54);
+        visuals.widgets.noninteractive.rounding = Rounding::same(6.0);
+
+        visuals.widgets.inactive.bg_fill = Theme::WELL_BG;
         visuals.widgets.inactive.bg_stroke = Stroke::new(1.0_f32, Theme::BORDER_LIGHT);
         visuals.widgets.inactive.fg_stroke = Stroke::new(1.0_f32, Theme::TEXT_SECONDARY);
+        visuals.widgets.inactive.rounding = Rounding::same(6.0);
+
         visuals.widgets.hovered.bg_fill = Theme::CARD_HOVER;
-        visuals.widgets.hovered.bg_stroke = Stroke::new(1.0_f32, Theme::ACCENT_CYAN);
+        visuals.widgets.hovered.bg_stroke = Stroke::new(1.0_f32, Theme::BORDER_HOVER);
         visuals.widgets.hovered.fg_stroke = Stroke::new(1.0_f32, Theme::TEXT_PRIMARY);
-        visuals.widgets.active.bg_fill = Color32::from_rgb(30, 58, 138);
-        visuals.widgets.active.bg_stroke = Stroke::new(1.0_f32, Theme::ACCENT_CYAN);
+        visuals.widgets.hovered.rounding = Rounding::same(6.0);
+
+        visuals.widgets.active.bg_fill = Theme::ACCENT_BLUE;
+        visuals.widgets.active.bg_stroke = Stroke::new(1.0_f32, Theme::ACCENT_BLUE_HOVER);
         visuals.widgets.active.fg_stroke = Stroke::new(1.0_f32, Color32::WHITE);
+        visuals.widgets.active.rounding = Rounding::same(6.0);
+
+        visuals.selection.bg_fill = Theme::ACCENT_BLUE;
+        visuals.selection.stroke = Stroke::new(1.0_f32, Theme::ACCENT_BLUE_HOVER);
+        visuals.slider_trailing_fill = true;
+
         cc.egui_ctx.set_visuals(visuals);
 
         let audio_service = WindowsAudioService::new();
@@ -129,11 +142,11 @@ impl PyxillumApp {
                 for i in 0..num_pixels {
                     let pos_ratio = i as f32 / num_pixels as f32;
                     let hue = match self.state.ui_effect {
-                        0x01 => (pos_ratio * 360.0 + t * 60.0) % 360.0, // Rainbow Flow
-                        0x09 => 20.0 + (pos_ratio * 30.0 + t * 40.0).sin().abs() * 35.0, // Fire
-                        0x0F => 0.0,                                    // Comet Red
-                        0x11 => 220.0,                                  // Comet Blue
-                        146 => (pos_ratio * 180.0 + 180.0) % 360.0,     // Gradient
+                        0x01 => (pos_ratio * 360.0 + t * 60.0) % 360.0, // Rainbow
+                        0x09 => 20.0 + (pos_ratio * 30.0 + t * 40.0).sin().abs() * 35.0, // Red Yellow Fire
+                        0x0F => 0.0,                                // Red Comet
+                        0x11 => 220.0,                              // Blue Comet
+                        146 => (pos_ratio * 180.0 + 180.0) % 360.0, // Gradient
                         _ => (pos_ratio * 360.0 + t * 40.0) % 360.0,
                     };
 
@@ -162,7 +175,7 @@ impl PyxillumApp {
                         let b = (b * 255.0 * brightness_factor) as u8;
                         self.state.strip_pixels.push(RgbColor::new(r, g, b));
                     } else {
-                        self.state.strip_pixels.push(RgbColor::new(15, 23, 42));
+                        self.state.strip_pixels.push(RgbColor::new(26, 26, 26));
                     }
                 }
             }
@@ -284,7 +297,7 @@ impl eframe::App for PyxillumApp {
                 egui::Frame::none()
                     .fill(Theme::SIDEBAR_BG)
                     .stroke(Stroke::new(1.0_f32, Theme::SIDEBAR_BORDER))
-                    .inner_margin(egui::Margin::symmetric(16.0, 18.0)),
+                    .inner_margin(egui::Margin::symmetric(14.0, 16.0)),
             )
             .show(ctx, |ui| {
                 render_sidebar(ui, &mut self.state);
@@ -295,7 +308,7 @@ impl eframe::App for PyxillumApp {
             .frame(
                 egui::Frame::none()
                     .fill(Theme::CANVAS_BG)
-                    .inner_margin(egui::Margin::symmetric(20.0, 16.0)),
+                    .inner_margin(egui::Margin::symmetric(20.0, 14.0)),
             )
             .show(ctx, |ui| {
                 // Top Header Action Bar
@@ -303,12 +316,20 @@ impl eframe::App for PyxillumApp {
 
                 ui.add_space(10.0);
 
-                // Embedded 60 FPS Strip Simulation Monitor
-                render_neon_strip(ui, &self.state.strip_pixels, self.state.ui_power);
+                // Centered LED Strip Monitor
+                let strip_max_w = 840.0_f32.min(ui.available_width());
+                let strip_pad = ((ui.available_width() - strip_max_w) / 2.0).max(0.0);
+                ui.horizontal(|ui| {
+                    ui.add_space(strip_pad);
+                    ui.vertical(|ui| {
+                        ui.set_max_width(strip_max_w);
+                        render_neon_strip(ui, &self.state.strip_pixels, self.state.ui_power);
+                    });
+                });
 
-                ui.add_space(14.0);
+                ui.add_space(12.0);
 
-                // Responsive Multi-Pane Stage inside ScrollArea
+                // Main Stage inside ScrollArea
                 egui::ScrollArea::vertical()
                     .auto_shrink([false, false])
                     .show(ui, |ui| match &self.state.current_screen {
@@ -331,72 +352,41 @@ impl eframe::App for PyxillumApp {
                         }
                         AppScreen::Dashboard(_) => {
                             let avail_w = ui.available_width();
-                            let is_wide = avail_w >= 940.0;
-                            let show_split_drawer =
-                                is_wide && self.state.dashboard_mode == DashboardMode::Dynamic;
+                            let is_wide = avail_w >= 1100.0;
+                            let show_split_drawer = is_wide
+                                && self.state.dashboard_mode == DashboardMode::Dynamic
+                                && self.state.show_effect_drawer;
 
                             if show_split_drawer {
                                 // Two-Column Desktop Layout: Center Controls + Right Preset Drawer
                                 ui.columns(2, |cols| {
-                                    // Left Column: Interactive Dial & Controls
                                     cols[0].vertical(|ui| {
-                                        egui::Frame::none()
-                                            .fill(Theme::CARD_BG)
-                                            .rounding(Rounding::same(16.0))
-                                            .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                                            .inner_margin(egui::Margin::symmetric(24.0, 20.0))
-                                            .show(ui, |ui| {
-                                                self.render_active_screen_content(ui);
-                                            });
+                                        self.render_active_screen_content(ui);
                                     });
 
-                                    // Right Column: Full 146-Effect Preset Catalog
                                     cols[1].vertical(|ui| {
-                                        egui::Frame::none()
-                                            .fill(Theme::CARD_BG)
-                                            .rounding(Rounding::same(16.0))
-                                            .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                                            .inner_margin(egui::Margin::symmetric(20.0, 16.0))
-                                            .show(ui, |ui| {
-                                                ui.label(
-                                                    egui::RichText::new(
-                                                        "Lighting Styles Catalog (146)",
-                                                    )
+                                        render_card(ui, 8.0, |ui| {
+                                            ui.label(
+                                                egui::RichText::new("Preset Styles Catalog (146)")
                                                     .strong()
-                                                    .size(15.0)
+                                                    .size(14.0)
                                                     .color(Theme::TEXT_PRIMARY),
-                                                );
-                                                ui.add_space(6.0);
-                                                if let Some(code) =
-                                                    render_effect_drawer(ui, &mut self.state)
-                                                {
-                                                    self.state.ui_effect = code;
-                                                    self.send(GuiCommand::SendCommand(
-                                                        Command::SetEffect(code),
-                                                    ));
-                                                }
-                                            });
+                                            );
+                                            ui.add_space(6.0);
+                                            if let Some(code) =
+                                                render_effect_drawer(ui, &mut self.state)
+                                            {
+                                                self.state.ui_effect = code;
+                                                self.send(GuiCommand::SendCommand(
+                                                    Command::SetEffect(code),
+                                                ));
+                                            }
+                                        });
                                     });
                                 });
                             } else {
-                                // Centered Single Stage: Max width constrained to 740px
-                                ui.vertical_centered(|ui| {
-                                    let stage_w = avail_w.min(740.0);
-                                    ui.allocate_ui_with_layout(
-                                        Vec2::new(stage_w, ui.available_height()),
-                                        egui::Layout::top_down(egui::Align::Center),
-                                        |ui| {
-                                            egui::Frame::none()
-                                                .fill(Theme::CARD_BG)
-                                                .rounding(Rounding::same(16.0))
-                                                .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                                                .inner_margin(egui::Margin::symmetric(24.0, 20.0))
-                                                .show(ui, |ui| {
-                                                    self.render_active_screen_content(ui);
-                                                });
-                                        },
-                                    );
-                                });
+                                // Centered Single Stage
+                                self.render_active_screen_content(ui);
                             }
                         }
                     });
@@ -419,8 +409,8 @@ impl eframe::App for PyxillumApp {
 
         // Floating Effect Drawer Modal (when not in wide two-column mode)
         let avail_w = ctx.screen_rect().width();
-        if self.state.show_effect_drawer && avail_w < 1140.0 {
-            egui::Window::new("146 Lighting Styles Preset Drawer")
+        if self.state.show_effect_drawer && avail_w < 1100.0 {
+            egui::Window::new("146 Lighting Styles Preset Catalog")
                 .collapsible(false)
                 .resizable(true)
                 .default_size(Vec2::new(380.0, 520.0))
@@ -441,19 +431,19 @@ impl eframe::App for PyxillumApp {
 impl PyxillumApp {
     fn render_top_header(&mut self, ui: &mut egui::Ui) {
         let (rect, _) =
-            ui.allocate_exact_size(Vec2::new(ui.available_width(), 48.0), egui::Sense::hover());
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 46.0), egui::Sense::hover());
         let p = ui.painter_at(rect);
-        p.rect_filled(rect, Rounding::same(10.0), Theme::HEADER_BG);
+        p.rect_filled(rect, Rounding::same(8.0), Theme::HEADER_BG);
         p.rect_stroke(
             rect,
-            Rounding::same(10.0),
+            Rounding::same(8.0),
             Stroke::new(1.0_f32, Theme::HEADER_BORDER),
         );
 
-        // Left Section: Breadcrumb / Back button & Device title
-        let left_w = 280.0;
+        // Left Section: Breadcrumb & Title
+        let left_w = 320.0;
         let left_rect = Rect::from_min_size(
-            Pos2::new(rect.min.x + 8.0, rect.min.y),
+            Pos2::new(rect.min.x + 10.0, rect.min.y),
             Vec2::new(left_w, rect.height()),
         );
         ui.allocate_ui_at_rect(left_rect, |left_ui| {
@@ -465,11 +455,12 @@ impl PyxillumApp {
                             .add(
                                 egui::Button::new(
                                     egui::RichText::new("< Devices")
-                                        .size(12.5)
-                                        .color(Theme::ACCENT_CYAN),
+                                        .size(11.5)
+                                        .color(Theme::TEXT_SECONDARY),
                                 )
-                                .fill(Color32::from_rgb(23, 32, 54))
-                                .rounding(Rounding::same(6.0)),
+                                .fill(Theme::WELL_BG)
+                                .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
+                                .rounding(Rounding::same(4.0)),
                             )
                             .clicked()
                         {
@@ -478,11 +469,12 @@ impl PyxillumApp {
 
                         left_ui.add_space(8.0);
                         let display_title = if !self.state.active_device_id.is_empty() {
-                            format!(
-                                "Controller ({})",
+                            let short_id = if self.state.active_device_id.len() >= 8 {
+                                &self.state.active_device_id[..8]
+                            } else {
                                 &self.state.active_device_id
-                                    [..self.state.active_device_id.len().min(8)]
-                            )
+                            };
+                            format!("SP621E ({})", short_id)
                         } else {
                             "SP621E Controller".to_string()
                         };
@@ -490,7 +482,7 @@ impl PyxillumApp {
                         left_ui.label(
                             egui::RichText::new(display_title)
                                 .strong()
-                                .size(14.0)
+                                .size(13.5)
                                 .color(Theme::TEXT_PRIMARY),
                         );
 
@@ -501,21 +493,21 @@ impl PyxillumApp {
                             Theme::TEXT_MUTED
                         };
                         let (d_rect, _) =
-                            left_ui.allocate_exact_size(Vec2::splat(10.0), egui::Sense::hover());
+                            left_ui.allocate_exact_size(Vec2::splat(8.0), egui::Sense::hover());
                         left_ui
                             .painter()
-                            .circle_filled(d_rect.center(), 3.5, dot_col);
+                            .circle_filled(d_rect.center(), 3.0, dot_col);
                     } else {
                         left_ui.label(
                             egui::RichText::new("Pyxillum Device Studio")
                                 .strong()
-                                .size(15.0)
+                                .size(14.0)
                                 .color(Theme::TEXT_PRIMARY),
                         );
                         left_ui.add_space(6.0);
                         left_ui.label(
-                            egui::RichText::new("Bluetooth Low Energy")
-                                .size(11.5)
+                            egui::RichText::new("BLE Peripheral Hub")
+                                .size(11.0)
                                 .color(Theme::TEXT_MUTED),
                         );
                     }
@@ -523,98 +515,45 @@ impl PyxillumApp {
             );
         });
 
-        // Center Section: Mode Tabs (when on Dashboard)
-        if matches!(self.state.current_screen, AppScreen::Dashboard(_)) {
-            let center_x = rect.center().x;
-            let tab_bar_w = 340.0;
-            let tab_rect = Rect::from_center_size(
-                Pos2::new(center_x, rect.center().y),
-                Vec2::new(tab_bar_w, 32.0),
-            );
-            ui.allocate_ui_at_rect(tab_rect, |center_ui| {
-                center_ui.with_layout(
-                    egui::Layout::left_to_right(egui::Align::Center),
-                    |center_ui| {
-                        let modes = [
-                            (DashboardMode::Dynamic, "Dynamic"),
-                            (DashboardMode::Solid, "Solid"),
-                            (DashboardMode::Music, "Music"),
-                            (DashboardMode::Diy, "DIY"),
-                        ];
-
-                        for (m, lbl) in modes {
-                            let is_sel = self.state.dashboard_mode == m;
-                            let btn = egui::Button::new(
-                                egui::RichText::new(lbl)
-                                    .size(12.0)
-                                    .strong()
-                                    .color(if is_sel {
-                                        Color32::WHITE
-                                    } else {
-                                        Theme::TEXT_SECONDARY
-                                    }),
-                            )
-                            .fill(if is_sel {
-                                Theme::ACCENT_BLUE
-                            } else {
-                                Color32::TRANSPARENT
-                            })
-                            .rounding(Rounding::same(6.0))
-                            .min_size(Vec2::new(76.0, 26.0));
-
-                            if center_ui.add(btn).clicked() {
-                                self.state.dashboard_mode = m;
-                            }
-                            center_ui.add_space(4.0);
-                        }
-                    },
-                );
-            });
-        }
-
-        // Right Section: Power Button & Settings
+        // Right Section: Power ToggleSwitch & Settings Button
         let right_rect = Rect::from_min_max(
-            Pos2::new(rect.max.x - 200.0, rect.min.y),
-            Pos2::new(rect.max.x - 8.0, rect.max.y),
+            Pos2::new(rect.max.x - 220.0, rect.min.y),
+            Pos2::new(rect.max.x - 10.0, rect.max.y),
         );
         ui.allocate_ui_at_rect(right_rect, |right_ui| {
             right_ui.with_layout(
                 egui::Layout::right_to_left(egui::Align::Center),
                 |right_ui| {
-                    // Power Switch Button
-                    let (pwr_rect, pwr_resp) =
-                        right_ui.allocate_exact_size(Vec2::splat(32.0), egui::Sense::click());
-                    let pwr_p = right_ui.painter_at(pwr_rect);
-                    let pwr_col = if self.state.ui_power {
-                        Theme::ACCENT_RED
-                    } else {
-                        Color32::from_rgb(71, 85, 105)
-                    };
-                    pwr_p.circle_filled(pwr_rect.center(), 15.0, pwr_col);
-                    pwr_p.text(
-                        pwr_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        "P",
-                        egui::FontId::proportional(14.0),
-                        Color32::WHITE,
-                    );
-
-                    if pwr_resp.clicked() {
-                        self.state.ui_power = !self.state.ui_power;
-                        self.send(GuiCommand::SendCommand(Command::Power(self.state.ui_power)));
+                    // Master Power ToggleSwitch
+                    let mut power_val = self.state.ui_power;
+                    if render_toggle_switch(right_ui, &mut power_val).clicked() {
+                        self.state.ui_power = power_val;
+                        self.send(GuiCommand::SendCommand(Command::Power(power_val)));
                     }
 
-                    right_ui.add_space(10.0);
+                    right_ui.add_space(6.0);
+                    let power_lbl = if self.state.ui_power { "On" } else { "Off" };
+                    right_ui.label(egui::RichText::new(power_lbl).size(11.5).color(
+                        if self.state.ui_power {
+                            Theme::TEXT_PRIMARY
+                        } else {
+                            Theme::TEXT_MUTED
+                        },
+                    ));
 
+                    right_ui.add_space(14.0);
+
+                    // Settings Icon Button
                     if right_ui
                         .add(
                             egui::Button::new(
                                 egui::RichText::new("Settings")
-                                    .size(12.0)
+                                    .size(11.5)
                                     .color(Theme::TEXT_SECONDARY),
                             )
-                            .fill(Color32::from_rgb(23, 32, 54))
-                            .rounding(Rounding::same(6.0)),
+                            .fill(Theme::WELL_BG)
+                            .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
+                            .rounding(Rounding::same(4.0)),
                         )
                         .clicked()
                     {

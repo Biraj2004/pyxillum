@@ -5,7 +5,7 @@
 
 use crate::catalog::get_music_mode_name;
 use crate::state::AppState;
-use crate::theme::{render_source_pill, Theme};
+use crate::theme::{render_card, render_source_pill, Theme};
 use crate::widgets::ArcDial;
 use crate::windows_media::NowPlayingInfo;
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
@@ -18,179 +18,213 @@ pub fn render_music_mode(
 ) -> bool {
     let mut state_changed = false;
 
-    ui.vertical_centered(|ui| {
-        // 1. Large Circular Music Dial
-        let mode_name = get_music_mode_name(state.music_mode_index);
-        let mut dial = ArcDial::new(state.music_mode_index as u32, 18, mode_name);
-        if let Some(delta) = dial.show(ui) {
-            let next_val = (state.music_mode_index as i32 + delta).clamp(1, 18) as u8;
-            if next_val != state.music_mode_index {
-                state.music_mode_index = next_val;
-                state_changed = true;
-            }
-        }
+    // Constrain width to 680px centered for balanced desktop proportion
+    let max_w = 680.0_f32.min(ui.available_width());
+    let pad = ((ui.available_width() - max_w) / 2.0).max(0.0);
 
-        ui.add_space(10.0);
+    ui.horizontal(|ui| {
+        ui.add_space(pad);
+        ui.vertical(|ui| {
+            ui.set_max_width(max_w);
 
-        // 2. Windows System Media Transport Controls (GSMTC) Banner
-        let banner_w = (ui.available_width() - 40.0).clamp(280.0, 480.0);
-        let (banner_rect, _) =
-            ui.allocate_exact_size(Vec2::new(banner_w, 42.0), egui::Sense::hover());
-        let bp = ui.painter_at(banner_rect);
+            // 1. Music Dial Hero Card
+            render_card(ui, 8.0, |ui| {
+                ui.vertical_centered(|ui| {
+                    let mode_name = get_music_mode_name(state.music_mode_index);
+                    let mut dial = ArcDial::new(state.music_mode_index as u32, 18, mode_name);
+                    if let Some(delta) = dial.show(ui) {
+                        let next_val = (state.music_mode_index as i32 + delta).clamp(1, 18) as u8;
+                        if next_val != state.music_mode_index {
+                            state.music_mode_index = next_val;
+                            state_changed = true;
+                        }
+                    }
 
-        bp.rect_filled(
-            banner_rect,
-            Rounding::same(10.0),
-            Color32::from_rgb(23, 32, 54),
-        );
-        bp.rect_stroke(
-            banner_rect,
-            Rounding::same(10.0),
-            Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
-        );
+                    ui.add_space(10.0);
 
-        let icon_rect = Rect::from_min_size(
-            Pos2::new(banner_rect.min.x + 10.0, banner_rect.min.y + 10.0),
-            Vec2::splat(22.0),
-        );
-        bp.rect_filled(icon_rect, Rounding::same(5.0), Theme::ACCENT_BLUE);
-        bp.text(
-            icon_rect.center(),
-            egui::Align2::CENTER_CENTER,
-            "P",
-            egui::FontId::proportional(11.0),
-            Color32::WHITE,
-        );
+                    // Audio Source Selector Pills
+                    ui.horizontal(|ui| {
+                        let bar_w = ui.available_width();
+                        ui.add_space(((bar_w - 300.0) / 2.0).max(0.0));
 
-        let track_text = if !now_playing.title.is_empty() {
-            format!(
-                "Now Playing: {} - {}",
-                now_playing.title, now_playing.artist
-            )
-        } else {
-            "Windows Audio: Ready / Monitoring WASAPI Output".to_string()
-        };
+                        let is_stream = state.ui_audio_input == AudioInput::Player;
+                        if render_source_pill(ui, "PC Media", is_stream).clicked() {
+                            state.ui_audio_input = AudioInput::Player;
+                            state_changed = true;
+                        }
+                        ui.add_space(8.0);
 
-        bp.text(
-            Pos2::new(banner_rect.min.x + 40.0, banner_rect.center().y),
-            egui::Align2::LEFT_CENTER,
-            track_text,
-            egui::FontId::proportional(11.5),
-            Theme::TEXT_PRIMARY,
-        );
+                        let is_int_mic = state.ui_audio_input == AudioInput::InternalMic;
+                        if render_source_pill(ui, "Device Mic", is_int_mic).clicked() {
+                            state.ui_audio_input = AudioInput::InternalMic;
+                            state_changed = true;
+                        }
+                        ui.add_space(8.0);
 
-        ui.add_space(12.0);
+                        let is_ext_mic = state.ui_audio_input == AudioInput::ExternalMic;
+                        if render_source_pill(ui, "Host Mic", is_ext_mic).clicked() {
+                            state.ui_audio_input = AudioInput::ExternalMic;
+                            state_changed = true;
+                        }
+                    });
+                });
+            });
 
-        // 3. 16-Band Graphic Equalizer
-        render_equalizer_bars(ui, state);
+            ui.add_space(12.0);
 
-        ui.add_space(14.0);
+            // 2. Windows Media Transport Banner (GSMTC)
+            let (banner_rect, _) =
+                ui.allocate_exact_size(Vec2::new(max_w, 44.0), egui::Sense::hover());
+            let bp = ui.painter_at(banner_rect);
 
-        // 4. Audio Input Source Selector
-        ui.horizontal(|ui| {
-            let bar_w = ui.available_width();
-            ui.add_space(((bar_w - 320.0) / 2.0).max(0.0));
-
-            if render_source_pill(ui, "Auto Cycle", false).clicked() {
-                // Auto cycle
-            }
-            ui.add_space(8.0);
-
-            let is_stream = state.ui_audio_input == AudioInput::Player;
-            if render_source_pill(ui, "PC Stream", is_stream).clicked() {
-                state.ui_audio_input = AudioInput::Player;
-                state.sync_with_windows_audio = true;
-                state_changed = true;
-            }
-            ui.add_space(8.0);
-
-            let is_host = state.ui_audio_input == AudioInput::ExternalMic;
-            if render_source_pill(ui, "Host Mic", is_host).clicked() {
-                state.ui_audio_input = AudioInput::ExternalMic;
-                state.sync_with_windows_audio = false;
-                state_changed = true;
-            }
-            ui.add_space(8.0);
-
-            let is_int = state.ui_audio_input == AudioInput::InternalMic;
-            if render_source_pill(ui, "Device Mic", is_int).clicked() {
-                state.ui_audio_input = AudioInput::InternalMic;
-                state.sync_with_windows_audio = false;
-                state_changed = true;
-            }
-        });
-
-        ui.add_space(12.0);
-
-        // 5. Sensitivity Slider
-        ui.horizontal(|ui| {
-            let w = ui.available_width();
-            ui.add_space(((w - 280.0) / 2.0).max(0.0));
-            ui.label(
-                egui::RichText::new("Mic Sensitivity:")
-                    .size(12.0)
-                    .color(Theme::TEXT_SECONDARY),
+            bp.rect_filled(banner_rect, Rounding::same(8.0), Theme::CARD_BG);
+            bp.rect_stroke(
+                banner_rect,
+                Rounding::same(8.0),
+                Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
             );
-            if ui
-                .add(egui::Slider::new(&mut state.ui_sensitivity, 1..=16).show_value(true))
-                .changed()
-            {
-                state_changed = true;
-            }
+
+            let icon_rect = Rect::from_min_size(
+                Pos2::new(banner_rect.min.x + 12.0, banner_rect.center().y - 10.0),
+                Vec2::splat(20.0),
+            );
+            bp.rect_filled(icon_rect, Rounding::same(4.0), Theme::ACCENT_BLUE);
+            bp.text(
+                icon_rect.center(),
+                egui::Align2::CENTER_CENTER,
+                "M",
+                egui::FontId::proportional(11.0),
+                Color32::WHITE,
+            );
+
+            let track_text = if !now_playing.title.is_empty() {
+                format!(
+                    "Now Playing: {} - {}",
+                    now_playing.title, now_playing.artist
+                )
+            } else {
+                "Windows Audio: Monitoring active system audio playback".to_string()
+            };
+
+            bp.text(
+                Pos2::new(banner_rect.min.x + 40.0, banner_rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                track_text,
+                egui::FontId::proportional(12.0),
+                Theme::TEXT_PRIMARY,
+            );
+
+            ui.add_space(12.0);
+
+            // 3. Graphic Equalizer Visualizer Card
+            render_card(ui, 8.0, |ui| {
+                ui.vertical(|ui| {
+                    ui.label(
+                        egui::RichText::new("Acoustic Spectrum")
+                            .size(12.0)
+                            .color(Theme::TEXT_SECONDARY),
+                    );
+                    ui.add_space(6.0);
+                    render_equalizer_bars(ui, state);
+                });
+            });
+
+            ui.add_space(12.0);
+
+            // 4. Sensitivity & Brightness Sliders
+            ui.columns(2, |cols| {
+                // Sensitivity Card
+                cols[0].group(|ui| {
+                    ui.set_width(ui.available_width());
+                    ui.vertical(|ui| {
+                        ui.label(
+                            egui::RichText::new("Acoustic Sensitivity")
+                                .size(12.0)
+                                .color(Theme::TEXT_SECONDARY),
+                        );
+                        ui.label(
+                            egui::RichText::new(format!("Level {} / 16", state.ui_sensitivity))
+                                .strong()
+                                .size(18.0)
+                                .color(Theme::ACCENT_BLUE),
+                        );
+                        ui.add_space(4.0);
+                        if ui
+                            .add(
+                                egui::Slider::new(&mut state.ui_sensitivity, 1..=16)
+                                    .show_value(false),
+                            )
+                            .changed()
+                        {
+                            state_changed = true;
+                        }
+                    });
+                });
+
+                // Brightness Card
+                cols[1].group(|ui| {
+                    ui.set_width(ui.available_width());
+                    ui.vertical(|ui| {
+                        ui.label(
+                            egui::RichText::new("Master Brightness")
+                                .size(12.0)
+                                .color(Theme::TEXT_SECONDARY),
+                        );
+                        let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+                        ui.label(
+                            egui::RichText::new(format!("{}%", pct))
+                                .strong()
+                                .size(18.0)
+                                .color(Theme::TEXT_PRIMARY),
+                        );
+                        ui.add_space(4.0);
+                        if ui
+                            .add(
+                                egui::Slider::new(&mut state.ui_brightness, 0..=255)
+                                    .show_value(false),
+                            )
+                            .changed()
+                        {
+                            state_changed = true;
+                        }
+                    });
+                });
+            });
         });
     });
 
     state_changed
 }
 
+/// Helper that renders 16 animated spectrum bars tracking live audio peak.
 fn render_equalizer_bars(ui: &mut egui::Ui, state: &AppState) {
-    let eq_w = (ui.available_width() - 40.0).clamp(280.0, 480.0);
-    let (rect, _) = ui.allocate_exact_size(Vec2::new(eq_w, 60.0), egui::Sense::hover());
-    let painter = ui.painter_at(rect);
+    let avail_w = ui.available_width().max(200.0);
+    let h = 48.0;
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(avail_w, h), egui::Sense::hover());
+    let p = ui.painter_at(rect);
 
-    painter.rect_filled(rect, Rounding::same(10.0), Color32::from_rgb(17, 24, 39));
-    painter.rect_stroke(
-        rect,
-        Rounding::same(10.0),
-        Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
-    );
+    p.rect_filled(rect, Rounding::same(6.0), Theme::WELL_BG);
 
-    let bars = 16;
-    let spacing = rect.width() / (bars as f32);
-    let bar_w = spacing * 0.62;
+    let num_bars = 16;
+    let bar_w = ((rect.width() - 20.0) / num_bars as f32) - 4.0;
+    let max_bar_h = rect.height() - 12.0;
 
-    for i in 0..bars {
-        let freq = i as f32 * 1.35;
-        let height_factor = if state.ui_power {
-            if state.sync_with_windows_audio && state.live_audio_peak > 0.01 {
-                let harmonic = (state.audio_visualizer_timer * 12.0 + freq).sin() * 0.35 + 0.65;
-                (state.live_audio_peak * harmonic).clamp(0.08, 0.98)
-            } else {
-                let wave = ((state.audio_visualizer_timer * 8.0 + freq).sin() * 0.4 + 0.5)
-                    * ((state.audio_visualizer_timer * 3.7 + freq * 2.1).cos() * 0.3 + 0.7);
-                wave.clamp(0.1, 0.95)
-            }
-        } else {
-            0.04
-        };
+    for i in 0..num_bars {
+        let harmonic = ((i as f32 * 0.45 + state.audio_visualizer_timer * 6.0).sin() * 0.5 + 0.5)
+            * state.live_audio_peak;
+        let bar_h = (max_bar_h * harmonic.clamp(0.08, 1.0)).max(3.0);
+        let x = rect.min.x + 10.0 + (i as f32) * (bar_w + 4.0);
+        let y = rect.max.y - 6.0 - bar_h;
+        let b_rect = Rect::from_min_size(Pos2::new(x, y), Vec2::new(bar_w, bar_h));
 
-        let bar_h = rect.height() * height_factor * (state.ui_sensitivity as f32 / 16.0);
-        let bar_rect = Rect::from_min_size(
-            Pos2::new(
-                rect.min.x + spacing * (i as f32 + 0.18),
-                rect.max.y - bar_h - 2.0,
-            ),
-            Vec2::new(bar_w, bar_h),
-        );
-
-        let col = if i < 6 {
+        let col = if i < 10 {
             Theme::ACCENT_BLUE
-        } else if i < 11 {
-            Theme::ACCENT_EMERALD
+        } else if i < 13 {
+            Theme::ACCENT_CYAN
         } else {
             Theme::ACCENT_AMBER
         };
 
-        painter.rect_filled(bar_rect, Rounding::same(3.0), col);
+        p.rect_filled(b_rect, Rounding::same(2.0), col);
     }
 }

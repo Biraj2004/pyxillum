@@ -4,117 +4,102 @@
 //! multi-algorithm chase modes (Forward, Backward, Middle, Out), and real-time preview.
 
 use crate::state::{AppState, DiyChaseMode, DiyEffectType};
-use crate::theme::Theme;
+use crate::theme::{render_card, Theme};
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 use pyxillum_protocol::RgbColor;
 
 pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
     let mut state_changed = false;
 
-    ui.vertical(|ui| {
-        // 1. DIY Effect Header & Solid / Gradient Toggle
-        ui.horizontal(|ui| {
-            ui.label(
-                egui::RichText::new("DIY Effect")
-                    .strong()
-                    .size(17.0)
-                    .color(Theme::TEXT_PRIMARY),
-            );
+    let max_w = 700.0_f32.min(ui.available_width());
+    let pad = ((ui.available_width() - max_w) / 2.0).max(0.0);
 
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let is_grad = state.diy_effect_type == DiyEffectType::Gradient;
-                let (tog_rect, _) =
-                    ui.allocate_exact_size(Vec2::new(140.0, 32.0), egui::Sense::hover());
-                let tp = ui.painter_at(tog_rect);
-                tp.rect_filled(
-                    tog_rect,
-                    Rounding::same(16.0),
-                    Color32::from_rgb(23, 32, 54),
-                );
+    ui.horizontal(|ui| {
+        ui.add_space(pad);
+        ui.vertical(|ui| {
+            ui.set_max_width(max_w);
 
-                let half_w = tog_rect.width() / 2.0;
-                let solid_rect =
-                    Rect::from_min_size(tog_rect.min, Vec2::new(half_w, tog_rect.height()));
-                let grad_rect = Rect::from_min_size(
-                    Pos2::new(tog_rect.min.x + half_w, tog_rect.min.y),
-                    Vec2::new(half_w, tog_rect.height()),
-                );
-
-                if !is_grad {
-                    tp.rect_filled(
-                        solid_rect,
-                        Rounding::same(16.0),
-                        Color32::from_rgb(30, 58, 138),
+            // 1. DIY Effect Header Card & Solid / Gradient Toggle
+            render_card(ui, 8.0, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new("DIY Lighting Sequence")
+                            .strong()
+                            .size(15.0)
+                            .color(Theme::TEXT_PRIMARY),
                     );
-                    tp.rect_stroke(
-                        solid_rect,
-                        Rounding::same(16.0),
-                        Stroke::new(1.0_f32, Theme::ACCENT_CYAN),
-                    );
-                } else {
-                    tp.rect_filled(
-                        grad_rect,
-                        Rounding::same(16.0),
-                        Color32::from_rgb(30, 58, 138),
-                    );
-                    tp.rect_stroke(
-                        grad_rect,
-                        Rounding::same(16.0),
-                        Stroke::new(1.0_f32, Theme::ACCENT_CYAN),
-                    );
-                }
 
-                tp.text(
-                    solid_rect.center(),
-                    egui::Align2::CENTER_CENTER,
-                    "Solid",
-                    egui::FontId::proportional(12.0),
-                    if !is_grad {
-                        Theme::TEXT_PRIMARY
-                    } else {
-                        Theme::TEXT_SECONDARY
-                    },
-                );
-                tp.text(
-                    grad_rect.center(),
-                    egui::Align2::CENTER_CENTER,
-                    "Gradient",
-                    egui::FontId::proportional(12.0),
-                    if is_grad {
-                        Theme::TEXT_PRIMARY
-                    } else {
-                        Theme::TEXT_SECONDARY
-                    },
-                );
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let is_grad = state.diy_effect_type == DiyEffectType::Gradient;
+                        let (tog_rect, _) =
+                            ui.allocate_exact_size(Vec2::new(160.0, 30.0), egui::Sense::hover());
+                        let tp = ui.painter_at(tog_rect);
 
-                if ui
-                    .interact(solid_rect, ui.id().with("tog_solid"), egui::Sense::click())
-                    .clicked()
-                {
-                    state.diy_effect_type = DiyEffectType::Solid;
-                    state_changed = true;
-                }
-                if ui
-                    .interact(grad_rect, ui.id().with("tog_grad"), egui::Sense::click())
-                    .clicked()
-                {
-                    state.diy_effect_type = DiyEffectType::Gradient;
-                    state_changed = true;
-                }
+                        tp.rect_filled(tog_rect, Rounding::same(15.0), Theme::WELL_BG);
+                        tp.rect_stroke(
+                            tog_rect,
+                            Rounding::same(15.0),
+                            Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
+                        );
+
+                        let half_w = tog_rect.width() / 2.0;
+                        let solid_rect =
+                            Rect::from_min_size(tog_rect.min, Vec2::new(half_w, tog_rect.height()));
+                        let grad_rect = Rect::from_min_size(
+                            Pos2::new(tog_rect.min.x + half_w, tog_rect.min.y),
+                            Vec2::new(half_w, tog_rect.height()),
+                        );
+
+                        let active_rect = if !is_grad { solid_rect } else { grad_rect };
+                        tp.rect_filled(active_rect, Rounding::same(15.0), Theme::ACCENT_BLUE);
+
+                        tp.text(
+                            solid_rect.center(),
+                            egui::Align2::CENTER_CENTER,
+                            "Solid",
+                            egui::FontId::proportional(12.0),
+                            if !is_grad {
+                                Color32::WHITE
+                            } else {
+                                Theme::TEXT_SECONDARY
+                            },
+                        );
+                        tp.text(
+                            grad_rect.center(),
+                            egui::Align2::CENTER_CENTER,
+                            "Gradient",
+                            egui::FontId::proportional(12.0),
+                            if is_grad {
+                                Color32::WHITE
+                            } else {
+                                Theme::TEXT_SECONDARY
+                            },
+                        );
+
+                        if ui
+                            .interact(solid_rect, ui.id().with("tog_solid"), egui::Sense::click())
+                            .clicked()
+                        {
+                            state.diy_effect_type = DiyEffectType::Solid;
+                            state_changed = true;
+                        }
+                        if ui
+                            .interact(grad_rect, ui.id().with("tog_grad"), egui::Sense::click())
+                            .clicked()
+                        {
+                            state.diy_effect_type = DiyEffectType::Gradient;
+                            state_changed = true;
+                        }
+                    });
+                });
             });
-        });
 
-        ui.add_space(16.0);
+            ui.add_space(12.0);
 
-        // 2. 14-Node Colour Grid Container (2x7 Grid)
-        egui::Frame::none()
-            .fill(Color32::from_rgb(248, 250, 252))
-            .rounding(Rounding::same(14.0))
-            .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-            .inner_margin(egui::Margin::symmetric(16.0, 14.0))
-            .show(ui, |ui| {
+            // 2. 14-Node Colour Grid Container (2x7 Grid)
+            render_card(ui, 8.0, |ui| {
                 ui.label(
-                    egui::RichText::new("Color")
+                    egui::RichText::new("Sequence Palette (14 Nodes)")
                         .size(13.0)
                         .strong()
                         .color(Theme::TEXT_PRIMARY),
@@ -123,244 +108,272 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
 
                 let available_w = ui.available_width();
                 let cols = 7;
-                let cell_w = (available_w / cols as f32).min(44.0);
-                let circle_r = 17.0;
+                let cell_w = (available_w / cols as f32).max(42.0);
 
-                // Row 1 (Nodes 0..7)
-                ui.horizontal(|ui| {
-                    for i in 0..7 {
-                        render_color_node(ui, state, i, cell_w, circle_r, &mut state_changed);
+                // Render in 2 rows of 7 nodes
+                for row in 0..2 {
+                    ui.horizontal(|ui| {
+                        for col in 0..cols {
+                            let idx = row * cols + col;
+                            if idx < state.diy_nodes.len() {
+                                let node = &state.diy_nodes[idx];
+                                let is_selected = state.selected_diy_index == Some(idx);
+
+                                let (btn_rect, btn_resp) = ui.allocate_exact_size(
+                                    Vec2::new(cell_w - 6.0, 48.0),
+                                    egui::Sense::click(),
+                                );
+                                let p = ui.painter_at(btn_rect);
+
+                                let chip_center =
+                                    Pos2::new(btn_rect.center().x, btn_rect.min.y + 18.0);
+                                let chip_radius = 14.0_f32;
+
+                                let chip_col =
+                                    Color32::from_rgb(node.color.r, node.color.g, node.color.b);
+                                p.circle_filled(chip_center, chip_radius, chip_col);
+
+                                if is_selected {
+                                    p.circle_stroke(
+                                        chip_center,
+                                        chip_radius + 3.0,
+                                        Stroke::new(2.5_f32, Theme::ACCENT_BLUE),
+                                    );
+                                } else {
+                                    p.circle_stroke(
+                                        chip_center,
+                                        chip_radius,
+                                        Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
+                                    );
+                                }
+
+                                // Node numeric readout
+                                let txt_col = if (node.color.r as u32 * 299
+                                    + node.color.g as u32 * 587
+                                    + node.color.b as u32 * 114)
+                                    / 1000
+                                    > 128
+                                {
+                                    Color32::BLACK
+                                } else {
+                                    Color32::WHITE
+                                };
+
+                                p.text(
+                                    chip_center,
+                                    egui::Align2::CENTER_CENTER,
+                                    format!("{}", node.value),
+                                    egui::FontId::proportional(10.0),
+                                    txt_col,
+                                );
+
+                                if btn_resp.clicked() {
+                                    state.selected_diy_index = Some(idx);
+                                }
+                            }
+                        }
+                    });
+                    ui.add_space(8.0);
+                }
+
+                // Node Editor Controls for Selected Index
+                if let Some(sel_idx) = state.selected_diy_index {
+                    if sel_idx < state.diy_nodes.len() {
+                        ui.add_space(6.0);
+                        ui.separator();
+                        ui.add_space(8.0);
+
+                        ui.horizontal(|ui| {
+                            ui.label(
+                                egui::RichText::new(format!("Editing Node #{}", sel_idx + 1))
+                                    .size(12.0)
+                                    .strong()
+                                    .color(Theme::TEXT_PRIMARY),
+                            );
+
+                            let node = &mut state.diy_nodes[sel_idx];
+                            let mut node_col = [
+                                node.color.r as f32 / 255.0,
+                                node.color.g as f32 / 255.0,
+                                node.color.b as f32 / 255.0,
+                            ];
+
+                            if ui.color_edit_button_rgb(&mut node_col).changed() {
+                                node.color = RgbColor::new(
+                                    (node_col[0] * 255.0) as u8,
+                                    (node_col[1] * 255.0) as u8,
+                                    (node_col[2] * 255.0) as u8,
+                                );
+                                state_changed = true;
+                            }
+
+                            ui.add_space(16.0);
+                            ui.label(
+                                egui::RichText::new("Weight / Value:")
+                                    .size(11.5)
+                                    .color(Theme::TEXT_SECONDARY),
+                            );
+                            if ui
+                                .add(egui::Slider::new(&mut node.value, 0..=255).show_value(true))
+                                .changed()
+                            {
+                                state_changed = true;
+                            }
+                        });
                     }
-                });
-
-                ui.add_space(10.0);
-
-                // Row 2 (Nodes 7..14)
-                ui.horizontal(|ui| {
-                    for i in 7..14 {
-                        render_color_node(ui, state, i, cell_w, circle_r, &mut state_changed);
-                    }
-                });
+                }
             });
 
-        ui.add_space(16.0);
+            ui.add_space(12.0);
 
-        // 3. Chase Mode Dropdown Card
-        let (mode_rect, _) =
-            ui.allocate_exact_size(Vec2::new(ui.available_width(), 48.0), egui::Sense::hover());
-        let mp = ui.painter_at(mode_rect);
-        mp.rect_filled(mode_rect, Rounding::same(12.0), Theme::CARD_BG);
-        mp.rect_stroke(
-            mode_rect,
-            Rounding::same(12.0),
-            Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
-        );
+            // 3. Operational Direction & Parameters
+            render_card(ui, 8.0, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new("Chase Mode")
+                            .strong()
+                            .size(13.0)
+                            .color(Theme::TEXT_PRIMARY),
+                    );
 
-        mp.text(
-            Pos2::new(mode_rect.min.x + 14.0, mode_rect.center().y),
-            egui::Align2::LEFT_CENTER,
-            "Mode",
-            egui::FontId::proportional(14.0),
-            Theme::TEXT_PRIMARY,
-        );
+                    let current_mode_str = match state.diy_chase_mode {
+                        DiyChaseMode::Forward => "Chase forward",
+                        DiyChaseMode::Backward => "Chase backward",
+                        DiyChaseMode::Middle => "Chase middle to out",
+                        DiyChaseMode::Out => "Chase out to middle",
+                    };
 
-        let mode_lbl = match state.diy_chase_mode {
-            DiyChaseMode::Forward => "Chase forward",
-            DiyChaseMode::Backward => "Chase backward",
-            DiyChaseMode::Middle => "Chase middle",
-            DiyChaseMode::Out => "Chase out",
-        };
+                    egui::ComboBox::from_id_source("diy_chase_select")
+                        .selected_text(current_mode_str)
+                        .show_ui(ui, |ui| {
+                            if ui
+                                .selectable_label(
+                                    state.diy_chase_mode == DiyChaseMode::Forward,
+                                    "Chase forward",
+                                )
+                                .clicked()
+                            {
+                                state.diy_chase_mode = DiyChaseMode::Forward;
+                                state_changed = true;
+                            }
+                            if ui
+                                .selectable_label(
+                                    state.diy_chase_mode == DiyChaseMode::Backward,
+                                    "Chase backward",
+                                )
+                                .clicked()
+                            {
+                                state.diy_chase_mode = DiyChaseMode::Backward;
+                                state_changed = true;
+                            }
+                            if ui
+                                .selectable_label(
+                                    state.diy_chase_mode == DiyChaseMode::Middle,
+                                    "Chase middle to out",
+                                )
+                                .clicked()
+                            {
+                                state.diy_chase_mode = DiyChaseMode::Middle;
+                                state_changed = true;
+                            }
+                            if ui
+                                .selectable_label(
+                                    state.diy_chase_mode == DiyChaseMode::Out,
+                                    "Chase out to middle",
+                                )
+                                .clicked()
+                            {
+                                state.diy_chase_mode = DiyChaseMode::Out;
+                                state_changed = true;
+                            }
+                        });
+                });
 
-        ui.allocate_ui_at_rect(
-            Rect::from_min_max(
-                Pos2::new(mode_rect.max.x - 170.0, mode_rect.min.y + 8.0),
-                Pos2::new(mode_rect.max.x - 10.0, mode_rect.max.y - 8.0),
-            ),
-            |ui| {
-                egui::ComboBox::from_id_source("diy_chase_mode_cb")
-                    .selected_text(mode_lbl)
-                    .show_ui(ui, |ui| {
+                ui.add_space(14.0);
+
+                // Speed & Brightness Sliders
+                ui.columns(2, |cols| {
+                    cols[0].vertical(|ui| {
+                        ui.label(
+                            egui::RichText::new("Sequence Brightness")
+                                .size(12.0)
+                                .color(Theme::TEXT_SECONDARY),
+                        );
+                        let pct = (state.diy_brightness as f32 / 255.0 * 100.0) as u32;
+                        ui.label(
+                            egui::RichText::new(format!("{}%", pct))
+                                .strong()
+                                .size(18.0)
+                                .color(Theme::TEXT_PRIMARY),
+                        );
+                        ui.add_space(4.0);
                         if ui
-                            .selectable_value(
-                                &mut state.diy_chase_mode,
-                                DiyChaseMode::Forward,
-                                "Chase forward",
+                            .add(
+                                egui::Slider::new(&mut state.diy_brightness, 0..=255)
+                                    .show_value(false),
                             )
-                            .clicked()
-                        {
-                            state_changed = true;
-                        }
-                        if ui
-                            .selectable_value(
-                                &mut state.diy_chase_mode,
-                                DiyChaseMode::Backward,
-                                "Chase backward",
-                            )
-                            .clicked()
-                        {
-                            state_changed = true;
-                        }
-                        if ui
-                            .selectable_value(
-                                &mut state.diy_chase_mode,
-                                DiyChaseMode::Middle,
-                                "Chase middle",
-                            )
-                            .clicked()
-                        {
-                            state_changed = true;
-                        }
-                        if ui
-                            .selectable_value(
-                                &mut state.diy_chase_mode,
-                                DiyChaseMode::Out,
-                                "Chase out",
-                            )
-                            .clicked()
+                            .changed()
                         {
                             state_changed = true;
                         }
                     });
-            },
-        );
 
-        ui.add_space(16.0);
-
-        // 4. Dual Metric Sliders: Brightness & Speed
-        ui.columns(2, |cols| {
-            cols[0].group(|ui| {
-                ui.label(
-                    egui::RichText::new("Brightness")
-                        .size(12.0)
-                        .color(Theme::TEXT_SECONDARY),
-                );
-                let pct = (state.diy_brightness as f32 / 255.0 * 100.0) as u32;
-                ui.label(
-                    egui::RichText::new(format!("{}%", pct))
-                        .strong()
-                        .size(16.0)
-                        .color(Theme::TEXT_PRIMARY),
-                );
-                if ui
-                    .add(egui::Slider::new(&mut state.diy_brightness, 0..=255).show_value(false))
-                    .changed()
-                {
-                    state_changed = true;
-                }
+                    cols[1].vertical(|ui| {
+                        ui.label(
+                            egui::RichText::new("Sequence Speed")
+                                .size(12.0)
+                                .color(Theme::TEXT_SECONDARY),
+                        );
+                        ui.label(
+                            egui::RichText::new(format!("Level {}", state.diy_speed))
+                                .strong()
+                                .size(18.0)
+                                .color(Theme::ACCENT_CYAN),
+                        );
+                        ui.add_space(4.0);
+                        if ui
+                            .add(egui::Slider::new(&mut state.diy_speed, 1..=16).show_value(false))
+                            .changed()
+                        {
+                            state_changed = true;
+                        }
+                    });
+                });
             });
 
-            cols[1].group(|ui| {
+            ui.add_space(12.0);
+
+            // 4. Live Strip Visual Preview Bar
+            render_card(ui, 8.0, |ui| {
                 ui.label(
-                    egui::RichText::new("Speed")
+                    egui::RichText::new("Output Preview")
                         .size(12.0)
                         .color(Theme::TEXT_SECONDARY),
                 );
-                ui.label(
-                    egui::RichText::new(format!("{}", state.diy_speed))
-                        .strong()
-                        .size(16.0)
-                        .color(Theme::ACCENT_EMERALD),
+                ui.add_space(6.0);
+
+                let (p_rect, _) = ui.allocate_exact_size(
+                    Vec2::new(ui.available_width(), 26.0),
+                    egui::Sense::hover(),
                 );
-                if ui
-                    .add(egui::Slider::new(&mut state.diy_speed, 1..=10).show_value(false))
-                    .changed()
-                {
-                    state_changed = true;
+                let p = ui.painter_at(p_rect);
+                p.rect_filled(p_rect, Rounding::same(6.0), Theme::WELL_BG);
+
+                let n_count = state.diy_nodes.len();
+                if n_count > 0 {
+                    let step_w = p_rect.width() / n_count as f32;
+                    for (i, node) in state.diy_nodes.iter().enumerate() {
+                        let seg_rect = Rect::from_min_size(
+                            Pos2::new(p_rect.min.x + (i as f32) * step_w, p_rect.min.y),
+                            Vec2::new(step_w, p_rect.height()),
+                        );
+                        let col = Color32::from_rgb(node.color.r, node.color.g, node.color.b);
+                        p.rect_filled(seg_rect, Rounding::ZERO, col);
+                    }
                 }
             });
         });
-
-        ui.add_space(16.0);
-
-        // 5. Multi-Colour Chase Running Preview Bar
-        let (prev_rect, _) =
-            ui.allocate_exact_size(Vec2::new(ui.available_width(), 38.0), egui::Sense::hover());
-        let painter = ui.painter_at(prev_rect);
-
-        let step_w = prev_rect.width() / 14.0;
-        let offset = (state.animation_timer * 4.0) as usize % 14;
-
-        for i in 0..14 {
-            let node_idx = match state.diy_chase_mode {
-                DiyChaseMode::Backward => (14 + offset - (i % 14)) % 14,
-                _ => (i + offset) % 14,
-            };
-            let n = &state.diy_nodes[node_idx];
-            let col = Color32::from_rgb(n.color.r, n.color.g, n.color.b);
-            let seg = Rect::from_min_max(
-                Pos2::new(prev_rect.min.x + (i as f32) * step_w, prev_rect.min.y),
-                Pos2::new(prev_rect.min.x + ((i + 1) as f32) * step_w, prev_rect.max.y),
-            );
-            painter.rect_filled(seg, Rounding::same(4.0), col);
-        }
-        painter.rect_stroke(
-            prev_rect,
-            Rounding::same(19.0),
-            Stroke::new(1.0_f32, Color32::WHITE),
-        );
     });
 
     state_changed
-}
-
-fn render_color_node(
-    ui: &mut egui::Ui,
-    state: &mut AppState,
-    idx: usize,
-    cell_w: f32,
-    circle_r: f32,
-    state_changed: &mut bool,
-) {
-    let (node_rect, resp) = ui.allocate_exact_size(Vec2::new(cell_w, 36.0), egui::Sense::click());
-    let p = ui.painter_at(node_rect);
-    let center = node_rect.center();
-
-    let node = &state.diy_nodes[idx];
-    let fill = Color32::from_rgb(node.color.r, node.color.g, node.color.b);
-    let is_selected = state.selected_diy_index == Some(idx);
-
-    p.circle_filled(center, circle_r, fill);
-
-    if is_selected {
-        p.circle_stroke(
-            center,
-            circle_r + 2.0,
-            Stroke::new(2.0_f32, Theme::ACCENT_BLUE),
-        );
-    } else {
-        p.circle_stroke(
-            center,
-            circle_r,
-            Stroke::new(1.0_f32, Color32::from_rgba_premultiplied(0, 0, 0, 40)),
-        );
-    }
-
-    let val_str = format!("{}", node.value);
-    let is_dark =
-        (node.color.r as u32 * 299 + node.color.g as u32 * 587 + node.color.b as u32 * 114) / 1000
-            < 128;
-    p.text(
-        center,
-        egui::Align2::CENTER_CENTER,
-        val_str,
-        egui::FontId::proportional(11.0),
-        if is_dark {
-            Color32::WHITE
-        } else {
-            Color32::BLACK
-        },
-    );
-
-    if resp.clicked() {
-        state.selected_diy_index = Some(idx);
-        // Cycle node color on click
-        let next_rgb = match idx % 4 {
-            0 => RgbColor::new(239, 68, 68),
-            1 => RgbColor::new(59, 130, 246),
-            2 => RgbColor::new(34, 197, 94),
-            _ => RgbColor::new(234, 179, 8),
-        };
-        state.diy_nodes[idx].color = next_rgb;
-        *state_changed = true;
-    }
 }

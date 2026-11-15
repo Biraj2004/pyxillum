@@ -15,7 +15,7 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
         .collapsible(false)
         .resizable(false)
         .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
-        .default_width(400.0)
+        .default_width(420.0)
         .show(ctx, |ui| {
             ui.add_space(6.0);
             ui.label(
@@ -26,12 +26,12 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
             ui.add_space(14.0);
 
             // Strip Pixel Count
-            ui.label(egui::RichText::new("Pixel Strip Length").strong().size(13.0));
+            ui.label(egui::RichText::new("Pixel Strip Length").strong().size(13.0).color(Theme::TEXT_PRIMARY));
             ui.add(egui::Slider::new(&mut state.ui_length, 1..=255).text("Addressable Pixels"));
             ui.add_space(10.0);
 
             // Colour Channel Sequence
-            ui.label(egui::RichText::new("Colour Sequence (Chip Order)").strong().size(13.0));
+            ui.label(egui::RichText::new("Colour Sequence (Chip Order)").strong().size(13.0).color(Theme::TEXT_PRIMARY));
             egui::ComboBox::from_id_source("chip_order_combo")
                 .selected_text(format!("{:?}", state.ui_chip_order))
                 .show_ui(ui, |ui| {
@@ -46,36 +46,44 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
 
             // Safety Warning Box
             egui::Frame::none()
-                .fill(Color32::from_rgb(45, 10, 15))
-                .stroke(Stroke::new(1.0_f32, Color32::from_rgb(153, 27, 27)))
-                .rounding(Rounding::same(8.0))
-                .inner_margin(egui::Margin::symmetric(12.0, 10.0))
+                .fill(Color32::from_rgb(48, 22, 24))
+                .stroke(Stroke::new(1.0_f32, Color32::from_rgb(120, 36, 42)))
+                .rounding(Rounding::same(6.0))
+                .inner_margin(egui::Margin::symmetric(14.0, 12.0))
                 .show(ui, |ui| {
                     ui.label(
                         egui::RichText::new("Hardware Safety Gate")
                             .strong()
                             .size(12.0)
-                            .color(Color32::from_rgb(252, 165, 165)),
+                            .color(Color32::from_rgb(255, 150, 150)),
                     );
+                    ui.add_space(2.0);
                     ui.label(
                         egui::RichText::new(
                             "Modifying chip order or length writes directly to non-volatile EEPROM registers. Please verify parameters before applying.",
                         )
                         .size(11.0)
-                        .color(Color32::from_rgb(248, 113, 113)),
+                        .color(Color32::from_rgb(220, 130, 130)),
                     );
-                    ui.add_space(6.0);
+                    ui.add_space(8.0);
                     ui.checkbox(
                         &mut state.ui_confirm_safety,
                         "I understand this mutates hardware registers",
                     );
                 });
 
-            ui.add_space(16.0);
+            ui.add_space(18.0);
 
             // Action Buttons
             ui.horizontal(|ui| {
-                if ui.button("Cancel").clicked() {
+                if ui
+                    .add(
+                        egui::Button::new(egui::RichText::new("Cancel").color(Theme::TEXT_SECONDARY))
+                            .fill(Color32::from_rgb(44, 44, 44))
+                            .rounding(Rounding::same(4.0)),
+                    )
+                    .clicked()
+                {
                     state.show_settings_modal = false;
                 }
 
@@ -84,8 +92,9 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                     let apply_btn = ui.add_enabled(
                         can_apply,
                         egui::Button::new(egui::RichText::new("Apply Configuration").strong().color(Color32::WHITE))
-                            .fill(if can_apply { Theme::ACCENT_BLUE } else { Color32::from_rgb(203, 213, 225) })
-                            .rounding(Rounding::same(6.0)),
+                            .fill(if can_apply { Theme::ACCENT_BLUE } else { Color32::from_rgb(48, 48, 48) })
+                            .rounding(Rounding::same(4.0))
+                            .min_size(Vec2::new(140.0, 30.0)),
                     );
 
                     if apply_btn.clicked() {

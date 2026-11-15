@@ -5,7 +5,7 @@
 use crate::catalog::{EffectCategory, LightingStyle, LIGHTING_STYLES};
 use crate::state::AppState;
 use crate::theme::Theme;
-use eframe::egui::{self, Color32, Rounding, Stroke, Vec2};
+use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 
 pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u8> {
     let mut selected_effect = None;
@@ -20,8 +20,8 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
             );
             ui.add(
                 egui::TextEdit::singleline(&mut state.effect_search_query)
-                    .hint_text("Search 146 effects by name or ID...")
-                    .desired_width(ui.available_width() - 10.0),
+                    .hint_text("Search 146 styles by name or code...")
+                    .desired_width(ui.available_width() - 8.0),
             );
         });
 
@@ -42,8 +42,16 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                     .fill(if is_all {
                         Theme::ACCENT_BLUE
                     } else {
-                        Color32::from_rgb(23, 32, 54)
+                        Theme::WELL_BG
                     })
+                    .stroke(Stroke::new(
+                        1.0_f32,
+                        if is_all {
+                            Theme::ACCENT_BLUE_HOVER
+                        } else {
+                            Theme::BORDER_LIGHT
+                        },
+                    ))
                     .rounding(Rounding::same(12.0)),
                 );
             if all_btn.clicked() {
@@ -63,8 +71,16 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                     .fill(if is_sel {
                         Theme::ACCENT_BLUE
                     } else {
-                        Color32::from_rgb(23, 32, 54)
+                        Theme::WELL_BG
                     })
+                    .stroke(Stroke::new(
+                        1.0_f32,
+                        if is_sel {
+                            Theme::ACCENT_BLUE_HOVER
+                        } else {
+                            Theme::BORDER_LIGHT
+                        },
+                    ))
                     .rounding(Rounding::same(12.0)),
                 );
                 if btn.clicked() {
@@ -101,84 +117,99 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
             .collect();
 
         ui.label(
-            egui::RichText::new(format!("Showing {} of 146 Lighting Styles", filtered.len()))
+            egui::RichText::new(format!("Showing {} presets", filtered.len()))
                 .size(11.0)
                 .color(Theme::TEXT_MUTED),
         );
         ui.add_space(4.0);
 
         egui::ScrollArea::vertical()
-            .max_height(ui.available_height() - 20.0)
+            .auto_shrink([false, false])
+            .max_height(340.0)
             .show(ui, |ui| {
                 for style in filtered {
                     let is_active = state.ui_effect == style.code;
+                    let item_h = 42.0;
+                    let (item_rect, resp) = ui.allocate_exact_size(
+                        Vec2::new(ui.available_width() - 8.0, item_h),
+                        egui::Sense::click(),
+                    );
+                    let p = ui.painter_at(item_rect);
 
-                    let row_resp = egui::Frame::none()
-                        .fill(if is_active {
-                            Color32::from_rgb(30, 58, 138)
+                    let is_hovered = resp.hovered();
+                    let bg = if is_active {
+                        Theme::CARD_ACTIVE
+                    } else if is_hovered {
+                        Theme::CARD_HOVER
+                    } else {
+                        Theme::CARD_BG
+                    };
+
+                    let border = if is_active {
+                        Theme::BORDER_FOCUS
+                    } else if is_hovered {
+                        Theme::BORDER_HOVER
+                    } else {
+                        Theme::BORDER_LIGHT
+                    };
+
+                    p.rect_filled(item_rect, Rounding::same(6.0), bg);
+                    p.rect_stroke(item_rect, Rounding::same(6.0), Stroke::new(1.0_f32, border));
+
+                    // Left Indicator Pill for Active
+                    if is_active {
+                        let pill = Rect::from_min_size(
+                            Pos2::new(item_rect.min.x + 2.0, item_rect.center().y - 10.0),
+                            Vec2::new(3.0, 20.0),
+                        );
+                        p.rect_filled(pill, Rounding::same(1.5), Theme::ACCENT_BLUE);
+                    }
+
+                    // Numeric Badge
+                    let badge_rect = Rect::from_min_size(
+                        Pos2::new(item_rect.min.x + 12.0, item_rect.center().y - 12.0),
+                        Vec2::new(32.0, 24.0),
+                    );
+                    p.rect_filled(badge_rect, Rounding::same(4.0), Theme::WELL_BG);
+                    p.text(
+                        badge_rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        format!("{}", style.code),
+                        egui::FontId::monospace(11.0),
+                        if is_active {
+                            Theme::ACCENT_CYAN
                         } else {
-                            Color32::from_rgb(19, 27, 46)
-                        })
-                        .stroke(Stroke::new(
-                            1.0_f32,
-                            if is_active {
-                                Theme::ACCENT_CYAN
-                            } else {
-                                Theme::BORDER_LIGHT
-                            },
-                        ))
-                        .rounding(Rounding::same(8.0))
-                        .inner_margin(egui::Margin::symmetric(10.0, 8.0))
-                        .show(ui, |ui| {
-                            ui.horizontal(|ui| {
-                                // Code Badge
-                                let badge_text = format!("{:03}", style.code);
-                                let (badge_rect, _) = ui.allocate_exact_size(
-                                    Vec2::new(34.0, 22.0),
-                                    egui::Sense::hover(),
-                                );
-                                ui.painter_at(badge_rect).rect_filled(
-                                    badge_rect,
-                                    Rounding::same(5.0),
-                                    if is_active {
-                                        Theme::ACCENT_CYAN
-                                    } else {
-                                        Color32::from_rgb(30, 41, 59)
-                                    },
-                                );
-                                ui.painter_at(badge_rect).text(
-                                    badge_rect.center(),
-                                    egui::Align2::CENTER_CENTER,
-                                    badge_text,
-                                    egui::FontId::proportional(11.0),
-                                    if is_active {
-                                        Color32::BLACK
-                                    } else {
-                                        Theme::TEXT_PRIMARY
-                                    },
-                                );
+                            Theme::TEXT_MUTED
+                        },
+                    );
 
-                                ui.add_space(8.0);
-                                ui.vertical(|ui| {
-                                    ui.label(
-                                        egui::RichText::new(style.name)
-                                            .strong()
-                                            .size(13.0)
-                                            .color(Theme::TEXT_PRIMARY),
-                                    );
-                                    ui.label(
-                                        egui::RichText::new(style.description)
-                                            .size(10.5)
-                                            .color(Theme::TEXT_SECONDARY),
-                                    );
-                                });
-                            });
-                        });
+                    // Name and Description
+                    let text_x = badge_rect.max.x + 10.0;
+                    p.text(
+                        Pos2::new(text_x, item_rect.min.y + 11.0),
+                        egui::Align2::LEFT_CENTER,
+                        style.name,
+                        egui::FontId::proportional(12.5),
+                        if is_active {
+                            Theme::TEXT_PRIMARY
+                        } else {
+                            Theme::TEXT_SECONDARY
+                        },
+                    );
 
-                    if row_resp.response.interact(egui::Sense::click()).clicked() {
+                    p.text(
+                        Pos2::new(text_x, item_rect.min.y + 26.0),
+                        egui::Align2::LEFT_CENTER,
+                        style.description,
+                        egui::FontId::proportional(10.0),
+                        Theme::TEXT_MUTED,
+                    );
+
+                    if resp.clicked() {
                         selected_effect = Some(style.code);
                     }
-                    ui.add_space(4.0);
+
+                    ui.add_space(3.0);
                 }
             });
     });
