@@ -1103,3 +1103,56 @@ pub fn get_music_mode_name(index: u8) -> &'static str {
         .map(|m| m.name)
         .unwrap_or("Strip Music Mode")
 }
+
+/// Finds the closest on-chip single-colour preset for a given RGB colour and dynamic effect style.
+pub fn find_closest_hardware_effect(
+    r: u8,
+    g: u8,
+    b: u8,
+    style: crate::state::CustomColorEffect,
+) -> (u8, String) {
+    use crate::state::CustomColorEffect;
+
+    // The 7 ROM single-colour presets in SP621E firmware:
+    // 0: Red, 1: Green, 2: Blue, 3: Yellow, 4: Cyan, 5: Purple, 6: White
+    let rom_colors: [(u8, u8, u8); 7] = [
+        (255, 0, 0),     // Red
+        (0, 255, 0),     // Green
+        (0, 100, 255),   // Blue
+        (255, 215, 0),   // Yellow
+        (0, 235, 255),   // Cyan
+        (195, 0, 255),   // Purple
+        (255, 255, 255), // White
+    ];
+
+    let mut min_dist = u32::MAX;
+    let mut best_idx = 0;
+
+    for (idx, &(rr, gg, bb)) in rom_colors.iter().enumerate() {
+        let dr = r as i32 - rr as i32;
+        let dg = g as i32 - gg as i32;
+        let db = b as i32 - bb as i32;
+        // Perceptually weighted Euclidean distance
+        let dist = (2 * dr * dr + 4 * dg * dg + 3 * db * db) as u32;
+        if dist < min_dist {
+            min_dist = dist;
+            best_idx = idx;
+        }
+    }
+
+    let code = match style {
+        CustomColorEffect::Solid => {
+            return (pyxillum_protocol::EFFECT_SOLID, "Solid Colour".to_string())
+        }
+        CustomColorEffect::Comet => 15 + best_idx as u8,
+        CustomColorEffect::Stars => 71 + best_idx as u8,
+        CustomColorEffect::Pulse => 106 + best_idx as u8,
+        CustomColorEffect::Breathe => 113 + best_idx as u8,
+        CustomColorEffect::Strobe => 120 + best_idx as u8,
+        CustomColorEffect::Wave => 50 + (best_idx as u8 % 21),
+        CustomColorEffect::Sweep => 146,
+    };
+
+    let name = get_lighting_title(code);
+    (code, name)
+}

@@ -48,6 +48,60 @@ pub enum DashboardMode {
     Diy,
 }
 
+/// Dynamic lighting styles that can be applied directly to a custom chosen colour.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CustomColorEffect {
+    Solid,
+    Breathe,
+    Strobe,
+    Pulse,
+    Wave,
+    Comet,
+    Stars,
+    Sweep,
+}
+
+impl CustomColorEffect {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Solid => "Solid",
+            Self::Breathe => "Breathe",
+            Self::Strobe => "Strobe",
+            Self::Pulse => "Pulse",
+            Self::Wave => "Wave",
+            Self::Comet => "Comet",
+            Self::Stars => "Stars",
+            Self::Sweep => "Sweep",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            Self::Solid => "Continuous steady illumination of custom colour",
+            Self::Breathe => "Smooth sinusoidal breathing fade (15% to 100%)",
+            Self::Strobe => "High-energy transient flash bursts",
+            Self::Pulse => "Heartbeat double-pulse radial expansion",
+            Self::Wave => "Sinusoidal undulating wave traversing strip",
+            Self::Comet => "High-velocity comet head with smooth fading tail",
+            Self::Stars => "Sparkling twinkling star embers across dark canvas",
+            Self::Sweep => "Spatial hue oscillation centered on custom colour",
+        }
+    }
+
+    pub fn all() -> &'static [CustomColorEffect] {
+        &[
+            Self::Solid,
+            Self::Breathe,
+            Self::Strobe,
+            Self::Pulse,
+            Self::Wave,
+            Self::Comet,
+            Self::Stars,
+            Self::Sweep,
+        ]
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiyEffectType {
     Solid,
@@ -108,6 +162,9 @@ pub struct AppState {
     // Solid Mode Controls
     pub ui_color: [f32; 3],
     pub ui_color_temp: f32, // 0.0 = Warm Amber (2700K), 1.0 = Cool White (6500K)
+    pub custom_color_effect: CustomColorEffect,
+    pub custom_effect_speed: u8,
+    pub live_color_stream_enabled: bool,
 
     // Music Mode Controls
     pub music_mode_index: u8, // 1..18
@@ -190,6 +247,9 @@ impl Default for AppState {
 
             ui_color: [0.23, 0.51, 0.96],
             ui_color_temp: 0.5,
+            custom_color_effect: CustomColorEffect::Solid,
+            custom_effect_speed: 6,
+            live_color_stream_enabled: true,
 
             music_mode_index: 5, // Default to 5 (Energy Gradient)
             ui_audio_input: AudioInput::InternalMic,

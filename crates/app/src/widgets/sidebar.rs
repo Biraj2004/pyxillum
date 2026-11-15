@@ -128,7 +128,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
 
         let nav_items = [
             ("Dynamic FX", "146 Presets", DashboardMode::Dynamic),
-            ("Solid Colour", "CCT & Palette", DashboardMode::Solid),
+            ("Solid Colour", "Custom & Dynamic", DashboardMode::Solid),
             ("Music Rhythm", "18 Audio Styles", DashboardMode::Music),
             ("DIY Custom", "14-Node Sequencer", DashboardMode::Diy),
         ];

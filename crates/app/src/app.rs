@@ -15,7 +15,9 @@ use crate::screens::{
     render_device_hub, render_diy_mode, render_dynamic_mode, render_music_mode,
     render_settings_modal, render_solid_mode, DeviceHubAction,
 };
-use crate::state::{AppScreen, AppState, DashboardMode, DeviceCardInfo, GuiCommand, GuiEvent};
+use crate::state::{
+    AppScreen, AppState, CustomColorEffect, DashboardMode, DeviceCardInfo, GuiCommand, GuiEvent,
+};
 use crate::theme::{render_card, render_toggle_switch, Theme};
 use crate::widgets::{render_effect_drawer, render_neon_strip, render_sidebar};
 use crate::windows_media::{NowPlayingInfo, WindowsAudioService};
@@ -39,9 +41,14 @@ pub struct PyxillumApp {
     last_sent_brightness: u8,
     last_sent_loop_all: bool,
     last_sent_color: [u8; 3],
+    last_sent_custom_effect: CustomColorEffect,
     last_sent_audio_input: AudioInput,
     last_sent_sensitivity: u8,
     last_sent_music_mode: u8,
+
+    // Real-time BLE brightness streaming for dynamic custom colour effects
+    last_stream_instant: Instant,
+    last_streamed_level: u8,
 }
 
 impl PyxillumApp {
@@ -104,9 +111,13 @@ impl PyxillumApp {
             last_sent_brightness: 255,
             last_sent_loop_all: false,
             last_sent_color: [255, 120, 0],
+            last_sent_custom_effect: CustomColorEffect::Solid,
             last_sent_audio_input: AudioInput::InternalMic,
             last_sent_sensitivity: 8,
             last_sent_music_mode: 1,
+
+            last_stream_instant: Instant::now(),
+            last_streamed_level: 255,
         }
     }
 
@@ -130,12 +141,124 @@ impl PyxillumApp {
 
         match self.state.dashboard_mode {
             DashboardMode::Solid => {
-                let r = (self.state.ui_color[0] * 255.0 * brightness_factor) as u8;
-                let g = (self.state.ui_color[1] * 255.0 * brightness_factor) as u8;
-                let b = (self.state.ui_color[2] * 255.0 * brightness_factor) as u8;
-                let col = RgbColor::new(r, g, b);
-                for _ in 0..num_pixels {
-                    self.state.strip_pixels.push(col);
+                let r_base = self.state.ui_color[0] * 255.0;
+                let g_base = self.state.ui_color[1] * 255.0;
+                let b_base = self.state.ui_color[2] * 255.0;
+                let speed_mult = self.state.custom_effect_speed as f32 * 0.4;
+                let t = self.state.animation_timer * speed_mult;
+
+                match self.state.custom_color_effect {
+                    CustomColorEffect::Solid => {
+                        let r = (r_base * brightness_factor) as u8;
+                        let g = (g_base * brightness_factor) as u8;
+                        let b = (b_base * brightness_factor) as u8;
+                        let col = RgbColor::new(r, g, b);
+                        for _ in 0..num_pixels {
+                            self.state.strip_pixels.push(col);
+                        }
+                    }
+                    CustomColorEffect::Breathe => {
+                        let wave = ((t * 2.5).sin() * 0.5 + 0.5).powf(1.8);
+                        let factor = (0.12 + 0.88 * wave) * brightness_factor;
+                        let col = RgbColor::new(
+                            (r_base * factor) as u8,
+                            (g_base * factor) as u8,
+                            (b_base * factor) as u8,
+                        );
+                        for _ in 0..num_pixels {
+                            self.state.strip_pixels.push(col);
+                        }
+                    }
+                    CustomColorEffect::Strobe => {
+                        let phase = (t * 6.0).fract();
+                        let flash = if phase < 0.22 { 1.0 } else { 0.04 };
+                        let factor = flash * brightness_factor;
+                        let col = RgbColor::new(
+                            (r_base * factor) as u8,
+                            (g_base * factor) as u8,
+                            (b_base * factor) as u8,
+                        );
+                        for _ in 0..num_pixels {
+                            self.state.strip_pixels.push(col);
+                        }
+                    }
+                    CustomColorEffect::Pulse => {
+                        let cycle = (t * 2.2).fract();
+                        let p = if cycle < 0.15 {
+                            (cycle / 0.15 * std::f32::consts::PI).sin()
+                        } else if (0.24..0.39).contains(&cycle) {
+                            ((cycle - 0.24) / 0.15 * std::f32::consts::PI).sin() * 0.7
+                        } else {
+                            0.05
+                        };
+                        let factor = (0.08 + 0.92 * p) * brightness_factor;
+                        let col = RgbColor::new(
+                            (r_base * factor) as u8,
+                            (g_base * factor) as u8,
+                            (b_base * factor) as u8,
+                        );
+                        for _ in 0..num_pixels {
+                            self.state.strip_pixels.push(col);
+                        }
+                    }
+                    CustomColorEffect::Wave => {
+                        for i in 0..num_pixels {
+                            let spatial = ((i as f32 * 0.25 - t * 4.0).sin() * 0.5 + 0.5).powi(2);
+                            let factor = (0.1 + 0.9 * spatial) * brightness_factor;
+                            let col = RgbColor::new(
+                                (r_base * factor) as u8,
+                                (g_base * factor) as u8,
+                                (b_base * factor) as u8,
+                            );
+                            self.state.strip_pixels.push(col);
+                        }
+                    }
+                    CustomColorEffect::Comet => {
+                        let pos = (t * 4.0).rem_euclid(num_pixels as f32 + 12.0) - 6.0;
+                        let tail_len = 10.0_f32;
+                        for i in 0..num_pixels {
+                            let dist = pos - i as f32;
+                            let intensity = if dist >= 0.0 && dist <= tail_len {
+                                (1.0 - dist / tail_len).powf(1.6)
+                            } else {
+                                0.03
+                            };
+                            let factor = intensity * brightness_factor;
+                            let col = RgbColor::new(
+                                (r_base * factor) as u8,
+                                (g_base * factor) as u8,
+                                (b_base * factor) as u8,
+                            );
+                            self.state.strip_pixels.push(col);
+                        }
+                    }
+                    CustomColorEffect::Stars => {
+                        for i in 0..num_pixels {
+                            let sparkle = ((i as f32 * 23.7 + t * 6.5).sin() * 0.5 + 0.5).powi(3);
+                            let factor = (0.06 + 0.94 * sparkle) * brightness_factor;
+                            let col = RgbColor::new(
+                                (r_base * factor) as u8,
+                                (g_base * factor) as u8,
+                                (b_base * factor) as u8,
+                            );
+                            self.state.strip_pixels.push(col);
+                        }
+                    }
+                    CustomColorEffect::Sweep => {
+                        let (h_base, s_base, v_base) = pyxillum_sim::render::rgb_to_hsv(
+                            self.state.ui_color[0],
+                            self.state.ui_color[1],
+                            self.state.ui_color[2],
+                        );
+                        for i in 0..num_pixels {
+                            let offset = (i as f32 * 0.15 + t * 2.0).sin() * 35.0;
+                            let h = (h_base + offset).rem_euclid(360.0);
+                            let col = pyxillum_sim::render::hsv_to_rgb(h, s_base, v_base);
+                            self.state
+                                .strip_pixels
+                                .push(pyxillum_sim::render::scale_color(col, brightness_factor));
+                        }
+                    }
                 }
             }
             DashboardMode::Diy => {
@@ -418,6 +541,52 @@ impl eframe::App for PyxillumApp {
 
         // Update real-time LED strip frame
         self.update_strip_simulation(dt);
+
+        // Stream real-time brightness modulation over BLE when in dynamic custom colour style
+        if self.state.is_connected
+            && self.state.dashboard_mode == DashboardMode::Solid
+            && self.state.ui_power
+            && self.state.custom_color_effect != CustomColorEffect::Solid
+            && self.state.live_color_stream_enabled
+            && now.duration_since(self.last_stream_instant) >= std::time::Duration::from_millis(45)
+        {
+            let speed_mult = self.state.custom_effect_speed as f32 * 0.4;
+            let t = self.state.animation_timer * speed_mult;
+            let max_lvl = self.state.ui_brightness as f32;
+
+            let stream_lvl = match self.state.custom_color_effect {
+                CustomColorEffect::Breathe => {
+                    let wave = ((t * 2.5).sin() * 0.5 + 0.5).powf(1.8);
+                    ((0.12 + 0.88 * wave) * max_lvl) as u8
+                }
+                CustomColorEffect::Strobe => {
+                    let phase = (t * 6.0).fract();
+                    if phase < 0.22 {
+                        self.state.ui_brightness
+                    } else {
+                        (max_lvl * 0.04) as u8
+                    }
+                }
+                CustomColorEffect::Pulse => {
+                    let cycle = (t * 2.2).fract();
+                    let p = if cycle < 0.15 {
+                        (cycle / 0.15 * std::f32::consts::PI).sin()
+                    } else if (0.24..0.39).contains(&cycle) {
+                        ((cycle - 0.24) / 0.15 * std::f32::consts::PI).sin() * 0.7
+                    } else {
+                        0.05
+                    };
+                    ((0.08 + 0.92 * p) * max_lvl) as u8
+                }
+                _ => self.state.ui_brightness,
+            };
+
+            if stream_lvl != self.last_streamed_level {
+                self.last_streamed_level = stream_lvl;
+                self.send(GuiCommand::SendCommand(Command::SetBrightness(stream_lvl)));
+            }
+            self.last_stream_instant = now;
+        }
 
         // 1. Persistent Left Navigation Rail (Desktop Sidebar)
         egui::SidePanel::left("desktop_sidebar")
@@ -738,15 +907,37 @@ impl PyxillumApp {
                         let r = (self.state.ui_color[0] * 255.0) as u8;
                         let g = (self.state.ui_color[1] * 255.0) as u8;
                         let b = (self.state.ui_color[2] * 255.0) as u8;
-                        if [r, g, b] != self.last_sent_color
-                            || self.state.ui_brightness != self.last_sent_brightness
-                        {
-                            self.last_sent_color = [r, g, b];
-                            self.last_sent_brightness = self.state.ui_brightness;
-                            self.send(GuiCommand::SendCommand(Command::SetColor {
-                                color: RgbColor::new(r, g, b),
-                                level: self.state.ui_brightness,
-                            }));
+
+                        if self.state.custom_color_effect == CustomColorEffect::Solid {
+                            if [r, g, b] != self.last_sent_color
+                                || self.state.ui_brightness != self.last_sent_brightness
+                                || self.last_sent_custom_effect != CustomColorEffect::Solid
+                            {
+                                self.last_sent_color = [r, g, b];
+                                self.last_sent_brightness = self.state.ui_brightness;
+                                self.last_sent_custom_effect = CustomColorEffect::Solid;
+                                self.send(GuiCommand::SendCommand(Command::SetEffect(
+                                    pyxillum_protocol::EFFECT_SOLID,
+                                )));
+                                self.send(GuiCommand::SendCommand(Command::SetColor {
+                                    color: RgbColor::new(r, g, b),
+                                    level: self.state.ui_brightness,
+                                }));
+                            }
+                        } else {
+                            if [r, g, b] != self.last_sent_color
+                                || self.state.custom_color_effect != self.last_sent_custom_effect
+                            {
+                                self.last_sent_color = [r, g, b];
+                                self.last_sent_custom_effect = self.state.custom_color_effect;
+                                self.send(GuiCommand::SendCommand(Command::SetColor {
+                                    color: RgbColor::new(r, g, b),
+                                    level: self.state.ui_brightness,
+                                }));
+                                self.send(GuiCommand::SendCommand(Command::SetSpeed(
+                                    self.state.custom_effect_speed,
+                                )));
+                            }
                         }
                     }
                 }

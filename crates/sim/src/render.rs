@@ -99,6 +99,29 @@ pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> RgbColor {
     )
 }
 
+/// Helper to convert RGB (0.0..=1.0) to HSV (Hue: 0..360, Saturation: 0..1, Value: 0..1).
+pub fn rgb_to_hsv(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
+    let max = r.max(g).max(b);
+    let min = r.min(g).min(b);
+    let delta = max - min;
+
+    let h = if delta < 1e-5 {
+        0.0
+    } else if (max - r).abs() < 1e-5 {
+        60.0 * (((g - b) / delta) % 6.0)
+    } else if (max - g).abs() < 1e-5 {
+        60.0 * (((b - r) / delta) + 2.0)
+    } else {
+        60.0 * (((r - g) / delta) + 4.0)
+    };
+
+    let h = (h % 360.0 + 360.0) % 360.0;
+    let s = if max < 1e-5 { 0.0 } else { delta / max };
+    let v = max;
+
+    (h, s, v)
+}
+
 /// Linearly interpolates between two RGB colors with weight `f` (0.0 to 1.0).
 pub fn lerp_color(c1: RgbColor, c2: RgbColor, f: f32) -> RgbColor {
     let f = f.clamp(0.0, 1.0);
