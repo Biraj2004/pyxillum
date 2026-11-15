@@ -23,7 +23,7 @@ use crate::windows_media::{NowPlayingInfo, WindowsAudioService};
 pub struct PyxillumApp {
     cmd_tx: mpsc::Sender<GuiCommand>,
     event_rx: mpsc::Receiver<GuiEvent>,
-    _state_reader: Arc<tokio::sync::RwLock<DeviceState>>,
+    state_reader: Arc<tokio::sync::RwLock<DeviceState>>,
     _simulator_ref: Option<Arc<Mutex<DeviceSimulator>>>,
     audio_service: WindowsAudioService,
 
@@ -32,6 +32,12 @@ pub struct PyxillumApp {
     now_playing: NowPlayingInfo,
 
     last_frame_instant: Instant,
+
+    // Last sent hardware state to prevent redundant packet queuing
+    last_sent_effect: u8,
+    last_sent_speed: u8,
+    last_sent_brightness: u8,
+    last_sent_loop_all: bool,
 }
 
 impl PyxillumApp {
@@ -79,7 +85,7 @@ impl PyxillumApp {
         Self {
             cmd_tx,
             event_rx,
-            _state_reader: state_reader,
+            state_reader,
             _simulator_ref: simulator_ref,
             audio_service,
 
@@ -88,6 +94,11 @@ impl PyxillumApp {
             now_playing: NowPlayingInfo::default(),
 
             last_frame_instant: Instant::now(),
+
+            last_sent_effect: 1,
+            last_sent_speed: 5,
+            last_sent_brightness: 255,
+            last_sent_loop_all: false,
         }
     }
 
@@ -138,24 +149,12 @@ impl PyxillumApp {
             DashboardMode::Dynamic => {
                 let speed_mult = self.state.ui_speed as f32 * 0.4;
                 let t = self.state.animation_timer * speed_mult;
-
-                for i in 0..num_pixels {
-                    let pos_ratio = i as f32 / num_pixels as f32;
-                    let hue = match self.state.ui_effect {
-                        0x01 => (pos_ratio * 360.0 + t * 60.0) % 360.0, // Rainbow
-                        0x09 => 20.0 + (pos_ratio * 30.0 + t * 40.0).sin().abs() * 35.0, // Red Yellow Fire
-                        0x0F => 0.0,                                // Red Comet
-                        0x11 => 220.0,                              // Blue Comet
-                        146 => (pos_ratio * 180.0 + 180.0) % 360.0, // Gradient
-                        _ => (pos_ratio * 360.0 + t * 40.0) % 360.0,
-                    };
-
-                    let (r, g, b) = crate::widgets::color_disc::hsv_to_rgb(hue, 1.0, 1.0);
-                    let r = (r * 255.0 * brightness_factor) as u8;
-                    let g = (g * 255.0 * brightness_factor) as u8;
-                    let b = (b * 255.0 * brightness_factor) as u8;
-                    self.state.strip_pixels.push(RgbColor::new(r, g, b));
-                }
+                self.state.strip_pixels = pyxillum_sim::render_effect_frame(
+                    self.state.ui_effect,
+                    t,
+                    num_pixels,
+                    brightness_factor,
+                );
             }
             DashboardMode::Music => {
                 let peak = if self.state.sync_with_windows_audio {
@@ -191,6 +190,13 @@ impl eframe::App for PyxillumApp {
             .as_secs_f32()
             .min(0.1);
         self.last_frame_instant = now;
+
+        // Sync connection state with background DeviceState reader
+        if let Ok(hw_state) = self.state_reader.try_read() {
+            if hw_state.is_connected && !self.state.is_connected {
+                self.state.is_connected = true;
+            }
+        }
 
         // Drain background worker events (real BLE discoveries and connection updates)
         while let Ok(evt) = self.event_rx.try_recv() {
@@ -251,6 +257,20 @@ impl eframe::App for PyxillumApp {
                     for dev in &mut self.saved_devices {
                         dev.is_connected = dev.id == address;
                     }
+                    // Sync active state directly to controller
+                    self.send(GuiCommand::SendCommand(Command::Power(self.state.ui_power)));
+                    self.send(GuiCommand::SendCommand(Command::SetEffect(
+                        self.state.ui_effect,
+                    )));
+                    self.send(GuiCommand::SendCommand(Command::SetSpeed(
+                        self.state.ui_speed,
+                    )));
+                    self.send(GuiCommand::SendCommand(Command::SetBrightness(
+                        self.state.ui_brightness,
+                    )));
+                    self.last_sent_effect = self.state.ui_effect;
+                    self.last_sent_speed = self.state.ui_speed;
+                    self.last_sent_brightness = self.state.ui_brightness;
                 }
                 GuiEvent::Disconnected => {
                     self.state.is_connected = false;
@@ -273,6 +293,9 @@ impl eframe::App for PyxillumApp {
                         status.color.g as f32 / 255.0,
                         status.color.b as f32 / 255.0,
                     ];
+                    self.last_sent_effect = status.effect;
+                    self.last_sent_speed = status.speed;
+                    self.last_sent_brightness = status.brightness;
                 }
                 GuiEvent::Error(err) => {
                     self.state.is_scanning = false;
@@ -377,6 +400,7 @@ impl eframe::App for PyxillumApp {
                                                 render_effect_drawer(ui, &mut self.state)
                                             {
                                                 self.state.ui_effect = code;
+                                                self.last_sent_effect = code;
                                                 self.send(GuiCommand::SendCommand(
                                                     Command::SetEffect(code),
                                                 ));
@@ -418,6 +442,7 @@ impl eframe::App for PyxillumApp {
                 .show(ctx, |ui| {
                     if let Some(code) = render_effect_drawer(ui, &mut self.state) {
                         self.state.ui_effect = code;
+                        self.last_sent_effect = code;
                         self.send(GuiCommand::SendCommand(Command::SetEffect(code)));
                     }
                 });
@@ -572,21 +597,33 @@ impl PyxillumApp {
             AppScreen::Dashboard(_) => match self.state.dashboard_mode {
                 DashboardMode::Dynamic => {
                     if render_dynamic_mode(ui, &mut self.state) {
-                        self.send(GuiCommand::SendCommand(Command::SetEffect(
-                            self.state.ui_effect,
-                        )));
-                        self.send(GuiCommand::SendCommand(Command::SetSpeed(
-                            self.state.ui_speed,
-                        )));
-                        self.send(GuiCommand::SendCommand(Command::SetBrightness(
-                            self.state.ui_brightness,
-                        )));
-                        let light_mode = if self.state.is_loop_all {
-                            LightMode::AutoDynamic
-                        } else {
-                            LightMode::Single
-                        };
-                        self.send(GuiCommand::SendCommand(Command::SetLightMode(light_mode)));
+                        if self.state.ui_effect != self.last_sent_effect {
+                            self.last_sent_effect = self.state.ui_effect;
+                            self.send(GuiCommand::SendCommand(Command::SetEffect(
+                                self.state.ui_effect,
+                            )));
+                        }
+                        if self.state.ui_speed != self.last_sent_speed {
+                            self.last_sent_speed = self.state.ui_speed;
+                            self.send(GuiCommand::SendCommand(Command::SetSpeed(
+                                self.state.ui_speed,
+                            )));
+                        }
+                        if self.state.ui_brightness != self.last_sent_brightness {
+                            self.last_sent_brightness = self.state.ui_brightness;
+                            self.send(GuiCommand::SendCommand(Command::SetBrightness(
+                                self.state.ui_brightness,
+                            )));
+                        }
+                        if self.state.is_loop_all != self.last_sent_loop_all {
+                            self.last_sent_loop_all = self.state.is_loop_all;
+                            let light_mode = if self.state.is_loop_all {
+                                LightMode::AutoDynamic
+                            } else {
+                                LightMode::Single
+                            };
+                            self.send(GuiCommand::SendCommand(Command::SetLightMode(light_mode)));
+                        }
                     }
                 }
                 DashboardMode::Solid => {

@@ -13,6 +13,9 @@ use pyxillum_protocol::{
 use std::time::{Duration, Instant};
 use thiserror::Error;
 
+pub mod render;
+pub use render::{render_effect_frame, COLOR_BLACK, COLOR_WHITE};
+
 /// Errors emitted by the device simulator when receiving malformed or illegal commands.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum SimError {
@@ -349,69 +352,19 @@ impl DeviceSimulator {
         }
 
         let num_pixels = self.length as usize;
-        let mut pixels = Vec::with_capacity(num_pixels);
-
         let factor = (self.brightness as f32) / 255.0;
 
-        match self.effect {
-            EFFECT_SOLID => {
-                let scaled = RgbColor::new(
-                    (self.color.r as f32 * factor) as u8,
-                    (self.color.g as f32 * factor) as u8,
-                    (self.color.b as f32 * factor) as u8,
-                );
-                pixels.resize(num_pixels, scaled);
-            }
-            0x01 => {
-                // Rainbow sweep
-                for i in 0..num_pixels {
-                    let hue = (self.animation_tick * 10.0 + (i as f32 * 360.0 / num_pixels as f32))
-                        % 360.0;
-                    let (r, g, b) = hsv_to_rgb(hue, 1.0, factor);
-                    pixels.push(RgbColor::new(r, g, b));
-                }
-            }
-            _ => {
-                // Generic animated dynamic pattern
-                for i in 0..num_pixels {
-                    let wave =
-                        (((self.animation_tick * 5.0 + i as f32).sin() + 1.0) * 0.5) * factor;
-                    let r = (self.color.r as f32 * wave) as u8;
-                    let g = (self.color.g as f32 * wave) as u8;
-                    let b = (self.color.b as f32 * wave) as u8;
-                    pixels.push(RgbColor::new(r, g, b));
-                }
-            }
+        if self.effect == EFFECT_SOLID {
+            let scaled = RgbColor::new(
+                (self.color.r as f32 * factor) as u8,
+                (self.color.g as f32 * factor) as u8,
+                (self.color.b as f32 * factor) as u8,
+            );
+            vec![scaled; num_pixels]
+        } else {
+            render::render_effect_frame(self.effect, self.animation_tick, num_pixels, factor)
         }
-
-        pixels
     }
-}
-
-fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
-    let c = v * s;
-    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
-    let m = v - c;
-
-    let (r_prime, g_prime, b_prime) = if h < 60.0 {
-        (c, x, 0.0)
-    } else if h < 120.0 {
-        (x, c, 0.0)
-    } else if h < 180.0 {
-        (0.0, c, x)
-    } else if h < 240.0 {
-        (0.0, x, c)
-    } else if h < 300.0 {
-        (x, 0.0, c)
-    } else {
-        (c, 0.0, x)
-    };
-
-    (
-        ((r_prime + m) * 255.0) as u8,
-        ((g_prime + m) * 255.0) as u8,
-        ((b_prime + m) * 255.0) as u8,
-    )
 }
 
 #[cfg(test)]
