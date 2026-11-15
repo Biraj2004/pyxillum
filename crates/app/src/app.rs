@@ -262,47 +262,248 @@ impl PyxillumApp {
                 }
             }
             DashboardMode::Diy => {
-                let speed_mult = self.state.diy_speed as f32 * 0.5;
-                let float_offset = self.state.animation_timer * speed_mult * 2.5;
+                let speed_mult = self.state.diy_speed as f32 * 0.4;
+                let t = self.state.animation_timer * speed_mult;
                 let node_count = self.state.diy_nodes.len().max(1);
+                let is_gradient =
+                    self.state.diy_effect_type == crate::state::DiyEffectType::Gradient;
 
-                for i in 0..num_pixels {
-                    let float_idx = match self.state.diy_chase_mode {
-                        crate::state::DiyChaseMode::Forward => {
-                            ((i as f32 * 0.5) + float_offset).abs()
-                        }
-                        crate::state::DiyChaseMode::Backward => {
-                            (1000.0 * node_count as f32 - ((i as f32 * 0.5) - float_offset)).abs()
-                        }
-                        crate::state::DiyChaseMode::Middle => {
-                            let mid = num_pixels as f32 * 0.5;
-                            let dist = (i as f32 - mid).abs();
-                            (dist * 0.6 + float_offset).abs()
-                        }
-                        crate::state::DiyChaseMode::Out => {
-                            let mid = num_pixels as f32 * 0.5;
-                            let dist = (i as f32 - mid).abs();
-                            (1000.0 * node_count as f32 - (dist * 0.6 - float_offset)).abs()
-                        }
-                    };
+                match self.state.diy_pattern {
+                    crate::state::DiyPatternStyle::Chase => {
+                        let float_offset = t * 3.5;
+                        for i in 0..num_pixels {
+                            let float_idx = match self.state.diy_direction {
+                                crate::state::DiyDirection::Forward => {
+                                    ((i as f32 * 0.4) + float_offset).abs()
+                                }
+                                crate::state::DiyDirection::Backward => (10000.0
+                                    * node_count as f32
+                                    - ((i as f32 * 0.4) - float_offset))
+                                    .abs(),
+                                crate::state::DiyDirection::MiddleToOut => {
+                                    let mid = num_pixels as f32 * 0.5;
+                                    let dist = (i as f32 - mid).abs();
+                                    (dist * 0.5 + float_offset).abs()
+                                }
+                                crate::state::DiyDirection::OutToMiddle => {
+                                    let mid = num_pixels as f32 * 0.5;
+                                    let dist = (i as f32 - mid).abs();
+                                    (10000.0 * node_count as f32 - (dist * 0.5 - float_offset))
+                                        .abs()
+                                }
+                            };
 
-                    let idx1 = (float_idx as usize) % node_count;
-                    let idx2 = (idx1 + 1) % node_count;
-                    let frac = float_idx.fract();
+                            let idx1 = (float_idx as usize) % node_count;
+                            let idx2 = (idx1 + 1) % node_count;
+                            let frac = float_idx.fract();
 
-                    let n1 = &self.state.diy_nodes[idx1];
-                    let raw_color =
-                        if self.state.diy_effect_type == crate::state::DiyEffectType::Gradient {
-                            let n2 = &self.state.diy_nodes[idx2];
+                            let n1 = &self.state.diy_nodes[idx1];
+                            let raw_color = if is_gradient {
+                                let n2 = &self.state.diy_nodes[idx2];
+                                pyxillum_sim::render::lerp_color(n1.color, n2.color, frac)
+                            } else {
+                                n1.color
+                            };
+
+                            let weight_scale = (n1.value as f32 / 255.0).clamp(0.05, 1.0);
+                            let final_scale = brightness_factor * weight_scale;
+                            let scaled = pyxillum_sim::render::scale_color(raw_color, final_scale);
+                            self.state.strip_pixels.push(scaled);
+                        }
+                    }
+                    crate::state::DiyPatternStyle::Flow => {
+                        let float_offset = t * 2.0;
+                        for i in 0..num_pixels {
+                            let norm_pos = match self.state.diy_direction {
+                                crate::state::DiyDirection::Forward => {
+                                    (i as f32 / num_pixels.max(1) as f32) * (node_count as f32)
+                                        + float_offset
+                                }
+                                crate::state::DiyDirection::Backward => {
+                                    10000.0 * node_count as f32
+                                        + ((num_pixels - 1 - i) as f32 / num_pixels.max(1) as f32)
+                                            * (node_count as f32)
+                                        + float_offset
+                                }
+                                crate::state::DiyDirection::MiddleToOut => {
+                                    let mid = num_pixels as f32 * 0.5;
+                                    let dist = (i as f32 - mid).abs() / mid.max(1.0);
+                                    dist * (node_count as f32) + float_offset
+                                }
+                                crate::state::DiyDirection::OutToMiddle => {
+                                    let mid = num_pixels as f32 * 0.5;
+                                    let dist = 1.0 - ((i as f32 - mid).abs() / mid.max(1.0));
+                                    dist * (node_count as f32) + float_offset
+                                }
+                            };
+
+                            let idx1 = (norm_pos as usize) % node_count;
+                            let idx2 = (idx1 + 1) % node_count;
+                            let frac = norm_pos.fract();
+
+                            let n1 = &self.state.diy_nodes[idx1];
+                            let raw_color = if is_gradient {
+                                let n2 = &self.state.diy_nodes[idx2];
+                                pyxillum_sim::render::lerp_color(n1.color, n2.color, frac)
+                            } else {
+                                n1.color
+                            };
+
+                            let weight_scale = (n1.value as f32 / 255.0).clamp(0.05, 1.0);
+                            let final_scale = brightness_factor * weight_scale;
+                            let scaled = pyxillum_sim::render::scale_color(raw_color, final_scale);
+                            self.state.strip_pixels.push(scaled);
+                        }
+                    }
+                    crate::state::DiyPatternStyle::Breathe => {
+                        let cycle = (t * 0.8) % node_count as f32;
+                        let idx1 = (cycle as usize) % node_count;
+                        let idx2 = (idx1 + 1) % node_count;
+                        let frac = cycle.fract();
+
+                        let n1 = &self.state.diy_nodes[idx1];
+                        let n2 = &self.state.diy_nodes[idx2];
+                        let base_color = if is_gradient {
                             pyxillum_sim::render::lerp_color(n1.color, n2.color, frac)
                         } else {
                             n1.color
                         };
 
-                    let weight_scale = (n1.value as f32 / 255.0).clamp(0.0, 1.0);
-                    let final_scale = brightness_factor * weight_scale;
-                    let scaled = pyxillum_sim::render::scale_color(raw_color, final_scale);
-                    self.state.strip_pixels.push(scaled);
+                        let breath_env = (f32::sin(frac * std::f32::consts::PI)).powf(1.6);
+                        let final_scale = brightness_factor * breath_env;
+                        let scaled = pyxillum_sim::render::scale_color(base_color, final_scale);
+                        for _ in 0..num_pixels {
+                            self.state.strip_pixels.push(scaled);
+                        }
+                    }
+                    crate::state::DiyPatternStyle::Wave => {
+                        let wave_speed = t * 3.0;
+                        for i in 0..num_pixels {
+                            let phase = match self.state.diy_direction {
+                                crate::state::DiyDirection::Forward => {
+                                    (i as f32 * 0.15) - wave_speed
+                                }
+                                crate::state::DiyDirection::Backward => {
+                                    (i as f32 * 0.15) + wave_speed
+                                }
+                                crate::state::DiyDirection::MiddleToOut => {
+                                    let mid = num_pixels as f32 * 0.5;
+                                    (i as f32 - mid).abs() * 0.2 - wave_speed
+                                }
+                                crate::state::DiyDirection::OutToMiddle => {
+                                    let mid = num_pixels as f32 * 0.5;
+                                    (i as f32 - mid).abs() * 0.2 + wave_speed
+                                }
+                            };
+                            let wave_amp = (f32::sin(phase) * 0.5 + 0.5).powf(1.4);
+
+                            let col_pos = (i as f32 / num_pixels.max(1) as f32)
+                                * (node_count as f32)
+                                + (t * 0.5);
+                            let idx1 = (col_pos as usize) % node_count;
+                            let idx2 = (idx1 + 1) % node_count;
+                            let frac = col_pos.fract();
+
+                            let n1 = &self.state.diy_nodes[idx1];
+                            let raw_color = if is_gradient {
+                                let n2 = &self.state.diy_nodes[idx2];
+                                pyxillum_sim::render::lerp_color(n1.color, n2.color, frac)
+                            } else {
+                                n1.color
+                            };
+
+                            let final_scale = brightness_factor * wave_amp;
+                            let scaled = pyxillum_sim::render::scale_color(raw_color, final_scale);
+                            self.state.strip_pixels.push(scaled);
+                        }
+                    }
+                    crate::state::DiyPatternStyle::Comet => {
+                        let tail_len = 12.0_f32;
+                        let head_pos = match self.state.diy_direction {
+                            crate::state::DiyDirection::Backward => {
+                                (num_pixels as f32 + tail_len)
+                                    - ((t * 25.0) % (num_pixels as f32 + tail_len * 2.0))
+                            }
+                            _ => (t * 25.0) % (num_pixels as f32 + tail_len * 2.0) - tail_len,
+                        };
+                        let active_node_idx = ((t * 2.0) as usize) % node_count;
+                        let comet_color = self.state.diy_nodes[active_node_idx].color;
+
+                        for i in 0..num_pixels {
+                            let dist = (head_pos - i as f32).abs();
+                            let intensity = if dist < tail_len {
+                                (1.0 - (dist / tail_len)).powf(2.0)
+                            } else {
+                                0.03
+                            };
+
+                            let scaled = pyxillum_sim::render::scale_color(
+                                comet_color,
+                                brightness_factor * intensity,
+                            );
+                            self.state.strip_pixels.push(scaled);
+                        }
+                    }
+                    crate::state::DiyPatternStyle::Strobe => {
+                        let step = ((t * 5.0) as usize) % node_count;
+                        let phase_fraction = (t * 5.0).fract();
+                        let is_flash_on = phase_fraction < 0.6;
+
+                        let current_col = if is_flash_on {
+                            self.state.diy_nodes[step].color
+                        } else {
+                            pyxillum_protocol::RgbColor::BLACK
+                        };
+                        let scaled =
+                            pyxillum_sim::render::scale_color(current_col, brightness_factor);
+                        for _ in 0..num_pixels {
+                            self.state.strip_pixels.push(scaled);
+                        }
+                    }
+                    crate::state::DiyPatternStyle::Sparkle => {
+                        for i in 0..num_pixels {
+                            let hash = ((i as u32 * 1103515245 + 12345 + (t * 8.0) as u32) % 100)
+                                as f32
+                                / 100.0;
+                            let node_idx = (i + (t * 2.0) as usize) % node_count;
+                            let base_node_col = self.state.diy_nodes[node_idx].color;
+
+                            let sparkle_val = if hash > 0.82 {
+                                ((hash - 0.82) / 0.18).powf(1.5)
+                            } else {
+                                0.08
+                            };
+                            let scaled = pyxillum_sim::render::scale_color(
+                                base_node_col,
+                                brightness_factor * sparkle_val,
+                            );
+                            self.state.strip_pixels.push(scaled);
+                        }
+                    }
+                    crate::state::DiyPatternStyle::Static => {
+                        for i in 0..num_pixels {
+                            let norm_pos =
+                                (i as f32 / num_pixels.max(1) as f32) * (node_count as f32);
+                            let idx1 = (norm_pos as usize).min(node_count - 1);
+                            let idx2 = (idx1 + 1).min(node_count - 1);
+                            let frac = norm_pos.fract();
+
+                            let n1 = &self.state.diy_nodes[idx1];
+                            let raw_color = if is_gradient && idx1 != idx2 {
+                                let n2 = &self.state.diy_nodes[idx2];
+                                pyxillum_sim::render::lerp_color(n1.color, n2.color, frac)
+                            } else {
+                                n1.color
+                            };
+
+                            let weight_scale = (n1.value as f32 / 255.0).clamp(0.05, 1.0);
+                            let scaled = pyxillum_sim::render::scale_color(
+                                raw_color,
+                                brightness_factor * weight_scale,
+                            );
+                            self.state.strip_pixels.push(scaled);
+                        }
+                    }
                 }
             }
             DashboardMode::Dynamic => {

@@ -148,7 +148,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
             (
                 crate::widgets::NavIcon::DiyCustom,
                 "DIY Custom",
-                "14-Node Sequencer",
+                "Node Sequencer",
                 DashboardMode::Diy,
             ),
         ];
