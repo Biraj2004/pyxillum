@@ -4,7 +4,7 @@
 //! multi-algorithm chase modes (Forward, Backward, Middle, Out), and real-time preview.
 
 use crate::state::{AppState, DiyChaseMode, DiyEffectType};
-use crate::theme::{render_card, Theme};
+use crate::theme::{render_card, render_segmented_toggle, Theme};
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 use pyxillum_protocol::RgbColor;
 
@@ -31,63 +31,19 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         let is_grad = state.diy_effect_type == DiyEffectType::Gradient;
-                        let (tog_rect, _) =
-                            ui.allocate_exact_size(Vec2::new(160.0, 30.0), egui::Sense::hover());
-                        let tp = ui.painter_at(tog_rect);
-
-                        tp.rect_filled(tog_rect, Rounding::same(15.0), Theme::WELL_BG);
-                        tp.rect_stroke(
-                            tog_rect,
-                            Rounding::same(15.0),
-                            Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
-                        );
-
-                        let half_w = tog_rect.width() / 2.0;
-                        let solid_rect =
-                            Rect::from_min_size(tog_rect.min, Vec2::new(half_w, tog_rect.height()));
-                        let grad_rect = Rect::from_min_size(
-                            Pos2::new(tog_rect.min.x + half_w, tog_rect.min.y),
-                            Vec2::new(half_w, tog_rect.height()),
-                        );
-
-                        let active_rect = if !is_grad { solid_rect } else { grad_rect };
-                        tp.rect_filled(active_rect, Rounding::same(15.0), Theme::ACCENT_BLUE);
-
-                        tp.text(
-                            solid_rect.center(),
-                            egui::Align2::CENTER_CENTER,
+                        let (_, new_sel) = render_segmented_toggle(
+                            ui,
+                            "diy_mode_toggle",
                             "Solid",
-                            egui::FontId::proportional(12.0),
-                            if !is_grad {
-                                Color32::WHITE
-                            } else {
-                                Theme::TEXT_SECONDARY
-                            },
-                        );
-                        tp.text(
-                            grad_rect.center(),
-                            egui::Align2::CENTER_CENTER,
                             "Gradient",
-                            egui::FontId::proportional(12.0),
-                            if is_grad {
-                                Color32::WHITE
-                            } else {
-                                Theme::TEXT_SECONDARY
-                            },
+                            is_grad,
                         );
-
-                        if ui
-                            .interact(solid_rect, ui.id().with("tog_solid"), egui::Sense::click())
-                            .clicked()
-                        {
-                            state.diy_effect_type = DiyEffectType::Solid;
-                            state_changed = true;
-                        }
-                        if ui
-                            .interact(grad_rect, ui.id().with("tog_grad"), egui::Sense::click())
-                            .clicked()
-                        {
-                            state.diy_effect_type = DiyEffectType::Gradient;
+                        if let Some(to_grad) = new_sel {
+                            state.diy_effect_type = if to_grad {
+                                DiyEffectType::Gradient
+                            } else {
+                                DiyEffectType::Solid
+                            };
                             state_changed = true;
                         }
                     });

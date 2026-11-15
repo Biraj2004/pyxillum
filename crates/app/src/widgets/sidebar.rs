@@ -127,15 +127,20 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
         ui.add_space(4.0);
 
         let nav_items = [
-            ("Dynamic FX", "146 Presets", DashboardMode::Dynamic),
-            ("Solid Colour", "Custom & Dynamic", DashboardMode::Solid),
-            ("Music Rhythm", "18 Audio Styles", DashboardMode::Music),
-            ("DIY Custom", "14-Node Sequencer", DashboardMode::Diy),
+            ("✦", "Dynamic FX", "146 Presets", DashboardMode::Dynamic),
+            (
+                "◉",
+                "Solid Colour",
+                "Custom & Dynamic",
+                DashboardMode::Solid,
+            ),
+            ("♫", "Music Rhythm", "18 Audio Styles", DashboardMode::Music),
+            ("𝌆", "DIY Custom", "14-Node Sequencer", DashboardMode::Diy),
         ];
 
-        for (title, sub, mode) in nav_items {
+        for (icon, title, sub, mode) in nav_items {
             let is_selected = !is_hub && state.dashboard_mode == mode;
-            let item_h = 40.0;
+            let item_h = 42.0;
             let (item_rect, resp) = ui.allocate_exact_size(
                 Vec2::new(ui.available_width(), item_h),
                 egui::Sense::click(),
@@ -157,16 +162,32 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
             if is_selected {
                 // Windows 11 Fluent Active Indicator (Left Accent Pill)
                 let pill_rect = Rect::from_min_size(
-                    Pos2::new(item_rect.min.x + 2.0, item_rect.center().y - 9.0),
-                    Vec2::new(3.0, 18.0),
+                    Pos2::new(item_rect.min.x + 2.0, item_rect.center().y - 10.0),
+                    Vec2::new(3.0, 20.0),
                 );
                 p.rect_filled(pill_rect, Rounding::same(1.5), Theme::ACCENT_BLUE);
             }
 
-            // Mode Label & Sub-label
-            let text_x = item_rect.min.x + 14.0;
+            // Mode Icon
+            let icon_col = if is_selected {
+                Theme::ACCENT_CYAN
+            } else if is_hovered {
+                Theme::TEXT_PRIMARY
+            } else {
+                Theme::TEXT_MUTED
+            };
             p.text(
-                Pos2::new(text_x, item_rect.min.y + 11.0),
+                Pos2::new(item_rect.min.x + 14.0, item_rect.center().y),
+                egui::Align2::LEFT_CENTER,
+                icon,
+                egui::FontId::proportional(14.0),
+                icon_col,
+            );
+
+            // Mode Label & Sub-label
+            let text_x = item_rect.min.x + 36.0;
+            p.text(
+                Pos2::new(text_x, item_rect.min.y + 12.0),
                 egui::Align2::LEFT_CENTER,
                 title,
                 egui::FontId::proportional(12.5),
@@ -178,7 +199,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
             );
 
             p.text(
-                Pos2::new(text_x, item_rect.min.y + 26.0),
+                Pos2::new(text_x, item_rect.min.y + 27.0),
                 egui::Align2::LEFT_CENTER,
                 sub,
                 egui::FontId::proportional(10.0),
@@ -200,7 +221,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
         ui.add_space(6.0);
 
         // 4. Device Hub Navigation Item
-        let hub_h = 36.0;
+        let hub_h = 38.0;
         let (hub_rect, hub_resp) =
             ui.allocate_exact_size(Vec2::new(ui.available_width(), hub_h), egui::Sense::click());
         let hp = ui.painter_at(hub_rect);
@@ -224,8 +245,23 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
             hp.rect_filled(pill_rect, Rounding::same(1.5), Theme::ACCENT_BLUE);
         }
 
+        let hub_icon_col = if is_hub {
+            Theme::ACCENT_CYAN
+        } else if hub_hovered {
+            Theme::TEXT_PRIMARY
+        } else {
+            Theme::TEXT_MUTED
+        };
         hp.text(
             Pos2::new(hub_rect.min.x + 14.0, hub_rect.center().y),
+            egui::Align2::LEFT_CENTER,
+            "📶",
+            egui::FontId::proportional(13.0),
+            hub_icon_col,
+        );
+
+        hp.text(
+            Pos2::new(hub_rect.min.x + 36.0, hub_rect.center().y),
             egui::Align2::LEFT_CENTER,
             "Devices & Pairing",
             egui::FontId::proportional(12.5),
@@ -262,7 +298,7 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState) {
             if ui
                 .add(
                     egui::Button::new(
-                        egui::RichText::new("Settings & Hardware")
+                        egui::RichText::new("⚙ Settings & Hardware")
                             .size(11.5)
                             .color(Theme::TEXT_SECONDARY),
                     )

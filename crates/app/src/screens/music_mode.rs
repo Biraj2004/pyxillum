@@ -134,60 +134,56 @@ pub fn render_music_mode(
             // 4. Sensitivity & Brightness Sliders
             ui.columns(2, |cols| {
                 // Sensitivity Card
-                cols[0].group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.vertical(|ui| {
+                render_card(&mut cols[0], 8.0, |ui| {
+                    ui.horizontal(|ui| {
                         ui.label(
                             egui::RichText::new("Acoustic Sensitivity")
                                 .size(12.0)
                                 .color(Theme::TEXT_SECONDARY),
                         );
-                        ui.label(
-                            egui::RichText::new(format!("Level {} / 16", state.ui_sensitivity))
-                                .strong()
-                                .size(18.0)
-                                .color(Theme::ACCENT_BLUE),
-                        );
-                        ui.add_space(4.0);
-                        if ui
-                            .add(
-                                egui::Slider::new(&mut state.ui_sensitivity, 1..=16)
-                                    .show_value(false),
-                            )
-                            .changed()
-                        {
-                            state_changed = true;
-                        }
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.label(
+                                egui::RichText::new(format!("Level {} / 16", state.ui_sensitivity))
+                                    .strong()
+                                    .size(15.0)
+                                    .color(Theme::ACCENT_BLUE),
+                            );
+                        });
                     });
+                    ui.add_space(8.0);
+                    if ui
+                        .add(egui::Slider::new(&mut state.ui_sensitivity, 1..=16).show_value(false))
+                        .changed()
+                    {
+                        state_changed = true;
+                    }
                 });
 
                 // Brightness Card
-                cols[1].group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.vertical(|ui| {
+                render_card(&mut cols[1], 8.0, |ui| {
+                    ui.horizontal(|ui| {
                         ui.label(
                             egui::RichText::new("Master Brightness")
                                 .size(12.0)
                                 .color(Theme::TEXT_SECONDARY),
                         );
-                        let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
-                        ui.label(
-                            egui::RichText::new(format!("{}%", pct))
-                                .strong()
-                                .size(18.0)
-                                .color(Theme::TEXT_PRIMARY),
-                        );
-                        ui.add_space(4.0);
-                        if ui
-                            .add(
-                                egui::Slider::new(&mut state.ui_brightness, 0..=255)
-                                    .show_value(false),
-                            )
-                            .changed()
-                        {
-                            state_changed = true;
-                        }
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+                            ui.label(
+                                egui::RichText::new(format!("{}%", pct))
+                                    .strong()
+                                    .size(15.0)
+                                    .color(Theme::TEXT_PRIMARY),
+                            );
+                        });
                     });
+                    ui.add_space(8.0);
+                    if ui
+                        .add(egui::Slider::new(&mut state.ui_brightness, 0..=255).show_value(false))
+                        .changed()
+                    {
+                        state_changed = true;
+                    }
                 });
             });
         });

@@ -5,7 +5,7 @@
 
 use crate::catalog::{get_lighting_style, get_lighting_title};
 use crate::state::AppState;
-use crate::theme::{render_card, render_round_action_button, Theme};
+use crate::theme::{render_card, render_hero_play_button, render_pill_action_button, Theme};
 use crate::widgets::ArcDial;
 use eframe::egui;
 
@@ -44,41 +44,63 @@ pub fn render_dynamic_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                         );
                     }
 
-                    ui.add_space(14.0);
+                    ui.add_space(16.0);
 
-                    // 4-Button Action Bar (Loop, Play/Pause, Favorite, Preset List)
+                    // Refined Action Bar: [Loop/Once Pill] [Play Hero Button] [Fav Pill] [Presets Pill]
                     ui.horizontal(|ui| {
                         let bar_w = ui.available_width();
-                        ui.add_space(((bar_w - 240.0) / 2.0).max(0.0));
+                        // Total bar width: 76 + 12 + 44 + 12 + 70 + 12 + 84 = 310
+                        ui.add_space(((bar_w - 310.0) / 2.0).max(0.0));
 
-                        // Loop Toggle
-                        let loop_lbl = if state.is_loop_all { "Loop" } else { "Once" };
-                        if render_round_action_button(ui, loop_lbl, state.is_loop_all).clicked() {
+                        // Loop Mode Toggle Pill
+                        let loop_icon = if state.is_loop_all { "⟲" } else { "↻" };
+                        let loop_text = if state.is_loop_all { "Loop" } else { "Once" };
+                        if render_pill_action_button(
+                            ui,
+                            loop_icon,
+                            loop_text,
+                            state.is_loop_all,
+                            76.0,
+                        )
+                        .clicked()
+                        {
                             state.is_loop_all = !state.is_loop_all;
                             state_changed = true;
                         }
-                        ui.add_space(16.0);
+                        ui.add_space(12.0);
 
-                        // Play / Pause Toggle
-                        let play_lbl = if state.is_playing_dynamic { "||" } else { ">" };
-                        if render_round_action_button(ui, play_lbl, state.is_playing_dynamic)
-                            .clicked()
-                        {
+                        // Hero Play/Pause Circular Button
+                        if render_hero_play_button(ui, state.is_playing_dynamic).clicked() {
                             state.is_playing_dynamic = !state.is_playing_dynamic;
                             state_changed = true;
                         }
-                        ui.add_space(16.0);
+                        ui.add_space(12.0);
 
-                        // Favourite Toggle
-                        let fav_lbl = if state.is_favourite { "Saved" } else { "Fav" };
-                        if render_round_action_button(ui, fav_lbl, state.is_favourite).clicked() {
+                        // Favourite Toggle Pill
+                        let fav_icon = if state.is_favourite { "★" } else { "☆" };
+                        let fav_text = if state.is_favourite { "Saved" } else { "Fav" };
+                        if render_pill_action_button(
+                            ui,
+                            fav_icon,
+                            fav_text,
+                            state.is_favourite,
+                            70.0,
+                        )
+                        .clicked()
+                        {
                             state.is_favourite = !state.is_favourite;
                         }
-                        ui.add_space(16.0);
+                        ui.add_space(12.0);
 
-                        // List / Preset Drawer Toggle
-                        if render_round_action_button(ui, "List", state.show_effect_drawer)
-                            .clicked()
+                        // Preset Catalog Drawer Toggle Pill
+                        if render_pill_action_button(
+                            ui,
+                            "☰",
+                            "Presets",
+                            state.show_effect_drawer,
+                            84.0,
+                        )
+                        .clicked()
                         {
                             state.show_effect_drawer = !state.show_effect_drawer;
                         }
@@ -88,60 +110,59 @@ pub fn render_dynamic_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
 
             ui.add_space(12.0);
 
-            // 2. Dual Adjustment Sliders (Brightness and Speed)
+            // 2. Dual Adjustment Metric Cards (Brightness and Speed)
             ui.columns(2, |cols| {
                 // Brightness Card
-                cols[0].group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.vertical(|ui| {
+                render_card(&mut cols[0], 8.0, |ui| {
+                    ui.horizontal(|ui| {
                         ui.label(
-                            egui::RichText::new("Brightness")
+                            egui::RichText::new("Master Brightness")
                                 .size(12.0)
                                 .color(Theme::TEXT_SECONDARY),
                         );
-                        let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
-                        ui.label(
-                            egui::RichText::new(format!("{}%", pct))
-                                .strong()
-                                .size(18.0)
-                                .color(Theme::TEXT_PRIMARY),
-                        );
-                        ui.add_space(4.0);
-                        if ui
-                            .add(
-                                egui::Slider::new(&mut state.ui_brightness, 0..=255)
-                                    .show_value(false),
-                            )
-                            .changed()
-                        {
-                            state_changed = true;
-                        }
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+                            ui.label(
+                                egui::RichText::new(format!("{}%", pct))
+                                    .strong()
+                                    .size(15.0)
+                                    .color(Theme::TEXT_PRIMARY),
+                            );
+                        });
                     });
+                    ui.add_space(8.0);
+                    if ui
+                        .add(egui::Slider::new(&mut state.ui_brightness, 0..=255).show_value(false))
+                        .changed()
+                    {
+                        state_changed = true;
+                    }
                 });
 
                 // Speed Card
-                cols[1].group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.vertical(|ui| {
+                render_card(&mut cols[1], 8.0, |ui| {
+                    ui.horizontal(|ui| {
                         ui.label(
                             egui::RichText::new("Animation Speed")
                                 .size(12.0)
                                 .color(Theme::TEXT_SECONDARY),
                         );
-                        ui.label(
-                            egui::RichText::new(format!("Level {}", state.ui_speed))
-                                .strong()
-                                .size(18.0)
-                                .color(Theme::ACCENT_CYAN),
-                        );
-                        ui.add_space(4.0);
-                        if ui
-                            .add(egui::Slider::new(&mut state.ui_speed, 1..=10).show_value(false))
-                            .changed()
-                        {
-                            state_changed = true;
-                        }
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.label(
+                                egui::RichText::new(format!("Level {}", state.ui_speed))
+                                    .strong()
+                                    .size(15.0)
+                                    .color(Theme::ACCENT_CYAN),
+                            );
+                        });
                     });
+                    ui.add_space(8.0);
+                    if ui
+                        .add(egui::Slider::new(&mut state.ui_speed, 1..=10).show_value(false))
+                        .changed()
+                    {
+                        state_changed = true;
+                    }
                 });
             });
         });

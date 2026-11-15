@@ -146,8 +146,8 @@ impl ArcDial {
             Theme::TEXT_SECONDARY,
         );
 
-        // 7. Left Stepper Button (<)
-        let btn_size = Vec2::splat(32.0);
+        // 7. Left Stepper Button (‹)
+        let btn_size = Vec2::splat(34.0);
         let left_btn_rect =
             Rect::from_center_size(Pos2::new(rect.min.x + 18.0, center.y), btn_size);
         let left_btn_resp = ui.interact(
@@ -158,16 +158,16 @@ impl ArcDial {
         let lb_hovered = left_btn_resp.hovered();
         painter.circle_filled(
             left_btn_rect.center(),
-            15.0,
+            16.0,
             if lb_hovered {
                 Theme::CARD_HOVER
             } else {
-                Color32::from_rgb(42, 42, 42)
+                Color32::from_rgb(38, 38, 38)
             },
         );
         painter.circle_stroke(
             left_btn_rect.center(),
-            15.0,
+            16.0,
             Stroke::new(
                 1.0_f32,
                 if lb_hovered {
@@ -177,22 +177,31 @@ impl ArcDial {
                 },
             ),
         );
-        painter.text(
-            left_btn_rect.center(),
-            egui::Align2::CENTER_CENTER,
-            "<",
-            egui::FontId::proportional(14.0),
-            if lb_hovered {
-                Theme::TEXT_PRIMARY
-            } else {
-                Theme::TEXT_SECONDARY
-            },
+        let lc = left_btn_rect.center();
+        let chevron_col = if lb_hovered {
+            Theme::TEXT_PRIMARY
+        } else {
+            Theme::TEXT_SECONDARY
+        };
+        painter.line_segment(
+            [
+                Pos2::new(lc.x + 2.5, lc.y - 6.0),
+                Pos2::new(lc.x - 3.5, lc.y),
+            ],
+            Stroke::new(2.0_f32, chevron_col),
+        );
+        painter.line_segment(
+            [
+                Pos2::new(lc.x - 3.5, lc.y),
+                Pos2::new(lc.x + 2.5, lc.y + 6.0),
+            ],
+            Stroke::new(2.0_f32, chevron_col),
         );
         if left_btn_resp.clicked() {
             delta = Some(-1);
         }
 
-        // 8. Right Stepper Button (>)
+        // 8. Right Stepper Button (›)
         let right_btn_rect =
             Rect::from_center_size(Pos2::new(rect.max.x - 18.0, center.y), btn_size);
         let right_btn_resp = ui.interact(
@@ -203,16 +212,16 @@ impl ArcDial {
         let rb_hovered = right_btn_resp.hovered();
         painter.circle_filled(
             right_btn_rect.center(),
-            15.0,
+            16.0,
             if rb_hovered {
                 Theme::CARD_HOVER
             } else {
-                Color32::from_rgb(42, 42, 42)
+                Color32::from_rgb(38, 38, 38)
             },
         );
         painter.circle_stroke(
             right_btn_rect.center(),
-            15.0,
+            16.0,
             Stroke::new(
                 1.0_f32,
                 if rb_hovered {
@@ -222,16 +231,25 @@ impl ArcDial {
                 },
             ),
         );
-        painter.text(
-            right_btn_rect.center(),
-            egui::Align2::CENTER_CENTER,
-            ">",
-            egui::FontId::proportional(14.0),
-            if rb_hovered {
-                Theme::TEXT_PRIMARY
-            } else {
-                Theme::TEXT_SECONDARY
-            },
+        let rc = right_btn_rect.center();
+        let chevron_col_r = if rb_hovered {
+            Theme::TEXT_PRIMARY
+        } else {
+            Theme::TEXT_SECONDARY
+        };
+        painter.line_segment(
+            [
+                Pos2::new(rc.x - 2.5, rc.y - 6.0),
+                Pos2::new(rc.x + 3.5, rc.y),
+            ],
+            Stroke::new(2.0_f32, chevron_col_r),
+        );
+        painter.line_segment(
+            [
+                Pos2::new(rc.x + 3.5, rc.y),
+                Pos2::new(rc.x - 2.5, rc.y + 6.0),
+            ],
+            Stroke::new(2.0_f32, chevron_col_r),
         );
         if right_btn_resp.clicked() {
             delta = Some(1);

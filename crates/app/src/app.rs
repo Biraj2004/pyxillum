@@ -755,13 +755,13 @@ impl PyxillumApp {
                         if left_ui
                             .add(
                                 egui::Button::new(
-                                    egui::RichText::new("< Devices")
-                                        .size(11.5)
+                                    egui::RichText::new("‹ Devices")
+                                        .size(12.0)
                                         .color(Theme::TEXT_SECONDARY),
                                 )
                                 .fill(Theme::WELL_BG)
                                 .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                                .rounding(Rounding::same(4.0)),
+                                .rounding(Rounding::same(6.0)),
                             )
                             .clicked()
                         {
@@ -787,7 +787,7 @@ impl PyxillumApp {
                                 .color(Theme::TEXT_PRIMARY),
                         );
 
-                        left_ui.add_space(4.0);
+                        left_ui.add_space(6.0);
                         let dot_col = if self.state.is_connected {
                             Theme::ACCENT_EMERALD
                         } else {
@@ -797,7 +797,7 @@ impl PyxillumApp {
                             left_ui.allocate_exact_size(Vec2::splat(8.0), egui::Sense::hover());
                         left_ui
                             .painter()
-                            .circle_filled(d_rect.center(), 3.0, dot_col);
+                            .circle_filled(d_rect.center(), 3.5, dot_col);
                     } else {
                         left_ui.label(
                             egui::RichText::new("Pyxillum Device Studio")
@@ -818,7 +818,7 @@ impl PyxillumApp {
 
         // Right Section: Power ToggleSwitch & Settings Button
         let right_rect = Rect::from_min_max(
-            Pos2::new(rect.max.x - 220.0, rect.min.y),
+            Pos2::new(rect.max.x - 240.0, rect.min.y),
             Pos2::new(rect.max.x - 10.0, rect.max.y),
         );
         ui.allocate_ui_at_rect(right_rect, |right_ui| {
@@ -832,7 +832,7 @@ impl PyxillumApp {
                         self.send(GuiCommand::SendCommand(Command::Power(power_val)));
                     }
 
-                    right_ui.add_space(6.0);
+                    right_ui.add_space(8.0);
                     let power_lbl = if self.state.ui_power { "On" } else { "Off" };
                     right_ui.label(egui::RichText::new(power_lbl).size(11.5).color(
                         if self.state.ui_power {
@@ -848,13 +848,13 @@ impl PyxillumApp {
                     if right_ui
                         .add(
                             egui::Button::new(
-                                egui::RichText::new("Settings")
+                                egui::RichText::new("⚙ Settings")
                                     .size(11.5)
                                     .color(Theme::TEXT_SECONDARY),
                             )
                             .fill(Theme::WELL_BG)
                             .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                            .rounding(Rounding::same(4.0)),
+                            .rounding(Rounding::same(6.0)),
                         )
                         .clicked()
                     {
