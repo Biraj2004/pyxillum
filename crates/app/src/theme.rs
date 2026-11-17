@@ -321,16 +321,29 @@ pub fn render_primary_button(
     }
 }
 
-/// Renders a standardized WinUI 3 secondary / neutral button with consistent height and padding.
-pub fn render_secondary_button(ui: &mut egui::Ui, text: &str, min_width: f32) -> egui::Response {
+/// Renders a standardized WinUI 3 secondary / neutral button with optional enabled state.
+pub fn render_secondary_button_enabled(
+    ui: &mut egui::Ui,
+    text: &str,
+    enabled: bool,
+    min_width: f32,
+) -> egui::Response {
     let height = 34.0_f32;
-    let (rect, resp) =
-        ui.allocate_exact_size(Vec2::new(min_width.max(80.0), height), egui::Sense::click());
+    let (rect, resp) = ui.allocate_exact_size(
+        Vec2::new(min_width.max(80.0), height),
+        if enabled {
+            egui::Sense::click()
+        } else {
+            egui::Sense::hover()
+        },
+    );
     let p = ui.painter_at(rect);
-    let is_hovered = resp.hovered();
-    let is_active = resp.is_pointer_button_down_on();
+    let is_hovered = enabled && resp.hovered();
+    let is_active = enabled && resp.is_pointer_button_down_on();
 
-    let bg = if is_active {
+    let bg = if !enabled {
+        Color32::from_rgb(32, 32, 32)
+    } else if is_active {
         Theme::CARD_ACTIVE
     } else if is_hovered {
         Theme::CARD_HOVER
@@ -338,13 +351,17 @@ pub fn render_secondary_button(ui: &mut egui::Ui, text: &str, min_width: f32) ->
         Theme::WELL_BG
     };
 
-    let border = if is_hovered {
+    let border = if !enabled {
+        Theme::BORDER_LIGHT
+    } else if is_hovered {
         Theme::BORDER_HOVER
     } else {
         Theme::BORDER_LIGHT
     };
 
-    let text_col = if is_hovered {
+    let text_col = if !enabled {
+        Theme::TEXT_DISABLED
+    } else if is_hovered {
         Theme::TEXT_PRIMARY
     } else {
         Theme::TEXT_SECONDARY
@@ -361,7 +378,16 @@ pub fn render_secondary_button(ui: &mut egui::Ui, text: &str, min_width: f32) ->
         text_col,
     );
 
-    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+    if enabled {
+        resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+    } else {
+        resp.on_hover_cursor(egui::CursorIcon::NotAllowed)
+    }
+}
+
+/// Renders a standardized WinUI 3 secondary / neutral button with consistent height and padding.
+pub fn render_secondary_button(ui: &mut egui::Ui, text: &str, min_width: f32) -> egui::Response {
+    render_secondary_button_enabled(ui, text, true, min_width)
 }
 
 /// Renders a standardized WinUI 3 danger / disconnect button with consistent geometry.

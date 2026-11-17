@@ -6,7 +6,8 @@
 
 use crate::state::{AppState, DiyDirection, DiyEffectType, DiyNode, DiyPatternStyle, DiyPreset};
 use crate::theme::{
-    lerp_color_egui, render_card, render_secondary_button, render_segmented_toggle, Theme,
+    lerp_color_egui, render_card, render_secondary_button, render_secondary_button_enabled,
+    render_segmented_toggle, Theme,
 };
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 use pyxillum_protocol::RgbColor;
@@ -156,9 +157,8 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
             // 2. Dynamic Sequence Palette Grid & Palette Actions
             // =================================================================
             render_card(ui, 10.0, |ui| {
-                let node_count = state.diy_nodes.len();
-
                 ui.horizontal(|ui| {
+                    let node_count = state.diy_nodes.len();
                     ui.label(
                         egui::RichText::new(format!("Sequence Palette ({} Nodes)", node_count))
                             .size(13.5)
@@ -173,7 +173,10 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         // Reverse Palette
-                        if render_secondary_button(ui, "Reverse", 64.0).clicked() {
+                        let can_reverse = state.diy_nodes.len() > 1;
+                        let rev_resp =
+                            render_secondary_button_enabled(ui, "Reverse", can_reverse, 64.0);
+                        if can_reverse && rev_resp.clicked() {
                             state.diy_nodes.reverse();
                             state_changed = true;
                         }
@@ -181,46 +184,66 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                         ui.add_space(6.0);
 
                         // Duplicate Node
-                        if node_count < 32
-                            && render_secondary_button(ui, "Duplicate", 72.0).clicked()
-                        {
-                            if let Some(sel_idx) = state.selected_diy_index {
-                                if sel_idx < state.diy_nodes.len() {
-                                    let clone_node = state.diy_nodes[sel_idx].clone();
-                                    state.diy_nodes.insert(sel_idx + 1, clone_node);
-                                    state.selected_diy_index = Some(sel_idx + 1);
-                                    state_changed = true;
-                                }
+                        let can_duplicate =
+                            state.diy_nodes.len() < 32 && !state.diy_nodes.is_empty();
+                        let dup_resp =
+                            render_secondary_button_enabled(ui, "Duplicate", can_duplicate, 72.0);
+                        let dup_resp = if can_duplicate {
+                            dup_resp.on_hover_text("Duplicate selected colour node")
+                        } else {
+                            dup_resp.on_hover_text("Maximum 32 colour nodes reached")
+                        };
+                        if can_duplicate && dup_resp.clicked() {
+                            let dup_idx = state
+                                .selected_diy_index
+                                .unwrap_or_else(|| state.diy_nodes.len().saturating_sub(1));
+                            if let Some(clone_node) = state.diy_nodes.get(dup_idx).cloned() {
+                                state.diy_nodes.insert(dup_idx + 1, clone_node);
+                                state.selected_diy_index = Some(dup_idx + 1);
+                                state_changed = true;
                             }
                         }
-                        if node_count < 32 {
-                            ui.add_space(6.0);
-                        }
+
+                        ui.add_space(6.0);
 
                         // Remove Node Button
-                        if node_count > 2 && render_secondary_button(ui, "- Remove", 70.0).clicked()
-                        {
-                            if let Some(sel_idx) = state.selected_diy_index {
-                                if sel_idx < state.diy_nodes.len() {
-                                    state.diy_nodes.remove(sel_idx);
-                                    state.selected_diy_index =
-                                        Some(sel_idx.min(state.diy_nodes.len() - 1));
-                                    state_changed = true;
-                                }
+                        let can_remove = state.diy_nodes.len() > 2;
+                        let rem_resp =
+                            render_secondary_button_enabled(ui, "- Remove", can_remove, 72.0);
+                        let rem_resp = if can_remove {
+                            rem_resp.on_hover_text("Remove selected colour node from palette")
+                        } else {
+                            rem_resp.on_hover_text("Minimum 2 colour nodes required")
+                        };
+                        if can_remove && rem_resp.clicked() {
+                            let rem_idx = state
+                                .selected_diy_index
+                                .unwrap_or_else(|| state.diy_nodes.len().saturating_sub(1));
+                            if rem_idx < state.diy_nodes.len() {
+                                state.diy_nodes.remove(rem_idx);
+                                state.selected_diy_index = if state.diy_nodes.is_empty() {
+                                    None
+                                } else {
+                                    Some(rem_idx.min(state.diy_nodes.len() - 1))
+                                };
+                                state_changed = true;
                             }
                         }
-                        if node_count > 2 {
-                            ui.add_space(6.0);
-                        }
+
+                        ui.add_space(6.0);
 
                         // Add Node Button
-                        if node_count < 32
-                            && render_secondary_button(ui, "+ Add Node", 82.0).clicked()
-                        {
+                        let can_add = state.diy_nodes.len() < 32;
+                        let add_resp =
+                            render_secondary_button_enabled(ui, "+ Add Node", can_add, 82.0);
+                        let add_resp = if can_add {
+                            add_resp.on_hover_text("Add a new colour node to the palette")
+                        } else {
+                            add_resp.on_hover_text("Maximum 32 colour nodes reached")
+                        };
+                        if can_add && add_resp.clicked() {
                             let new_col = if let Some(sel_idx) = state.selected_diy_index {
-                                if sel_idx < state.diy_nodes.len() {
-                                    let prev = &state.diy_nodes[sel_idx];
-                                    // Slight hue shift for the new node
+                                if let Some(prev) = state.diy_nodes.get(sel_idx) {
                                     RgbColor::new(
                                         prev.color.g.wrapping_add(40),
                                         prev.color.b.wrapping_add(50),
@@ -245,19 +268,19 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
 
                 ui.add_space(10.0);
 
-                // Render dynamic node chips in responsive wrapped rows
+                // Render dynamic node chips in responsive wrapped rows (read current count after modifications)
+                let current_node_count = state.diy_nodes.len();
                 let total_w = ui.available_width();
                 let chip_slot_w = 48.0_f32;
                 let max_cols = ((total_w / chip_slot_w).floor() as usize).max(1);
 
-                let rows = node_count.div_ceil(max_cols);
+                let rows = current_node_count.div_ceil(max_cols);
 
                 for row in 0..rows {
                     ui.horizontal(|ui| {
                         for col in 0..max_cols {
                             let idx = row * max_cols + col;
-                            if idx < node_count {
-                                let node = &state.diy_nodes[idx];
+                            if let Some(node) = state.diy_nodes.get(idx) {
                                 let is_selected = state.selected_diy_index == Some(idx);
 
                                 let (btn_rect, btn_resp) = ui.allocate_exact_size(
@@ -338,16 +361,19 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                 // Selected Node Inspector & Colour Customizer
                 // =============================================================
                 if let Some(sel_idx) = state.selected_diy_index {
-                    if sel_idx < state.diy_nodes.len() {
+                    if let Some(node) = state.diy_nodes.get(sel_idx) {
+                        let current_col =
+                            Color32::from_rgb(node.color.r, node.color.g, node.color.b);
+                        let node_r = node.color.r;
+                        let node_g = node.color.g;
+                        let node_b = node.color.b;
+                        let node_val = node.value;
+
                         ui.add_space(8.0);
                         ui.separator();
                         ui.add_space(8.0);
 
                         ui.horizontal(|ui| {
-                            let node = &state.diy_nodes[sel_idx];
-                            let current_col =
-                                Color32::from_rgb(node.color.r, node.color.g, node.color.b);
-
                             // Large preview circle of selected node
                             let (swatch_rect, _) =
                                 ui.allocate_exact_size(Vec2::new(34.0, 34.0), egui::Sense::hover());
@@ -371,17 +397,28 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                                 ui.label(
                                     egui::RichText::new(format!(
                                         "RGB({}, {}, {}) • HEX #{:02X}{:02X}{:02X}",
-                                        node.color.r,
-                                        node.color.g,
-                                        node.color.b,
-                                        node.color.r,
-                                        node.color.g,
-                                        node.color.b
+                                        node_r, node_g, node_b, node_r, node_g, node_b
                                     ))
                                     .size(10.5)
                                     .color(Theme::TEXT_MUTED),
                                 );
                             });
+
+                            if state.diy_nodes.len() > 2 {
+                                ui.add_space(8.0);
+                                if render_secondary_button(ui, "Delete Node", 80.0)
+                                    .on_hover_text("Delete this colour node")
+                                    .clicked()
+                                {
+                                    state.diy_nodes.remove(sel_idx);
+                                    state.selected_diy_index = if state.diy_nodes.is_empty() {
+                                        None
+                                    } else {
+                                        Some(sel_idx.min(state.diy_nodes.len() - 1))
+                                    };
+                                    state_changed = true;
+                                }
+                            }
 
                             ui.add_space(16.0);
 
@@ -410,8 +447,11 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                                     );
 
                                     if sw_resp.clicked() {
-                                        state.diy_nodes[sel_idx].color = RgbColor::new(r, g, b);
-                                        state_changed = true;
+                                        if let Some(target_node) = state.diy_nodes.get_mut(sel_idx)
+                                        {
+                                            target_node.color = RgbColor::new(r, g, b);
+                                            state_changed = true;
+                                        }
                                     }
                                 }
                             });
@@ -420,17 +460,19 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
 
                             // Precise Color Picker Button
                             let mut node_col = [
-                                state.diy_nodes[sel_idx].color.r as f32 / 255.0,
-                                state.diy_nodes[sel_idx].color.g as f32 / 255.0,
-                                state.diy_nodes[sel_idx].color.b as f32 / 255.0,
+                                node_r as f32 / 255.0,
+                                node_g as f32 / 255.0,
+                                node_b as f32 / 255.0,
                             ];
                             if ui.color_edit_button_rgb(&mut node_col).changed() {
-                                state.diy_nodes[sel_idx].color = RgbColor::new(
-                                    (node_col[0] * 255.0) as u8,
-                                    (node_col[1] * 255.0) as u8,
-                                    (node_col[2] * 255.0) as u8,
-                                );
-                                state_changed = true;
+                                if let Some(target_node) = state.diy_nodes.get_mut(sel_idx) {
+                                    target_node.color = RgbColor::new(
+                                        (node_col[0] * 255.0) as u8,
+                                        (node_col[1] * 255.0) as u8,
+                                        (node_col[2] * 255.0) as u8,
+                                    );
+                                    state_changed = true;
+                                }
                             }
                         });
 
@@ -443,8 +485,7 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                                     .size(11.5)
                                     .color(Theme::TEXT_SECONDARY),
                             );
-                            let weight_pct =
-                                (state.diy_nodes[sel_idx].value as f32 / 255.0 * 100.0) as u32;
+                            let weight_pct = (node_val as f32 / 255.0 * 100.0) as u32;
                             ui.label(
                                 egui::RichText::new(format!("{}%", weight_pct))
                                     .size(12.0)
@@ -452,14 +493,16 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                                     .color(Theme::ACCENT_CYAN),
                             );
                             ui.add_space(6.0);
-                            if ui
-                                .add(
-                                    egui::Slider::new(&mut state.diy_nodes[sel_idx].value, 0..=255)
-                                        .show_value(false),
-                                )
-                                .changed()
-                            {
-                                state_changed = true;
+                            if let Some(target_node) = state.diy_nodes.get_mut(sel_idx) {
+                                if ui
+                                    .add(
+                                        egui::Slider::new(&mut target_node.value, 0..=255)
+                                            .show_value(false),
+                                    )
+                                    .changed()
+                                {
+                                    state_changed = true;
+                                }
                             }
                         });
                     }
@@ -658,17 +701,19 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                             let idx2 = (idx1 + 1).min(n_count - 1);
                             let local_t = frac_pos.fract();
 
-                            let n1 = &state.diy_nodes[idx1];
-                            let n2 = &state.diy_nodes[idx2];
-                            let c1 = Color32::from_rgb(n1.color.r, n1.color.g, n1.color.b);
-                            let c2 = Color32::from_rgb(n2.color.r, n2.color.g, n2.color.b);
-                            let blend = lerp_color_egui(c1, c2, local_t);
+                            if let (Some(n1), Some(n2)) =
+                                (state.diy_nodes.get(idx1), state.diy_nodes.get(idx2))
+                            {
+                                let c1 = Color32::from_rgb(n1.color.r, n1.color.g, n1.color.b);
+                                let c2 = Color32::from_rgb(n2.color.r, n2.color.g, n2.color.b);
+                                let blend = lerp_color_egui(c1, c2, local_t);
 
-                            let seg_rect = Rect::from_min_size(
-                                Pos2::new(p_rect.min.x + (s as f32) * step_w, p_rect.min.y),
-                                Vec2::new(step_w + 1.0, p_rect.height()),
-                            );
-                            p.rect_filled(seg_rect, Rounding::ZERO, blend);
+                                let seg_rect = Rect::from_min_size(
+                                    Pos2::new(p_rect.min.x + (s as f32) * step_w, p_rect.min.y),
+                                    Vec2::new(step_w + 1.0, p_rect.height()),
+                                );
+                                p.rect_filled(seg_rect, Rounding::ZERO, blend);
+                            }
                         }
                     } else {
                         // Discrete solid segments

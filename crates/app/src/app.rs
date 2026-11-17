@@ -262,9 +262,17 @@ impl PyxillumApp {
                 }
             }
             DashboardMode::Diy => {
+                if self.state.diy_nodes.is_empty() {
+                    for _ in 0..num_pixels {
+                        self.state
+                            .strip_pixels
+                            .push(pyxillum_protocol::RgbColor::BLACK);
+                    }
+                    return;
+                }
                 let speed_mult = self.state.diy_speed as f32 * 0.4;
                 let t = self.state.animation_timer * speed_mult;
-                let node_count = self.state.diy_nodes.len().max(1);
+                let node_count = self.state.diy_nodes.len();
                 let is_gradient =
                     self.state.diy_effect_type == crate::state::DiyEffectType::Gradient;
 
