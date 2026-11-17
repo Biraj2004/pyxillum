@@ -536,7 +536,10 @@ pub fn render_card<R>(
         .rounding(Rounding::same(rounding))
         .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
         .inner_margin(egui::Margin::symmetric(20.0, 18.0))
-        .show(ui, add_contents)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            add_contents(ui)
+        })
 }
 
 /// Helper to render an authentic Windows 11 WinUI ToggleSwitch (42x22 px) with smooth animated sliding.

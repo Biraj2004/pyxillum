@@ -84,13 +84,14 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
     ui.horizontal(|ui| {
         ui.add_space(pad);
         ui.vertical(|ui| {
-            ui.set_max_width(max_w);
+            ui.set_width(max_w);
 
             // =================================================================
             // 1. DIY Header & Mode Architecture Controls
             // =================================================================
             render_card(ui, 10.0, |ui| {
                 ui.horizontal(|ui| {
+                    ui.set_width(ui.available_width());
                     ui.vertical(|ui| {
                         ui.label(
                             egui::RichText::new("DIY Lighting Sequencer")
@@ -158,6 +159,7 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
             // =================================================================
             render_card(ui, 10.0, |ui| {
                 ui.horizontal(|ui| {
+                    ui.set_width(ui.available_width());
                     let node_count = state.diy_nodes.len();
                     ui.label(
                         egui::RichText::new(format!("Sequence Palette ({} Nodes)", node_count))
@@ -663,6 +665,7 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
             // =================================================================
             render_card(ui, 10.0, |ui| {
                 ui.horizontal(|ui| {
+                    ui.set_width(ui.available_width());
                     ui.label(
                         egui::RichText::new("Output Chromatic Preview")
                             .size(12.5)
