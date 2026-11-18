@@ -5,7 +5,7 @@
 
 use crate::state::AppState;
 use crate::theme::{render_primary_button, render_secondary_button, Theme};
-use eframe::egui::{self, Color32, Rect, Rounding, Stroke, Vec2};
+use eframe::egui::{self, Color32, Rounding, Stroke, Vec2};
 use pyxillum_protocol::ChipOrder;
 
 pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool {
@@ -36,15 +36,18 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
         .show(ctx, |ui| {
             ui.set_width(ui.available_width());
 
-            // Header Row: Hardware Icon + Title & Subtitle + 'X' Close Button
+            // Handle Esc key to close dialog
+            if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                state.show_settings_modal = false;
+            }
+
+            // Header Row: Hardware Icon + Title & Subtitle + Close Button
             ui.horizontal(|ui| {
-                let (badge_rect, _) = ui.allocate_exact_size(Vec2::splat(28.0), egui::Sense::hover());
-                let bp = ui.painter_at(badge_rect);
-                bp.rect_filled(badge_rect, Rounding::same(6.0), Theme::ACCENT_BLUE);
-                bp.rect_stroke(
-                    Rect::from_center_size(badge_rect.center(), Vec2::splat(12.0)),
-                    Rounding::same(2.0),
-                    Stroke::new(1.5_f32, Color32::WHITE),
+                crate::ui::icons::header_tile_icon(
+                    ui,
+                    crate::ui::icons::Icon::HardwareChip,
+                    Color32::WHITE,
+                    Theme::ACCENT_BLUE,
                 );
 
                 ui.add_space(8.0);
@@ -63,25 +66,14 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                 });
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let (close_rect, close_resp) =
-                        ui.allocate_exact_size(Vec2::splat(26.0), egui::Sense::click());
-                    let is_hovered = close_resp.hovered();
-                    let cp = ui.painter_at(close_rect);
-                    if is_hovered {
-                        cp.rect_filled(close_rect, Rounding::same(6.0), Theme::CARD_HOVER);
-                    }
-                    cp.text(
-                        close_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        "✕",
-                        egui::FontId::proportional(12.0),
-                        if is_hovered {
-                            Theme::TEXT_PRIMARY
-                        } else {
-                            Theme::TEXT_MUTED
-                        },
-                    );
-                    if close_resp.clicked() {
+                    if crate::ui::icons::icon_button_32(
+                        ui,
+                        crate::ui::icons::Icon::Close,
+                        "Close (Esc)",
+                        false,
+                    )
+                    .clicked()
+                    {
                         state.show_settings_modal = false;
                     }
                 });

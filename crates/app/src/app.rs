@@ -966,6 +966,20 @@ impl eframe::App for PyxillumApp {
                 });
         }
 
+        // Debug Icon Sheet (triggered via --icon-sheet or Ctrl+Shift+I)
+        if ctx.input(|i| i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::I)) {
+            self.state.show_icon_sheet = !self.state.show_icon_sheet;
+        }
+
+        if self.state.show_icon_sheet {
+            egui::Window::new("Fluent Icons Debug Sheet")
+                .open(&mut self.state.show_icon_sheet)
+                .default_size([540.0, 620.0])
+                .show(ctx, |ui| {
+                    crate::ui::icons::render_debug_icon_sheet(ui);
+                });
+        }
+
         // Request 60 FPS continuous animation redraws
         ctx.request_repaint();
     }
@@ -1356,25 +1370,14 @@ impl PyxillumApp {
                     });
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let (close_rect, close_resp) =
-                            ui.allocate_exact_size(Vec2::splat(26.0), egui::Sense::click());
-                        let is_hovered = close_resp.hovered();
-                        let cp = ui.painter_at(close_rect);
-                        if is_hovered {
-                            cp.rect_filled(close_rect, Rounding::same(6.0), Theme::CARD_HOVER);
-                        }
-                        cp.text(
-                            close_rect.center(),
-                            egui::Align2::CENTER_CENTER,
-                            "✕",
-                            egui::FontId::proportional(12.0),
-                            if is_hovered {
-                                Theme::TEXT_PRIMARY
-                            } else {
-                                Theme::TEXT_MUTED
-                            },
-                        );
-                        if close_resp.clicked() {
+                        if crate::ui::icons::icon_button_32(
+                            ui,
+                            crate::ui::icons::Icon::Close,
+                            "Close (Esc)",
+                            false,
+                        )
+                        .clicked()
+                        {
                             self.state.show_help_modal = false;
                         }
                     });

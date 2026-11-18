@@ -144,3 +144,31 @@ $$\text{radius}_{\text{inner}} = \max(\text{radius}_{\text{outer}} - \text{paddi
 - **Fluid Type Scaling**: Automatically scales within $\text{clamp}(0.88, 1.0 + \Delta \times 0.12, 1.12)$ relative to the 1280px reference window width.
 - **Safe Truncation**: Overflowing labels truncate with an ellipsis and automatically display an interactive hover tooltip with the complete string.
 
+---
+
+## 7. Icon System (Microsoft Fluent System Icons)
+
+### 7.1 Single Icon Set & Elimination of Font Glyphs
+- **Set**: Microsoft Fluent System Icons (MIT License).
+- **Zero Fallback Tofu**: Completely eliminates Unicode dingbats, emojis, and fallback font glyphs (`✕`, `⚙`, `⚡`, `🔍`, etc.).
+- **Vector-Rendered Geometry**: Renders purely through `egui::Painter` with mathematical path shapes, arcs, and polygons. Zero file I/O overhead and zero texture atlas memory allocation.
+
+### 7.2 Strict Size Grid
+| Size Token | Target Controls |
+| :--- | :--- |
+| **16 px** | Standard buttons, inline action chips, list items, search clear |
+| **20 px** | Sidebar navigation rail, top header action items |
+| **24 px** | Dial chevrons, empty state illustrations, alert icons |
+| **32+ px** | Hero action buttons (Play/Pause), modal header tiles |
+
+### 7.3 Pixel Snapping
+To prevent blurring and anti-aliasing fuzz at high DPI scale factors ($100\%, 125\%, 150\%, 200\%$), all icon bounding rects are snapped to integer physical device pixels:
+$$\text{pos}_{\text{snapped}} = \frac{\text{round}(\text{pos} \times \text{scale})}{\text{scale}}$$
+
+### 7.4 Alignment & Visual Centering Helpers
+- `icon_label(icon, text)`: Standard 32px row height with 8px gap; optical center line alignment with text baseline.
+- `icon_button_32(icon, tooltip)`: 32x32 button with rounded hover/pressed states.
+- `header_tile_icon(icon, fg, bg)`: 32x32 rounded container with semantic tinted background (used in Settings dialog header).
+- **Debug Icon Sheet**: Inspectable live via CLI argument `--icon-sheet` or keyboard shortcut `Ctrl+Shift+I`.
+
+

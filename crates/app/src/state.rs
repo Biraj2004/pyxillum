@@ -314,6 +314,7 @@ pub struct AppState {
     // Modal and Drawer Visibility
     pub show_settings_modal: bool,
     pub show_help_modal: bool,
+    pub show_icon_sheet: bool,
     pub show_effect_drawer: bool,
     pub effect_search_query: String,
     pub effect_category_filter: Option<crate::catalog::EffectCategory>,
@@ -397,6 +398,7 @@ impl Default for AppState {
 
             show_settings_modal: false,
             show_help_modal: false,
+            show_icon_sheet: std::env::args().any(|a| a == "--icon-sheet"),
             show_effect_drawer: false,
             effect_search_query: String::new(),
             effect_category_filter: None,

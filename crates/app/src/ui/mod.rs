@@ -7,5 +7,6 @@
 //! - `icons`: Microsoft Fluent System Icons vector engine and alignment helpers
 //! - `animation`: Springs, transitions, and micro-interactions
 
+pub mod icons;
 pub mod theme;
 pub mod typography;
