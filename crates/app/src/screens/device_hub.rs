@@ -180,112 +180,107 @@ pub fn render_device_hub(
                 }
             });
         } else if !devices.is_empty() {
-            let avail_w = ui.available_width();
-            let cols = if avail_w >= 740.0 { 2 } else { 1 };
-            let card_w = (avail_w - (cols as f32 - 1.0) * 16.0) / cols as f32;
+            crate::ui::layout::grid_cols(ui, devices, 340.0, 16.0, |ui, _idx, dev, _col_w| {
+                let is_this_connected = dev.is_connected;
 
-            ui.horizontal_wrapped(|ui| {
-                for dev in devices {
-                    let is_this_connected = dev.is_connected;
+                Card::base().show(ui, |ui| {
+                    // Card Header: Device Name + Signal Strength Bars
+                    ui.horizontal(|ui| {
+                        let text_w = (ui.available_width() - 80.0).max(50.0);
+                        crate::ui::layout::truncated_label(
+                            ui,
+                            &dev.name,
+                            TypeScale::body_strong(),
+                            tokens.text.primary,
+                            text_w,
+                        );
 
-                    Card::base().show(ui, |ui| {
-                        ui.set_width(card_w - 40.0);
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let (sig_rect, _) =
+                                ui.allocate_exact_size(Vec2::new(20.0, 16.0), egui::Sense::hover());
+                            paint_signal_bars(ui.painter(), sig_rect, dev.rssi, &tokens);
 
-                        // Card Header: Device Name + Signal Strength Bars
-                        ui.horizontal(|ui| {
+                            let rssi_txt = format!("{} dBm", dev.rssi);
                             ui.label(
-                                egui::RichText::new(&dev.name)
-                                    .font(TypeScale::body_strong())
-                                    .color(tokens.text.primary),
-                            );
-
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                let (sig_rect, _) =
-                                    ui.allocate_exact_size(Vec2::new(20.0, 16.0), egui::Sense::hover());
-                                paint_signal_bars(ui.painter(), sig_rect, dev.rssi, &tokens);
-
-                                let rssi_txt = format!("{} dBm", dev.rssi);
-                                ui.label(
-                                    egui::RichText::new(rssi_txt)
-                                        .font(TypeScale::caption())
-                                        .color(tokens.text.tertiary),
-                                );
-                            });
-                        });
-
-                        ui.add_space(4.0);
-
-                        // MAC Address + Honest Capability Tag
-                        ui.horizontal(|ui| {
-                            ui.label(
-                                egui::RichText::new(&dev.id)
+                                egui::RichText::new(rssi_txt)
                                     .font(TypeScale::caption())
                                     .color(tokens.text.tertiary),
                             );
-                            ui.add_space(6.0);
-
-                            // Honest Capability Rule: physical controllers tagged "implemented, untested on hardware"
-                            let badge_text = if dev.is_simulated {
-                                "Virtual Simulator"
-                            } else {
-                                "SP-Family • implemented, untested on hardware"
-                            };
-                            ui.label(
-                                egui::RichText::new(badge_text)
-                                    .font(TypeScale::caption())
-                                    .color(tokens.text.secondary),
-                            );
-                        });
-
-                        ui.add_space(8.0);
-                        ui.separator();
-                        ui.add_space(8.0);
-
-                        // Action Row
-                        ui.horizontal(|ui| {
-                            if is_this_connected {
-                                ui.label(
-                                    egui::RichText::new("Connected (Active)")
-                                        .font(TypeScale::body_strong())
-                                        .color(tokens.semantic.success),
-                                );
-
-                                ui.with_layout(
-                                    egui::Layout::right_to_left(egui::Align::Center),
-                                    |ui| {
-                                        if FluentButton::destructive("Disconnect")
-                                            .icon(Icon::Close)
-                                            .show(ui)
-                                            .clicked()
-                                        {
-                                            triggered_action = Some(DeviceHubAction::Disconnect);
-                                        }
-                                    },
-                                );
-                            } else {
-                                ui.label(
-                                    egui::RichText::new("BLE GATT (0xFFE0)")
-                                        .font(TypeScale::caption())
-                                        .color(tokens.text.tertiary),
-                                );
-
-                                ui.with_layout(
-                                    egui::Layout::right_to_left(egui::Align::Center),
-                                    |ui| {
-                                        if FluentButton::primary("Connect")
-                                            .icon(Icon::Bluetooth)
-                                            .show(ui)
-                                            .clicked()
-                                        {
-                                            triggered_action =
-                                                Some(DeviceHubAction::Connect(dev.id.clone()));
-                                        }
-                                    },
-                                );
-                            }
                         });
                     });
-                }
+
+                    ui.add_space(4.0);
+
+                    // MAC Address + Honest Capability Tag
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            egui::RichText::new(&dev.id)
+                                .font(TypeScale::caption())
+                                .color(tokens.text.tertiary),
+                        );
+                        ui.add_space(6.0);
+
+                        // Honest Capability Rule: physical controllers tagged "implemented, untested on hardware"
+                        let badge_text = if dev.is_simulated {
+                            "Virtual Simulator"
+                        } else {
+                            "SP-Family • implemented, untested on hardware"
+                        };
+                        ui.label(
+                            egui::RichText::new(badge_text)
+                                .font(TypeScale::caption())
+                                .color(tokens.text.secondary),
+                        );
+                    });
+
+                    ui.add_space(8.0);
+                    ui.separator();
+                    ui.add_space(8.0);
+
+                    // Action Row
+                    ui.horizontal(|ui| {
+                        if is_this_connected {
+                            ui.label(
+                                egui::RichText::new("Connected (Active)")
+                                    .font(TypeScale::body_strong())
+                                    .color(tokens.semantic.success),
+                            );
+
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if FluentButton::destructive("Disconnect")
+                                        .icon(Icon::Close)
+                                        .show(ui)
+                                        .clicked()
+                                    {
+                                        triggered_action = Some(DeviceHubAction::Disconnect);
+                                    }
+                                },
+                            );
+                        } else {
+                            ui.label(
+                                egui::RichText::new("BLE GATT (0xFFE0)")
+                                    .font(TypeScale::caption())
+                                    .color(tokens.text.tertiary),
+                            );
+
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if FluentButton::primary("Connect")
+                                        .icon(Icon::Bluetooth)
+                                        .show(ui)
+                                        .clicked()
+                                    {
+                                        triggered_action =
+                                            Some(DeviceHubAction::Connect(dev.id.clone()));
+                                    }
+                                },
+                            );
+                        }
+                    });
+                });
             });
         }
     });

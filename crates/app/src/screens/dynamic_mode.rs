@@ -139,51 +139,52 @@ pub fn render_dynamic_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
         ui.add_space(16.0);
 
         // 2. Dual Adjustment Metric Cards (Master Brightness and Animation Speed)
-        ui.columns(2, |cols| {
-            // Brightness Card
-            Card::base().show(&mut cols[0], |ui| {
-                ui.horizontal(|ui| {
-                    ui.label(
-                        egui::RichText::new("Master Brightness")
-                            .font(TypeScale::body())
-                            .color(tokens.text.secondary),
-                    );
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+        crate::ui::layout::split_2(ui, 0.50, 200.0, 200.0, 16.0, |ui, side| match side {
+            crate::ui::layout::SplitSide::Left => {
+                Card::base().show(ui, |ui| {
+                    ui.horizontal(|ui| {
                         ui.label(
-                            egui::RichText::new(format!("{}%", pct))
-                                .font(TypeScale::body_strong())
-                                .color(tokens.text.primary),
+                            egui::RichText::new("Master Brightness")
+                                .font(TypeScale::body())
+                                .color(tokens.text.secondary),
                         );
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+                            ui.label(
+                                egui::RichText::new(format!("{}%", pct))
+                                    .font(TypeScale::body_strong())
+                                    .color(tokens.text.primary),
+                            );
+                        });
                     });
+                    ui.add_space(10.0);
+                    if fluent_slider(ui, "", &mut state.ui_brightness, 0, 255, "%").changed() {
+                        state_changed = true;
+                    }
                 });
-                ui.add_space(10.0);
-                if fluent_slider(ui, "", &mut state.ui_brightness, 0, 255, "%").changed() {
-                    state_changed = true;
-                }
-            });
-
-            // Speed Card
-            Card::base().show(&mut cols[1], |ui| {
-                ui.horizontal(|ui| {
-                    ui.label(
-                        egui::RichText::new("Animation Speed")
-                            .font(TypeScale::body())
-                            .color(tokens.text.secondary),
-                    );
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            }
+            crate::ui::layout::SplitSide::Right => {
+                Card::base().show(ui, |ui| {
+                    ui.horizontal(|ui| {
                         ui.label(
-                            egui::RichText::new(format!("Level {}", state.ui_speed))
-                                .font(TypeScale::body_strong())
-                                .color(tokens.accent.text_light),
+                            egui::RichText::new("Animation Speed")
+                                .font(TypeScale::body())
+                                .color(tokens.text.secondary),
                         );
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.label(
+                                egui::RichText::new(format!("Level {}", state.ui_speed))
+                                    .font(TypeScale::body_strong())
+                                    .color(tokens.accent.text_light),
+                            );
+                        });
                     });
+                    ui.add_space(10.0);
+                    if fluent_slider(ui, "", &mut state.ui_speed, 1, 10, "Level").changed() {
+                        state_changed = true;
+                    }
                 });
-                ui.add_space(10.0);
-                if fluent_slider(ui, "", &mut state.ui_speed, 1, 10, "Level").changed() {
-                    state_changed = true;
-                }
-            });
+            }
         });
     });
 

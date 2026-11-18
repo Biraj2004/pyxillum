@@ -162,94 +162,114 @@ pub fn toggle_tile_grid(
     ui: &mut Ui,
     items: &[ToggleTileItem],
     selected_index: usize,
-    columns: usize,
+    _suggested_cols: usize,
 ) -> usize {
     let tokens = ThemeTokens::default_dark();
-    let cols = columns.max(1);
     let mut new_selection = selected_index;
-    let full_w = ui.available_width();
+    let min_col_w = 180.0_f32;
     let gap = 8.0_f32;
-    let item_w = (full_w - gap * (cols - 1) as f32) / cols as f32;
-    let item_h = 56.0_f32;
+    let item_h = 58.0_f32;
 
-    egui::Grid::new("toggle_tile_grid")
-        .spacing(Vec2::new(gap, gap))
-        .show(ui, |ui| {
-            for (i, item) in items.iter().enumerate() {
-                let is_selected = i == selected_index;
-                let (rect, resp) =
-                    ui.allocate_exact_size(Vec2::new(item_w, item_h), Sense::click());
+    crate::ui::layout::grid_cols(ui, items, min_col_w, gap, |ui, i, item, col_w| {
+        let is_selected = i == selected_index;
+        let (rect, resp) = ui.allocate_exact_size(Vec2::new(col_w, item_h), Sense::click());
 
-                if ui.is_rect_visible(rect) {
-                    let p = ui.painter();
-                    let is_hovered = resp.hovered();
+        if ui.is_rect_visible(rect) {
+            let p = ui.painter();
+            let is_hovered = resp.hovered();
 
-                    let (bg, border, text_color) = if is_selected {
-                        (
-                            tokens.accent.base,
-                            Stroke::new(1.0_f32, tokens.accent.text_light),
-                            Color32::WHITE,
-                        )
-                    } else if is_hovered {
-                        (
-                            tokens.surfaces.raised_hover,
-                            tokens.card_stroke_hover(),
-                            tokens.text.primary,
-                        )
-                    } else {
-                        (
-                            tokens.surfaces.card,
-                            tokens.card_stroke(),
-                            tokens.text.secondary,
-                        )
-                    };
+            let (bg, border, text_color) = if is_selected {
+                (
+                    tokens.accent.base,
+                    Stroke::new(1.0_f32, tokens.accent.text_light),
+                    Color32::WHITE,
+                )
+            } else if is_hovered {
+                (
+                    tokens.surfaces.raised_hover,
+                    tokens.card_stroke_hover(),
+                    tokens.text.primary,
+                )
+            } else {
+                (
+                    tokens.surfaces.card,
+                    tokens.card_stroke(),
+                    tokens.text.secondary,
+                )
+            };
 
-                    p.rect_filled(rect, tokens.radius.control_rounding(), bg);
-                    p.rect_stroke(rect, tokens.radius.control_rounding(), border);
+            p.rect_filled(rect, tokens.radius.control_rounding(), bg);
+            p.rect_stroke(rect, tokens.radius.control_rounding(), border);
 
-                    // Left icon
-                    let icon_box = Rect::from_center_size(
-                        Pos2::new(rect.min.x + 22.0, rect.center().y),
-                        Vec2::splat(20.0),
-                    );
-                    item.icon.paint(p, icon_box, text_color);
+            // Left icon
+            let icon_box = Rect::from_center_size(
+                Pos2::new(rect.min.x + 20.0, rect.center().y),
+                Vec2::splat(20.0),
+            );
+            item.icon.paint(p, icon_box, text_color);
 
-                    // Text block
-                    let text_x = rect.min.x + 42.0;
-                    let title_font = crate::ui::typography::TypeScale::body_strong();
-                    let desc_font = crate::ui::typography::TypeScale::caption();
+            // Text block with truncation / 2-line wrap
+            let text_x = rect.min.x + 38.0;
+            let text_avail_w = (rect.max.x - text_x - 8.0).max(10.0);
+            let title_font = crate::ui::typography::TypeScale::body_strong();
+            let desc_font = crate::ui::typography::TypeScale::caption();
 
-                    let title_galley = ui
-                        .fonts(|f| f.layout_no_wrap(item.label.to_owned(), title_font, text_color));
-                    p.galley(
-                        Pos2::new(text_x, rect.min.y + 10.0),
-                        title_galley,
-                        text_color,
-                    );
+            // Truncated title (1 line)
+            let title_galley = ui.fonts(|f| {
+                let mut job = egui::text::LayoutJob::simple_singleline(
+                    item.label.to_owned(),
+                    title_font,
+                    text_color,
+                );
+                job.wrap = egui::text::TextWrapping {
+                    max_width: text_avail_w,
+                    max_rows: 1,
+                    break_anywhere: false,
+                    overflow_character: Some('…'),
+                };
+                f.layout_job(job)
+            });
+            p.galley(
+                Pos2::new(text_x, rect.min.y + 8.0),
+                title_galley,
+                text_color,
+            );
 
-                    let sub_color = if is_selected {
-                        Color32::from_white_alpha(200)
-                    } else {
-                        tokens.text.tertiary
-                    };
-                    let desc_galley = ui.fonts(|f| {
-                        f.layout_no_wrap(item.description.to_owned(), desc_font, sub_color)
-                    });
-                    p.galley(Pos2::new(text_x, rect.min.y + 28.0), desc_galley, sub_color);
-                }
+            // 2-line wrapped description
+            let sub_color = if is_selected {
+                Color32::from_white_alpha(200)
+            } else {
+                tokens.text.tertiary
+            };
+            let desc_galley = ui.fonts(|f| {
+                let mut job = egui::text::LayoutJob::default();
+                job.append(
+                    item.description,
+                    0.0,
+                    egui::TextFormat {
+                        font_id: desc_font,
+                        color: sub_color,
+                        ..Default::default()
+                    },
+                );
+                job.wrap = egui::text::TextWrapping {
+                    max_width: text_avail_w,
+                    max_rows: 2,
+                    break_anywhere: false,
+                    overflow_character: Some('…'),
+                };
+                f.layout_job(job)
+            });
+            p.galley(Pos2::new(text_x, rect.min.y + 26.0), desc_galley, sub_color);
+        }
 
-                if resp.clicked() {
-                    new_selection = i;
-                }
-                if resp.hovered() {
-                    ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-                }
-
-                if (i + 1) % cols == 0 {
-                    ui.end_row();
-                }
-            }
-        });
+        if resp.clicked() {
+            new_selection = i;
+        }
+        if resp.hovered() {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+        }
+    });
 
     new_selection
 }

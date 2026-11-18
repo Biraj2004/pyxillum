@@ -395,6 +395,33 @@ To maintain design consistency and structural symmetry when introducing new capa
 | **TC-08: Full-Width Sliders** | Brightness, speed, and sensitivity sliders span full card width with tabular values on top right. | Verified |
 | **TC-09: Hardware Safety Gate** | EEPROM modification disabled until confirmation checkbox is clicked; attempts trigger error shake. | Verified |
 | **TC-10: Motion Accessibility** | Disabling Windows Visual Effects causes all transitions to resolve instantly without delay. | Verified |
+| **TC-11: Container Bounds & Gutter Protection** | Zero widgets exceed parent bounds across all pages; 12px gutter prevents scrollbar from overlapping cards. | Verified |
+
+---
+
+## 15. Responsive Layout Architecture & Container Bounds
+
+To resolve container overflow and prevent scrollbar collision across varying monitor scale factors and window geometries, Pyxillum enforces a strict layout contract:
+
+### 15.1 Architectural Invariants
+1. **Vertical-Only Scroll Containment**: All scrollable content resides within a single vertical `ScrollArea::vertical()`. Horizontal scrolling is strictly disallowed (`auto_shrink([false, false])`).
+2. **Scrollbar Gutter Reservation**: A dedicated $12\text{px}$ scrollbar gutter is reserved to the right of content cards. This ensures Windows scrollbars never draw on top of card borders or action buttons.
+3. **Centered Visual Stage ($1360\text{px}$ Max Width)**: Pinned top fixtures (Top Action Header, Disconnect Warning InfoBar, and Virtual Pixel Hardware Monitor) and scrollable stage cards share the exact same `content_w` and horizontal `side_margin`, ensuring vertical alignment and bilateral symmetry across ultra-wide monitors.
+4. **No Raw Fixed Widths**: Hardcoded pixel widths on content cards (e.g. `set_width(card_w - 40.0)`) are strictly banned and enforced via automated static grep unit tests.
+
+### 15.2 Layout Primitives (`crates/app/src/ui/layout.rs`)
+- **`PageScaffold`**: Computes responsive centering geometry `(content_w, side_margin, gutter)` based on total available width and compact breakpoint ($< 1100\text{px}$).
+- **`card`**: Renders standard $12\text{px}$ rounded elevation surfaces where inner content width is measured strictly *inside* frame margins and stroke.
+- **`grid_cols`**: Computes column count $n = \lfloor\frac{\text{avail} + \text{gap}}{\text{min\_col\_w} + \text{gap}}\rfloor \ge 1$ and individual column width $\text{col\_w} = \frac{\text{avail} - (n - 1) \times \text{gap}}{n}$, guaranteeing mathematically that the total row width never exceeds $\text{avail}$.
+- **`split_2`**: Provides proportional dual-column layouts with automatic vertical stacking when $\text{available\_width} < \text{min\_left} + \text{min\_right} + \text{gap}$, eliminating multi-column horizontal clip failures.
+- **`truncated_label` & `two_line_description`**: Prevent silent label blowouts by constraining text to single-line or 2-line wrapped paragraphs with trailing ellipsis (`…`) and full hover tooltips.
+
+### 15.3 Layout Debugger (`--layout-debug` & `Ctrl+Shift+L`)
+A real-time layout inspector tracks every widget bounding box per frame:
+- When active, any widget whose rectangle right or bottom edge exceeds its container `max_rect` by $> 0.5\text{px}$ is highlighted with a semi-transparent red fill and solid red stroke.
+- A floating status HUD in the top-right corner reports real-time constraint telemetry (number of tracked rectangles and active overflow count).
+- Enabled via the `--layout-debug` startup flag or toggled interactively with the `Ctrl+Shift+L` keyboard shortcut.
+
 
 
 

@@ -59,9 +59,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Windows accessibility respect via `is_client_animation_enabled()`.
 - **Phase 9: Performance Optimisation & Executable Staging**:
   - Intelligent repaint pacing: 60 FPS continuous redraws only during active visualizers; idle pacing drops CPU usage to < 1%.
-  - Production binaries compiled and staged into `win-exe/`: `pyxillum-desktop.exe` (5.65 MB) and `pyxillum.exe` (1.76 MB).
+  - Production binaries compiled and staged into `win-exe/`: `pyxillum-desktop.exe` (5.66 MB) and `pyxillum.exe` (1.76 MB).
+- **Phase 10: Container Bounds, Scrollbar Gutter Protection & Layout Verification**:
+  - `layout.rs`: Unified `PageScaffold` with dedicated 12px scrollbar gutter reservation, 1360px max width centering, and responsive side margins matching top fixtures.
+  - Mathematical layout primitives: `card` (measures width strictly inside the frame after margin/stroke), `grid_cols` (column width guaranteed never to exceed available container width), and `split_2` (proportional dual-column layout with auto-stacking).
+  - Layout Debugger (`--layout-debug` CLI flag, `Ctrl+Shift+L` hotkey) with real-time constraint telemetry HUD and red overflow outlines.
+  - Zero-truncation protection: `truncated_label` with hover tooltip and `two_line_description` with ellipsis.
+  - Fixed horizontal wrapping drift and double frame padding in `card`, `chip_group`, `segmented`, `music_mode`, `device_hub`, `diy_mode`, `dynamic_mode`, and `solid_mode`.
+  - Comprehensive layout verification tests (`test_ban_raw_fixed_widths_for_content`, `test_grid_cols_mathematical_guarantee`, `test_page_scaffold_geometry`, `test_split_2_geometry`, `test_headless_screens_no_overflow`).
 
 ### New Files Added
+- `crates/app/src/ui/layout.rs`
 - `crates/app/src/ui/mod.rs`
 - `crates/app/src/ui/theme/mod.rs`
 - `crates/app/src/ui/theme/palette.rs`

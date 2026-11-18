@@ -562,51 +562,58 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
             ui.add_space(12.0);
 
             // Speed & Brightness Dual Full-Width Sliders
-            ui.columns(2, |cols| {
-                // Brightness
-                cols[0].vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new("Sequence Brightness")
-                                .font(TypeScale::body())
-                                .color(tokens.text.secondary),
-                        );
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            let pct = (state.diy_brightness as f32 / 255.0 * 100.0) as u32;
+            crate::ui::layout::split_2(ui, 0.50, 200.0, 200.0, 16.0, |ui, side| match side {
+                crate::ui::layout::SplitSide::Left => {
+                    ui.vertical(|ui| {
+                        ui.horizontal(|ui| {
                             ui.label(
-                                egui::RichText::new(format!("{}%", pct))
-                                    .font(TypeScale::body_strong())
-                                    .color(tokens.text.primary),
+                                egui::RichText::new("Sequence Brightness")
+                                    .font(TypeScale::body())
+                                    .color(tokens.text.secondary),
+                            );
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    let pct = (state.diy_brightness as f32 / 255.0 * 100.0) as u32;
+                                    ui.label(
+                                        egui::RichText::new(format!("{}%", pct))
+                                            .font(TypeScale::body_strong())
+                                            .color(tokens.text.primary),
+                                    );
+                                },
                             );
                         });
+                        ui.add_space(8.0);
+                        if fluent_slider(ui, "", &mut state.diy_brightness, 0, 255, "%").changed() {
+                            state_changed = true;
+                        }
                     });
-                    ui.add_space(8.0);
-                    if fluent_slider(ui, "", &mut state.diy_brightness, 0, 255, "%").changed() {
-                        state_changed = true;
-                    }
-                });
-
-                // Speed
-                cols[1].vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new("Animation Speed")
-                                .font(TypeScale::body())
-                                .color(tokens.text.secondary),
-                        );
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                }
+                crate::ui::layout::SplitSide::Right => {
+                    ui.vertical(|ui| {
+                        ui.horizontal(|ui| {
                             ui.label(
-                                egui::RichText::new(format!("Level {}", state.diy_speed))
-                                    .font(TypeScale::body_strong())
-                                    .color(tokens.accent.text_light),
+                                egui::RichText::new("Animation Speed")
+                                    .font(TypeScale::body())
+                                    .color(tokens.text.secondary),
+                            );
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    ui.label(
+                                        egui::RichText::new(format!("Level {}", state.diy_speed))
+                                            .font(TypeScale::body_strong())
+                                            .color(tokens.accent.text_light),
+                                    );
+                                },
                             );
                         });
+                        ui.add_space(8.0);
+                        if fluent_slider(ui, "", &mut state.diy_speed, 1, 16, "Level").changed() {
+                            state_changed = true;
+                        }
                     });
-                    ui.add_space(8.0);
-                    if fluent_slider(ui, "", &mut state.diy_speed, 1, 16, "Level").changed() {
-                        state_changed = true;
-                    }
-                });
+                }
             });
         });
 

@@ -100,8 +100,21 @@ impl<'a> ListRow<'a> {
             } else {
                 TypeScale::body()
             };
-            let title_galley =
-                ui.fonts(|f| f.layout_no_wrap(self.title.to_owned(), title_font, text_color));
+            let max_title_w = (full_w - 52.0 - 36.0).max(30.0);
+            let title_galley = ui.fonts(|f| {
+                let mut job = egui::text::LayoutJob::simple_singleline(
+                    self.title.to_owned(),
+                    title_font,
+                    text_color,
+                );
+                job.wrap = egui::text::TextWrapping {
+                    max_width: max_title_w,
+                    max_rows: 1,
+                    break_anywhere: false,
+                    overflow_character: Some('…'),
+                };
+                f.layout_job(job)
+            });
             p.galley(
                 Pos2::new(rect.min.x + 52.0, rect.center().y - 7.0),
                 title_galley,
@@ -144,6 +157,7 @@ impl<'a> ListRow<'a> {
 
         if resp.hovered() {
             ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+            resp.on_hover_text(format!("#{:03} {}", self.code, self.title));
         }
 
         (row_clicked, fav_toggled)

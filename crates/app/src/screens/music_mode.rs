@@ -132,51 +132,52 @@ pub fn render_music_mode(
         ui.add_space(16.0);
 
         // 4. Sensitivity & Brightness Dual Metric Sliders
-        ui.columns(2, |cols| {
-            // Sensitivity Card
-            Card::base().show(&mut cols[0], |ui| {
-                ui.horizontal(|ui| {
-                    ui.label(
-                        egui::RichText::new("Acoustic Sensitivity")
-                            .font(TypeScale::body())
-                            .color(tokens.text.secondary),
-                    );
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+        crate::ui::layout::split_2(ui, 0.50, 240.0, 240.0, 16.0, |ui, side| match side {
+            crate::ui::layout::SplitSide::Left => {
+                Card::base().show(ui, |ui| {
+                    ui.horizontal(|ui| {
                         ui.label(
-                            egui::RichText::new(format!("Level {} / 16", state.ui_sensitivity))
-                                .font(TypeScale::body_strong())
-                                .color(tokens.accent.text_light),
+                            egui::RichText::new("Acoustic Sensitivity")
+                                .font(TypeScale::body())
+                                .color(tokens.text.secondary),
                         );
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            ui.label(
+                                egui::RichText::new(format!("Level {} / 16", state.ui_sensitivity))
+                                    .font(TypeScale::body_strong())
+                                    .color(tokens.accent.text_light),
+                            );
+                        });
                     });
+                    ui.add_space(8.0);
+                    if fluent_slider(ui, "", &mut state.ui_sensitivity, 1, 16, "Level").changed() {
+                        state_changed = true;
+                    }
                 });
-                ui.add_space(8.0);
-                if fluent_slider(ui, "", &mut state.ui_sensitivity, 1, 16, "Level").changed() {
-                    state_changed = true;
-                }
-            });
-
-            // Brightness Card
-            Card::base().show(&mut cols[1], |ui| {
-                ui.horizontal(|ui| {
-                    ui.label(
-                        egui::RichText::new("Master Brightness")
-                            .font(TypeScale::body())
-                            .color(tokens.text.secondary),
-                    );
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+            }
+            crate::ui::layout::SplitSide::Right => {
+                Card::base().show(ui, |ui| {
+                    ui.horizontal(|ui| {
                         ui.label(
-                            egui::RichText::new(format!("{}%", pct))
-                                .font(TypeScale::body_strong())
-                                .color(tokens.text.primary),
+                            egui::RichText::new("Master Brightness")
+                                .font(TypeScale::body())
+                                .color(tokens.text.secondary),
                         );
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+                            ui.label(
+                                egui::RichText::new(format!("{}%", pct))
+                                    .font(TypeScale::body_strong())
+                                    .color(tokens.text.primary),
+                            );
+                        });
                     });
+                    ui.add_space(8.0);
+                    if fluent_slider(ui, "", &mut state.ui_brightness, 0, 255, "%").changed() {
+                        state_changed = true;
+                    }
                 });
-                ui.add_space(8.0);
-                if fluent_slider(ui, "", &mut state.ui_brightness, 0, 255, "%").changed() {
-                    state_changed = true;
-                }
-            });
+            }
         });
 
         ui.add_space(16.0);
@@ -190,105 +191,119 @@ pub fn render_music_mode(
             );
             ui.add_space(8.0);
 
-            let avail_w = ui.available_width();
-            let cols = if avail_w >= 800.0 {
-                3
-            } else if avail_w >= 540.0 {
-                2
-            } else {
-                1
-            };
-            let col_w = (avail_w - (cols as f32 - 1.0) * 10.0) / cols as f32;
+            crate::ui::layout::grid_cols(ui, MUSIC_MODES, 240.0, 10.0, |ui, _idx, m, col_w| {
+                let is_active = state.music_mode_index == m.index;
+                let (card_rect, resp) =
+                    ui.allocate_exact_size(Vec2::new(col_w, 48.0), Sense::click());
+                let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+                let p = ui.painter_at(card_rect);
 
-            ui.horizontal_wrapped(|ui| {
-                for m in MUSIC_MODES {
-                    let is_active = state.music_mode_index == m.index;
-                    let (card_rect, resp) =
-                        ui.allocate_exact_size(Vec2::new(col_w, 48.0), Sense::click());
-                    let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
-                    let p = ui.painter_at(card_rect);
+                let is_hovered = resp.hovered();
+                let bg = if is_active {
+                    tokens.accent.base.linear_multiply(0.20)
+                } else if is_hovered {
+                    tokens.surfaces.raised_hover
+                } else {
+                    tokens.surfaces.well
+                };
+                p.rect_filled(card_rect, tokens.radius.control_rounding(), bg);
 
-                    let is_hovered = resp.hovered();
-                    let bg = if is_active {
-                        tokens.accent.base.linear_multiply(0.20)
-                    } else if is_hovered {
-                        tokens.surfaces.raised_hover
-                    } else {
-                        tokens.surfaces.well
-                    };
-                    p.rect_filled(card_rect, tokens.radius.control_rounding(), bg);
+                let border = if is_active {
+                    tokens.accent.text_light
+                } else if is_hovered {
+                    tokens.borders.hover
+                } else {
+                    tokens.borders.subtle
+                };
+                p.rect_stroke(
+                    card_rect,
+                    tokens.radius.control_rounding(),
+                    Stroke::new(1.0_f32, border),
+                );
 
-                    let border = if is_active {
-                        tokens.accent.text_light
-                    } else if is_hovered {
-                        tokens.borders.hover
-                    } else {
-                        tokens.borders.subtle
-                    };
-                    p.rect_stroke(
-                        card_rect,
-                        tokens.radius.control_rounding(),
-                        Stroke::new(1.0_f32, border),
+                // Left indicator
+                if is_active {
+                    let ind = Rect::from_min_size(
+                        Pos2::new(card_rect.min.x + 2.0, card_rect.min.y + 10.0),
+                        Vec2::new(3.0, 28.0),
                     );
+                    p.rect_filled(ind, tokens.radius.chip_rounding(), tokens.accent.base);
+                }
 
-                    // Left indicator
+                // Mode index badge
+                let badge_rect = Rect::from_min_size(
+                    Pos2::new(card_rect.min.x + 8.0, card_rect.center().y - 11.0),
+                    Vec2::new(26.0, 22.0),
+                );
+                p.rect_filled(
+                    badge_rect,
+                    tokens.radius.chip_rounding(),
+                    tokens.surfaces.dialog,
+                );
+                p.text(
+                    badge_rect.center(),
+                    egui::Align2::CENTER_CENTER,
+                    format!("{}", m.index),
+                    TypeScale::caption(),
                     if is_active {
-                        let ind = Rect::from_min_size(
-                            Pos2::new(card_rect.min.x + 2.0, card_rect.min.y + 10.0),
-                            Vec2::new(3.0, 28.0),
-                        );
-                        p.rect_filled(ind, tokens.radius.chip_rounding(), tokens.accent.base);
-                    }
+                        tokens.accent.text_light
+                    } else {
+                        tokens.text.tertiary
+                    },
+                );
 
-                    // Mode index badge
-                    let badge_rect = Rect::from_min_size(
-                        Pos2::new(card_rect.min.x + 10.0, card_rect.center().y - 11.0),
-                        Vec2::new(28.0, 22.0),
-                    );
-                    p.rect_filled(
-                        badge_rect,
-                        tokens.radius.chip_rounding(),
-                        tokens.surfaces.dialog,
-                    );
-                    p.text(
-                        badge_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        format!("{}", m.index),
-                        TypeScale::caption(),
-                        if is_active {
-                            tokens.accent.text_light
-                        } else {
-                            tokens.text.tertiary
-                        },
-                    );
+                // Name & Subtitle with truncation
+                let text_x = badge_rect.max.x + 8.0;
+                let text_avail_w = (card_rect.max.x - text_x - 6.0).max(10.0);
+                let title_col = if is_active {
+                    tokens.text.primary
+                } else {
+                    tokens.text.secondary
+                };
 
-                    // Name
-                    let text_x = badge_rect.max.x + 8.0;
-                    p.text(
-                        Pos2::new(text_x, card_rect.min.y + 14.0),
-                        egui::Align2::LEFT_CENTER,
-                        m.name,
+                let title_galley = ui.fonts(|f| {
+                    let mut job = egui::text::LayoutJob::simple_singleline(
+                        m.name.to_owned(),
                         TypeScale::body_strong(),
-                        if is_active {
-                            tokens.text.primary
-                        } else {
-                            tokens.text.secondary
-                        },
+                        title_col,
                     );
+                    job.wrap = egui::text::TextWrapping {
+                        max_width: text_avail_w,
+                        max_rows: 1,
+                        break_anywhere: false,
+                        overflow_character: Some('…'),
+                    };
+                    f.layout_job(job)
+                });
+                p.galley(
+                    Pos2::new(text_x, card_rect.min.y + 6.0),
+                    title_galley,
+                    title_col,
+                );
 
-                    // Subtitle
-                    p.text(
-                        Pos2::new(text_x, card_rect.min.y + 32.0),
-                        egui::Align2::LEFT_CENTER,
-                        m.description,
+                let desc_galley = ui.fonts(|f| {
+                    let mut job = egui::text::LayoutJob::simple_singleline(
+                        m.description.to_owned(),
                         TypeScale::caption(),
                         tokens.text.tertiary,
                     );
+                    job.wrap = egui::text::TextWrapping {
+                        max_width: text_avail_w,
+                        max_rows: 1,
+                        break_anywhere: false,
+                        overflow_character: Some('…'),
+                    };
+                    f.layout_job(job)
+                });
+                p.galley(
+                    Pos2::new(text_x, card_rect.min.y + 26.0),
+                    desc_galley,
+                    tokens.text.tertiary,
+                );
 
-                    if resp.clicked() {
-                        state.music_mode_index = m.index;
-                        state_changed = true;
-                    }
+                if resp.clicked() {
+                    state.music_mode_index = m.index;
+                    state_changed = true;
                 }
             });
         });

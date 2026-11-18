@@ -11,63 +11,70 @@ pub fn chip_group(ui: &mut Ui, items: &[&str], selected_index: Option<usize>) ->
     let font = TypeScale::caption();
     let mut new_selection = selected_index;
 
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 6.0;
+    egui::ScrollArea::horizontal()
+        .auto_shrink([false, false])
+        .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 6.0;
 
-        for (i, &label) in items.iter().enumerate() {
-            let is_selected = selected_index == Some(i);
-            let text_size = ui.fonts(|f| {
-                f.layout_no_wrap(label.to_owned(), font.clone(), Color32::WHITE)
-                    .size()
-            });
-            let chip_w = text_size.x + 20.0;
-            let chip_h = 26.0_f32;
+                for (i, &label) in items.iter().enumerate() {
+                    let is_selected = selected_index == Some(i);
+                    let text_size = ui.fonts(|f| {
+                        f.layout_no_wrap(label.to_owned(), font.clone(), Color32::WHITE)
+                            .size()
+                    });
+                    let chip_w = text_size.x + 20.0;
+                    let chip_h = 26.0_f32;
 
-            let (rect, resp) = ui.allocate_exact_size(Vec2::new(chip_w, chip_h), Sense::click());
+                    let (rect, resp) =
+                        ui.allocate_exact_size(Vec2::new(chip_w, chip_h), Sense::click());
 
-            if resp.clicked() {
-                new_selection = if is_selected { None } else { Some(i) };
-            }
+                    if resp.clicked() {
+                        new_selection = if is_selected { None } else { Some(i) };
+                    }
 
-            if ui.is_rect_visible(rect) {
-                let p = ui.painter();
-                let is_hovered = resp.hovered();
+                    if ui.is_rect_visible(rect) {
+                        let p = ui.painter();
+                        let is_hovered = resp.hovered();
 
-                let (bg, border, text_color) = if is_selected {
-                    (tokens.accent.base, Stroke::NONE, Color32::WHITE)
-                } else if is_hovered {
-                    (
-                        tokens.surfaces.raised_hover,
-                        tokens.card_stroke_hover(),
-                        tokens.text.primary,
-                    )
-                } else {
-                    (
-                        tokens.surfaces.card,
-                        tokens.card_stroke(),
-                        tokens.text.secondary,
-                    )
-                };
+                        let (bg, border, text_color) = if is_selected {
+                            (tokens.accent.base, Stroke::NONE, Color32::WHITE)
+                        } else if is_hovered {
+                            (
+                                tokens.surfaces.raised_hover,
+                                tokens.card_stroke_hover(),
+                                tokens.text.primary,
+                            )
+                        } else {
+                            (
+                                tokens.surfaces.card,
+                                tokens.card_stroke(),
+                                tokens.text.secondary,
+                            )
+                        };
 
-                p.rect_filled(rect, tokens.radius.chip_rounding(), bg);
-                if border != Stroke::NONE {
-                    p.rect_stroke(rect, tokens.radius.chip_rounding(), border);
+                        p.rect_filled(rect, tokens.radius.chip_rounding(), bg);
+                        if border != Stroke::NONE {
+                            p.rect_stroke(rect, tokens.radius.chip_rounding(), border);
+                        }
+
+                        let text_pos = Pos2::new(
+                            rect.center().x - text_size.x / 2.0,
+                            rect.center().y - text_size.y / 2.0,
+                        );
+                        let galley = ui.fonts(|f| {
+                            f.layout_no_wrap(label.to_owned(), font.clone(), text_color)
+                        });
+                        p.galley(text_pos, galley, text_color);
+                    }
+
+                    if resp.hovered() {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+                    }
                 }
-
-                let text_pos = Pos2::new(
-                    rect.center().x - text_size.x / 2.0,
-                    rect.center().y - text_size.y / 2.0,
-                );
-                let galley =
-                    ui.fonts(|f| f.layout_no_wrap(label.to_owned(), font.clone(), text_color));
-                p.galley(text_pos, galley, text_color);
-            }
-
-            if resp.hovered() {
-                ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-            }
-        }
-    });
+            });
+        });
 
     new_selection
 }

@@ -43,6 +43,10 @@ fn main() -> eframe::Result<()> {
     let (cmd_tx, mut cmd_rx) = mpsc::channel::<GuiCommand>(64);
     let (event_tx, event_rx) = mpsc::channel::<GuiEvent>(64);
 
+    if std::env::args().any(|arg| arg == "--layout-debug") {
+        ui::layout::set_layout_debug_enabled(true);
+    }
+
     let use_sim = std::env::args().any(|arg| arg == "--sim")
         || std::env::var("PYXILLUM_SIM")
             .map(|v| v == "1")

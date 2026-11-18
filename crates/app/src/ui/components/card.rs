@@ -84,13 +84,11 @@ impl Card {
             .stroke(tokens.card_stroke())
             .inner_margin(egui::Margin::same(padding.x));
 
-        let resp = frame.show(ui, |ui| {
-            ui.set_width(ui.available_width());
-            add_contents(ui)
-        });
+        let resp = frame.show(ui, |ui| add_contents(ui));
 
         // 1px Inner Top Specular Highlight (Native Windows 11 Fluent Card Detail)
         let rect = resp.response.rect;
+        crate::ui::layout::track_widget_rect(ui, "card_outer_frame", rect);
         let p = ui.painter_at(rect);
         let highlight_y = rect.min.y + 1.0;
         let r = rounding.nw.min(6.0);

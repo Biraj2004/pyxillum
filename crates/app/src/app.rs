@@ -18,7 +18,7 @@ use crate::screens::{
 use crate::state::{
     AppScreen, AppState, CustomColorEffect, DashboardMode, DeviceCardInfo, GuiCommand, GuiEvent,
 };
-use crate::theme::{render_card, render_secondary_button, render_toggle_switch, Theme};
+use crate::theme::{render_secondary_button, render_toggle_switch, Theme};
 use crate::widgets::{render_effect_drawer, render_neon_strip, render_sidebar};
 use crate::windows_media::{NowPlayingInfo, WindowsAudioService};
 
@@ -613,6 +613,8 @@ impl PyxillumApp {
 
 impl eframe::App for PyxillumApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        crate::ui::layout::clear_layout_debug_records();
+
         // Show window on first frame to prevent startup flicker and apply native Windows 11 DWM appearance
         if !self.has_shown_window {
             self.has_shown_window = true;
@@ -621,6 +623,11 @@ impl eframe::App for PyxillumApp {
                 "Pyxillum - Pixel LED Studio",
                 self.tokens.surfaces.canvas,
             );
+        }
+
+        // Layout Debugger Hotkey (Ctrl+Shift+L)
+        if ctx.input(|i| i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::L)) {
+            self.state.layout_debug = crate::ui::layout::toggle_layout_debug();
         }
 
         // Global Keyboard Shortcuts
@@ -891,127 +898,157 @@ impl eframe::App for PyxillumApp {
             .frame(
                 egui::Frame::none()
                     .fill(self.tokens.surfaces.canvas)
-                    .inner_margin(egui::Margin::symmetric(24.0, 20.0)),
+                    .inner_margin(egui::Margin::symmetric(0.0, 16.0)),
             )
             .show(ctx, |ui| {
-                let avail_w = ui.available_width();
-                let max_content_w = 1280.0_f32;
-                let target_w = avail_w.min(max_content_w);
+                let (content_w, side_margin, gutter) =
+                    crate::ui::layout::PageScaffold::compute_geometry(ui.available_width(), is_compact);
 
-                ui.allocate_ui_with_layout(
-                    Vec2::new(target_w, ui.available_height()),
-                    egui::Layout::top_down(egui::Align::LEFT),
-                    |ui| {
-                        // Top Header Action Bar
-                        self.render_top_header(ui);
+                // Pinned Top Fixtures: Header, InfoBar, Neon Strip
+                ui.horizontal(|ui| {
+                    ui.add_space(side_margin);
+                    ui.allocate_ui_with_layout(
+                        Vec2::new(content_w, 0.0),
+                        egui::Layout::top_down(egui::Align::LEFT),
+                        |top_ui| {
+                            top_ui.set_max_width(content_w);
+                            // Top Header Action Bar
+                            self.render_top_header(top_ui);
 
-                        ui.add_space(12.0);
+                            top_ui.add_space(12.0);
 
-                        // Disconnected / Preview Mode Warning InfoBar
-                        if !self.state.is_connected
-                            && !matches!(self.state.current_screen, AppScreen::DeviceHub)
-                        {
-                            let (action_clicked, _) =
-                                crate::ui::components::infobar::InfoBar::info(
-                                    "Preview Mode Active",
-                                    "Changes affect the virtual strip only. Connect a physical controller to stream live lighting commands.",
-                                )
-                                .action("Scan & Connect")
-                                .show(ui);
+                            // Disconnected / Preview Mode Warning InfoBar
+                            if !self.state.is_connected
+                                && !matches!(self.state.current_screen, AppScreen::DeviceHub)
+                            {
+                                let (action_clicked, _) =
+                                    crate::ui::components::infobar::InfoBar::info(
+                                        "Preview Mode Active",
+                                        "Changes affect the virtual strip only. Connect a physical controller to stream live lighting commands.",
+                                    )
+                                    .action("Scan & Connect")
+                                    .show(top_ui);
 
-                            if action_clicked {
-                                self.state.current_screen = AppScreen::DeviceHub;
+                                if action_clicked {
+                                    self.state.current_screen = AppScreen::DeviceHub;
+                                }
+                                top_ui.add_space(12.0);
                             }
-                            ui.add_space(12.0);
-                        }
 
-                        // Pinned Adaptive Virtual Pixel Hardware Monitor (Always visible across all screens)
-                        render_neon_strip(ui, &self.state.strip_pixels, self.state.ui_power);
+                            // Pinned Adaptive Virtual Pixel Hardware Monitor (Always visible across all screens)
+                            render_neon_strip(top_ui, &self.state.strip_pixels, self.state.ui_power);
+                        },
+                    );
+                    ui.add_space(gutter);
+                });
 
-                        ui.add_space(16.0);
+                ui.add_space(16.0);
 
-                        // Main Stage inside ScrollArea
-                        egui::ScrollArea::vertical()
-                            .auto_shrink([false, false])
-                            .show(ui, |ui| match &self.state.current_screen {
-                                AppScreen::DeviceHub => {
-                                    if let Some(action) =
-                                        render_device_hub(ui, &mut self.state, &self.saved_devices)
-                                    {
-                                        match action {
-                                            DeviceHubAction::Scan => {
-                                                self.send(GuiCommand::Scan);
-                                            }
-                                            DeviceHubAction::CancelScan => {
-                                                self.state.is_scanning = false;
-                                            }
-                                            DeviceHubAction::Connect(addr) => {
-                                                self.send(GuiCommand::Connect(addr));
-                                            }
-                                            DeviceHubAction::Disconnect => {
-                                                self.send(GuiCommand::Disconnect);
-                                            }
-                                            DeviceHubAction::OpenSystemTarget(target) => {
-                                                #[cfg(windows)]
-                                                {
-                                                    let _ = std::process::Command::new("cmd")
-                                                        .args(["/C", "start", "", &target])
-                                                        .spawn();
-                                                }
-                                                #[cfg(not(windows))]
-                                                {
-                                                    let _ = target;
+                // Main Stage inside ScrollArea
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.add_space(side_margin);
+
+                            ui.allocate_ui_with_layout(
+                                Vec2::new(content_w, ui.available_height()),
+                                egui::Layout::top_down(egui::Align::LEFT),
+                                |stage_ui| {
+                                    stage_ui.set_max_width(content_w);
+                                    match &self.state.current_screen {
+                                        AppScreen::DeviceHub => {
+                                            if let Some(action) =
+                                                render_device_hub(stage_ui, &mut self.state, &self.saved_devices)
+                                            {
+                                                match action {
+                                                    DeviceHubAction::Scan => {
+                                                        self.send(GuiCommand::Scan);
+                                                    }
+                                                    DeviceHubAction::CancelScan => {
+                                                        self.state.is_scanning = false;
+                                                    }
+                                                    DeviceHubAction::Connect(addr) => {
+                                                        self.send(GuiCommand::Connect(addr));
+                                                    }
+                                                    DeviceHubAction::Disconnect => {
+                                                        self.send(GuiCommand::Disconnect);
+                                                    }
+                                                    DeviceHubAction::OpenSystemTarget(target) => {
+                                                        #[cfg(windows)]
+                                                        {
+                                                            let _ = std::process::Command::new("cmd")
+                                                                .args(["/C", "start", "", &target])
+                                                                .spawn();
+                                                        }
+                                                        #[cfg(not(windows))]
+                                                        {
+                                                            let _ = target;
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                }
-                                AppScreen::Dashboard(_) => {
-                                    let content_w = ui.available_width();
-                                    let show_split_drawer = !is_compact
-                                        && content_w >= 850.0
-                                        && self.state.dashboard_mode == DashboardMode::Dynamic
-                                        && self.state.show_effect_drawer;
+                                        AppScreen::Dashboard(_) => {
+                                            let show_split_drawer = !is_compact
+                                                && content_w >= 850.0
+                                                && self.state.dashboard_mode == DashboardMode::Dynamic
+                                                && self.state.show_effect_drawer;
 
-                                    if show_split_drawer {
-                                        // Two-Column Desktop Layout: Center Controls + Right Preset Drawer
-                                        ui.columns(2, |cols| {
-                                            cols[0].vertical(|ui| {
-                                                self.render_active_screen_content(ui);
-                                            });
+                                            if show_split_drawer {
+                                                // Two-Column Desktop Layout: Center Controls + Right Preset Drawer
+                                                let mut selected_effect_code = None;
+                                                crate::ui::layout::split_2(
+                                                    stage_ui,
+                                                    0.55,
+                                                    420.0,
+                                                    380.0,
+                                                    16.0,
+                                                    |ui, side| match side {
+                                                        crate::ui::layout::SplitSide::Left => {
+                                                            self.render_active_screen_content(ui);
+                                                        }
+                                                        crate::ui::layout::SplitSide::Right => {
+                                                            crate::ui::components::card::Card::base().show(ui, |ui| {
+                                                                ui.label(
+                                                                    egui::RichText::new(
+                                                                        "Preset Styles Catalog (146)",
+                                                                    )
+                                                                    .font(
+                                                                        crate::ui::typography::TypeScale::body_strong(),
+                                                                    )
+                                                                    .color(self.tokens.text.primary),
+                                                                );
+                                                                ui.add_space(6.0);
+                                                                if let Some(code) =
+                                                                    render_effect_drawer(ui, &mut self.state)
+                                                                {
+                                                                    selected_effect_code = Some(code);
+                                                                }
+                                                            });
+                                                        }
+                                                    },
+                                                );
 
-                                            cols[1].vertical(|ui| {
-                                                render_card(ui, 8.0, |ui| {
-                                                    ui.label(
-                                                        egui::RichText::new(
-                                                            "Preset Styles Catalog (146)",
-                                                        )
-                                                        .font(
-                                                            crate::ui::typography::TypeScale::body_strong(),
-                                                        )
-                                                        .color(self.tokens.text.primary),
-                                                    );
-                                                    ui.add_space(6.0);
-                                                    if let Some(code) =
-                                                        render_effect_drawer(ui, &mut self.state)
-                                                    {
-                                                        self.state.ui_effect = code;
-                                                        self.last_sent_effect = code;
-                                                        self.send(GuiCommand::SendCommand(
-                                                            Command::SetEffect(code),
-                                                        ));
-                                                    }
-                                                });
-                                            });
-                                        });
-                                    } else {
-                                        // Centered Single Stage (Stacks vertically in compact mode)
-                                        self.render_active_screen_content(ui);
+                                                if let Some(code) = selected_effect_code {
+                                                    self.state.ui_effect = code;
+                                                    self.last_sent_effect = code;
+                                                    self.send(GuiCommand::SendCommand(
+                                                        Command::SetEffect(code),
+                                                    ));
+                                                }
+                                            } else {
+                                                // Centered Single Stage
+                                                self.render_active_screen_content(stage_ui);
+                                            }
+                                        }
                                     }
-                                }
-                            });
-                    },
-                );
+                                },
+                            );
+
+                            ui.add_space(gutter);
+                        });
+                    });
             });
 
         // 3. Modals and Drawers
@@ -1076,6 +1113,9 @@ impl eframe::App for PyxillumApp {
             // Idle pacing: 10 Hz fallback for background events (BLE notifications / media updates)
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
+
+        // Layout Debug Overlays (draws red bounding box over any widget exceeding parent or clip rect)
+        crate::ui::layout::render_layout_debug_overlays(ctx);
     }
 
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
