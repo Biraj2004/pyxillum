@@ -17,6 +17,7 @@ use tracing::info;
 mod app;
 mod catalog;
 mod icon_data;
+pub mod platform;
 mod screens;
 mod state;
 mod theme;

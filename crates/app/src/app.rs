@@ -613,11 +613,59 @@ impl PyxillumApp {
 
 impl eframe::App for PyxillumApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // Show window on first frame to prevent startup flicker or reposition jump
+        // Show window on first frame to prevent startup flicker and apply native Windows 11 DWM appearance
         if !self.has_shown_window {
             self.has_shown_window = true;
             ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+            crate::platform::windows::apply_windows_dwm_appearance(
+                "Pyxillum - Pixel LED Studio",
+                self.tokens.surfaces.canvas,
+            );
         }
+
+        // Global Keyboard Shortcuts
+        ctx.input(|i| {
+            if i.modifiers.ctrl {
+                if i.key_pressed(egui::Key::Num1) {
+                    self.state.current_screen =
+                        AppScreen::Dashboard(self.state.active_device_id.clone());
+                    self.state.dashboard_mode = DashboardMode::Dynamic;
+                } else if i.key_pressed(egui::Key::Num2) {
+                    self.state.current_screen =
+                        AppScreen::Dashboard(self.state.active_device_id.clone());
+                    self.state.dashboard_mode = DashboardMode::Solid;
+                } else if i.key_pressed(egui::Key::Num3) {
+                    self.state.current_screen =
+                        AppScreen::Dashboard(self.state.active_device_id.clone());
+                    self.state.dashboard_mode = DashboardMode::Music;
+                } else if i.key_pressed(egui::Key::Num4) {
+                    self.state.current_screen =
+                        AppScreen::Dashboard(self.state.active_device_id.clone());
+                    self.state.dashboard_mode = DashboardMode::Diy;
+                } else if i.key_pressed(egui::Key::Num5) {
+                    self.state.current_screen = AppScreen::DeviceHub;
+                } else if i.key_pressed(egui::Key::Comma) {
+                    self.state.show_settings_modal = true;
+                } else if i.key_pressed(egui::Key::F) {
+                    self.state.show_effect_drawer = true;
+                }
+            } else if i.key_pressed(egui::Key::Escape) {
+                if self.state.show_settings_modal {
+                    self.state.show_settings_modal = false;
+                } else if self.state.show_help_modal {
+                    self.state.show_help_modal = false;
+                } else if self.state.show_effect_drawer {
+                    self.state.show_effect_drawer = false;
+                } else if self.state.show_icon_sheet {
+                    self.state.show_icon_sheet = false;
+                }
+            } else if i.key_pressed(egui::Key::F5)
+                && self.state.current_screen == AppScreen::DeviceHub
+                && !self.state.is_scanning
+            {
+                let _ = self.cmd_tx.try_send(GuiCommand::Scan);
+            }
+        });
 
         // Track valid window size, position, and maximised state for persistent session restoration
         ctx.input(|i| {

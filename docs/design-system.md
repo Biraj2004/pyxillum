@@ -171,4 +171,38 @@ $$\text{pos}_{\text{snapped}} = \frac{\text{round}(\text{pos} \times \text{scale
 - `header_tile_icon(icon, fg, bg)`: 32x32 rounded container with semantic tinted background (used in Settings dialog header).
 - **Debug Icon Sheet**: Inspectable live via CLI argument `--icon-sheet` or keyboard shortcut `Ctrl+Shift+I`.
 
+---
+
+## 8. Windows 11 Platform Integration
+
+### 8.1 Desktop Window Manager (DWM) Attributes
+Configured directly on the native Win32 `HWND` via `crates/app/src/platform/windows.rs`:
+- **`DWMWA_USE_IMMERSIVE_DARK_MODE` (20)**: Enforces Windows 11 dark window chrome and menus.
+- **`DWMWA_WINDOW_CORNER_PREFERENCE` (33)**: Set to `2` (`DWMWCP_ROUND`), matching native Fluent rounded window corners.
+- **`DWMWA_CAPTION_COLOR` (35)**: Tinted to `#202126` (Canvas token).
+- **`DWMWA_TEXT_COLOR` (36)**: Set to pure white `#FFFFFF`.
+- **`DWMWA_BORDER_COLOR` (34)**: Set to subtle `#42444A`.
+- **`DWMWA_SYSTEMBACKDROP_TYPE` (38)**: `3` (Mica backdrop) with automatic fallback to solid token surfaces on earlier builds or non-Mica environments.
+
+### 8.2 Application Manifest & Resources
+- **Resource File**: `windows/pyxillum.rc` compiled via MSVC `rc.exe` / GNU `windres`.
+- **DPI Awareness**: `permonitorv2,permonitor` with `<longPathAware>` and UTF-8 `<activeCodePage>`.
+- **Common Controls**: Version 6.0.0.0.
+- **Application Icon**: 53 KB multi-resolution `.ico` containing 16, 20, 24, 32, 48, and 256px mipmaps.
+
+### 8.3 Global Keyboard Shortcuts
+| Shortcut | Action | Scope |
+| :--- | :--- | :--- |
+| **Ctrl + 1** | Switch to Dynamic FX Studio | Global |
+| **Ctrl + 2** | Switch to Solid Colour Studio | Global |
+| **Ctrl + 3** | Switch to Music Rhythm Studio | Global |
+| **Ctrl + 4** | Switch to DIY Custom Sequencer | Global |
+| **Ctrl + 5** | Switch to Devices & Pairing Hub | Global |
+| **Ctrl + ,** | Open Hardware Settings Modal | Global |
+| **Ctrl + F** | Open Dynamic Effects Search Drawer | Global |
+| **Ctrl + Shift + I** | Toggle Fluent Icons Debug Sheet | Global |
+| **Escape** | Dismiss Active Modal / Drawer | Global |
+| **F5** | Rescan for Bluetooth Controllers | Devices Page |
+
+
 
