@@ -219,14 +219,80 @@ pub fn render_device_hub(
                             icon_col,
                         );
 
-                        ui.add_space(10.0);
+                        ui.add_space(12.0);
 
-                        // Right side widgets (Connect / Disconnect button + Signal strength)
+                        // 2. Middle Column: Name + middle-truncated MAC with tooltip + BLE GATT 0xFFE0 chip
+                        // Reserve 210px for the right-hand actions (Connect button + signal bars + gap)
+                        let avail = ui.available_width();
+                        let right_actions_w = 210.0_f32;
+                        let text_w = (avail - right_actions_w).max(100.0);
+
+                        ui.allocate_ui_with_layout(
+                            Vec2::new(text_w, 40.0),
+                            egui::Layout::top_down(egui::Align::LEFT),
+                            |mid_ui| {
+                                mid_ui.set_max_width(text_w);
+
+                                crate::ui::layout::truncated_label(
+                                    mid_ui,
+                                    &dev.name,
+                                    TypeScale::body_strong(),
+                                    tokens.text.primary,
+                                    text_w,
+                                );
+
+                                mid_ui.add_space(3.0);
+
+                                mid_ui.horizontal(|mid_ui| {
+                                    let mac_trunc = truncate_middle(&dev.id, 17);
+                                    mid_ui
+                                        .label(
+                                            egui::RichText::new(mac_trunc)
+                                                .font(TypeScale::caption())
+                                                .color(tokens.text.tertiary),
+                                        )
+                                        .on_hover_text(&dev.id);
+
+                                    mid_ui.add_space(8.0);
+
+                                    let chip_text = if dev.is_simulated {
+                                        "Virtual Simulator"
+                                    } else {
+                                        "BLE GATT 0xFFE0"
+                                    };
+
+                                    let chip_w = if dev.is_simulated { 108.0 } else { 100.0 };
+                                    let (chip_rect, chip_resp) = mid_ui
+                                        .allocate_exact_size(Vec2::new(chip_w, 18.0), Sense::hover());
+                                    let cp = mid_ui.painter_at(chip_rect);
+                                    cp.rect_filled(
+                                        chip_rect,
+                                        tokens.radius.chip_rounding(),
+                                        tokens.surfaces.well,
+                                    );
+                                    cp.text(
+                                        chip_rect.center(),
+                                        egui::Align2::CENTER_CENTER,
+                                        chip_text,
+                                        TypeScale::caption(),
+                                        tokens.text.secondary,
+                                    );
+
+                                    if !dev.is_simulated {
+                                        chip_resp.on_hover_text(
+                                            "Standard SP-Family GATT Service • implemented, untested on hardware",
+                                        );
+                                    }
+                                });
+                            },
+                        );
+
+                        // 3. Right side widgets (Connect / Disconnect button + Signal strength)
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if is_this_connected {
                                 if FluentButton::destructive("Disconnect")
                                     .icon(Icon::Close)
-                                    .min_width(90.0)
+                                    .min_width(96.0)
                                     .show(ui)
                                     .clicked()
                                 {
@@ -234,7 +300,7 @@ pub fn render_device_hub(
                                 }
                             } else if FluentButton::primary("Connect")
                                 .icon(Icon::Bluetooth)
-                                .min_width(85.0)
+                                .min_width(96.0)
                                 .show(ui)
                                 .clicked()
                             {
@@ -242,7 +308,7 @@ pub fn render_device_hub(
                                     Some(DeviceHubAction::Connect(dev.id.clone()));
                             }
 
-                            ui.add_space(12.0);
+                            ui.add_space(14.0);
 
                             // Signal icon + dBm
                             let (sig_rect, _) =
@@ -255,57 +321,6 @@ pub fn render_device_hub(
                                     .font(TypeScale::caption())
                                     .color(tokens.text.tertiary),
                             );
-                        });
-
-                        // 2. Middle Column: Name + middle-truncated MAC with tooltip + BLE GATT 0xFFE0 chip
-                        ui.vertical(|ui| {
-                            ui.label(
-                                egui::RichText::new(&dev.name)
-                                    .font(TypeScale::body_strong())
-                                    .color(tokens.text.primary),
-                            );
-
-                            ui.add_space(2.0);
-
-                            ui.horizontal(|ui| {
-                                let mac_trunc = truncate_middle(&dev.id, 14);
-                                ui.label(
-                                    egui::RichText::new(mac_trunc)
-                                        .font(TypeScale::caption())
-                                        .color(tokens.text.tertiary),
-                                )
-                                .on_hover_text(&dev.id);
-
-                                ui.add_space(6.0);
-
-                                let chip_text = if dev.is_simulated {
-                                    "Virtual Simulator"
-                                } else {
-                                    "BLE GATT 0xFFE0"
-                                };
-
-                                let (chip_rect, chip_resp) =
-                                    ui.allocate_exact_size(Vec2::new(96.0, 18.0), Sense::hover());
-                                let cp = ui.painter_at(chip_rect);
-                                cp.rect_filled(
-                                    chip_rect,
-                                    tokens.radius.chip_rounding(),
-                                    tokens.surfaces.well,
-                                );
-                                cp.text(
-                                    chip_rect.center(),
-                                    egui::Align2::CENTER_CENTER,
-                                    chip_text,
-                                    TypeScale::caption(),
-                                    tokens.text.secondary,
-                                );
-
-                                if !dev.is_simulated {
-                                    chip_resp.on_hover_text(
-                                        "Standard SP-Family GATT Service • implemented, untested on hardware",
-                                    );
-                                }
-                            });
                         });
                     });
                 });

@@ -293,8 +293,9 @@ where
     let avail_w = ui.available_width();
     let min_w = min_col_w.max(100.0);
 
-    // Determine how many columns fit within available width
-    let num_cols = (((avail_w + gap) / (min_w + gap)).floor() as usize).max(1);
+    // Determine how many columns fit within available width, clamped to the number of items
+    let calculated_cols = (((avail_w + gap) / (min_w + gap)).floor() as usize).max(1);
+    let num_cols = calculated_cols.min(items.len().max(1));
     let col_w = ((avail_w - (num_cols - 1) as f32 * gap) / num_cols as f32).max(1.0);
 
     let num_rows = items.len().div_ceil(num_cols);

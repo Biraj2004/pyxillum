@@ -339,19 +339,54 @@ impl BtleplugTransport {
             .iter()
             .any(|uuid| uuid.to_lowercase() == SERVICE_UUID.to_lowercase());
 
-        let has_name = if let Some(n) = name {
+        if has_manufacturer || has_service {
+            return true;
+        }
+
+        if let Some(n) = name {
             let lower = n.to_lowercase();
+
+            // Explicitly filter out consumer audio, computer peripherals, phones, and wearables
+            let is_consumer_device = lower.contains("buds")
+                || lower.contains("headphone")
+                || lower.contains("headset")
+                || lower.contains("earbud")
+                || lower.contains("earphone")
+                || lower.contains("speaker")
+                || lower.contains("watch")
+                || lower.contains("band")
+                || lower.contains("mouse")
+                || lower.contains("keyboard")
+                || lower.contains("airpod")
+                || lower.contains("iphone")
+                || lower.contains("ipad")
+                || lower.contains("galaxy")
+                || lower.contains("oneplus")
+                || lower.contains("laptop")
+                || lower.contains("desktop")
+                || lower.contains("television")
+                || lower.contains("tv");
+
+            if is_consumer_device {
+                return false;
+            }
+
             lower.contains("sp6")
                 || lower.contains("sp5")
                 || lower.contains("sp8")
+                || lower.contains("sp1")
+                || lower.contains("sp0")
                 || lower.contains("banlan")
                 || lower.contains("pixel")
                 || lower.contains("led")
+                || lower.contains("strip")
+                || lower.contains("light")
+                || lower.starts_with("lcd-")
+                || lower.starts_with("k-")
+                || lower.starts_with("sp-")
         } else {
             false
-        };
-
-        has_manufacturer || has_service || has_name
+        }
     }
 
     async fn get_adapter(&self) -> Result<Adapter, TransportError> {
@@ -426,8 +461,8 @@ impl Transport for BtleplugTransport {
 
             let is_compatible = Self::is_sp6xx_advertisement(name.as_deref(), &mfg_ids, &srv_uuids);
 
-            // Include if compatible or if device has a local name
-            if is_compatible || name.is_some() {
+            // Include only verified compatible SP-series lighting controllers
+            if is_compatible {
                 results.push(DiscoveredDevice {
                     address,
                     name,
@@ -661,5 +696,74 @@ mod tests {
         // TransportError integration
         let te = TransportError::Bluetooth(win_radio_off.to_string());
         assert_eq!(te.diagnostic(), BleDiagnostic::RadioTurnedOff);
+    }
+
+    #[test]
+    fn test_is_sp6xx_advertisement_filters_consumer_electronics() {
+        // Consumer devices must be rejected
+        assert!(!BtleplugTransport::is_sp6xx_advertisement(
+            Some("Oneplus Nord Buds 3 Pro"),
+            &[],
+            &[]
+        ));
+        assert!(!BtleplugTransport::is_sp6xx_advertisement(
+            Some("AirPods Pro"),
+            &[],
+            &[]
+        ));
+        assert!(!BtleplugTransport::is_sp6xx_advertisement(
+            Some("Sony WH-1000XM4"),
+            &[],
+            &[]
+        ));
+        assert!(!BtleplugTransport::is_sp6xx_advertisement(
+            Some("Logitech MX Master 3"),
+            &[],
+            &[]
+        ));
+        assert!(!BtleplugTransport::is_sp6xx_advertisement(
+            Some("Samsung Galaxy Watch 5"),
+            &[],
+            &[]
+        ));
+
+        // Valid SP controllers must be accepted
+        assert!(BtleplugTransport::is_sp6xx_advertisement(
+            Some("SP621E-1234"),
+            &[],
+            &[]
+        ));
+        assert!(BtleplugTransport::is_sp6xx_advertisement(
+            Some("SP530E"),
+            &[],
+            &[]
+        ));
+        assert!(BtleplugTransport::is_sp6xx_advertisement(
+            Some("LCD-601263H39912569"),
+            &[],
+            &[]
+        ));
+        assert!(BtleplugTransport::is_sp6xx_advertisement(
+            Some("BanlanX LED"),
+            &[],
+            &[]
+        ));
+        assert!(BtleplugTransport::is_sp6xx_advertisement(
+            Some("Pixel LED Strip"),
+            &[],
+            &[]
+        ));
+
+        // Device with manufacturer ID 0x5053 or service 0xFFE0 must be accepted even with generic name
+        assert!(BtleplugTransport::is_sp6xx_advertisement(
+            Some("Custom Controller"),
+            &[MANUFACTURER_ID_SP],
+            &[]
+        ));
+        assert!(BtleplugTransport::is_sp6xx_advertisement(
+            None,
+            &[],
+            &[SERVICE_UUID.to_string()]
+        ));
     }
 }
