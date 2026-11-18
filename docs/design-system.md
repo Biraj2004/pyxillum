@@ -204,5 +204,33 @@ Configured directly on the native Win32 `HWND` via `crates/app/src/platform/wind
 | **Escape** | Dismiss Active Modal / Drawer | Global |
 | **F5** | Rescan for Bluetooth Controllers | Devices Page |
 
+---
+
+## 9. Fluent Component Library (`crates/app/src/ui/components/`)
+
+### 9.1 Container & Navigation Architecture
+- **`Card`**: Structured containers with 3 elevation tiers (`Base`, `Raised`, `Modal`). Adheres to the concentric radius rule ($\text{inner} = \max(\text{outer} - \text{pad}, 4)$), 1px specular top highlight line (`5%` alpha white), and subtle `7%` alpha borders.
+- **`section_header`**: Aligns category headers with subtitles and optional right-aligned controls.
+- **`ListRow`**: High-performance $38\text{px}$ fixed-height rows for virtualized lists (`ScrollArea::show_rows`), featuring a 3px accent indicator flush on the left when active, and integrated favorite star toggles.
+
+### 9.2 Selection & Interactive Controls
+- **`SegmentedControl`**: Replaces all ad hoc pill and rectangular button groups across the entire application (Solid/Gradient, PC Media/Device Mic, Direction, Strip length presets, and Chip order). Features a smoothly animated sliding indicator thumb over an inset well.
+- **`toggle_tile_grid`**: Responsive 2D multi-column tile matrix for feature-rich selectors (such as the 8 DIY custom animation styles), displaying icons, bold titles, and subtitles.
+- **`chip_group`**: Horizontally scrollable single-row filter chips with gradient edge fades.
+- **`toggle_switch`**: $40 \times 20\text{px}$ Fluent toggle switch with smooth animated thumb travel and optional label.
+
+### 9.3 Range & Value Inputs
+- **`fluent_slider`**: Full-width $4\text{px}$ track with active accent fill, $20\text{px}$ white thumb with an inner accent dot that expands on hover/press ($3.5\text{px} \to 5.0\text{px}$), tabular right-aligned readout to prevent dragging jitter, and keyboard arrow / mouse wheel support.
+- **`colour_channel_slider`**: Live 16-step channel gradient tracks for precise R, G, and B channel manipulation.
+- **`ArcDial`**: $240^\circ$ rotary circular dial with live accent gradient track, $40\text{pt}$ tabular centre value, mode subtitle, and integrated step chevrons.
+- **`search_box`**: $32\text{px}$ input with leading search icon, placeholder text, and automatic clear button.
+
+### 9.4 Feedback, Alerts & Modals
+- **`InfoBar`**: 4 semantic tiers (`Info`, `Success`, `Warning`, `Danger`) with tinted backgrounds, leading $28\text{px}$ rounded icon tiles, message copy, optional action buttons, and dismiss controls.
+- **`ContentDialog`**: Fullscreen modal dialog with dark backdrop scrim, header icon tile, primary/secondary action buttons, and Esc dismissal.
+- **`connection_status_chip`**: Connection status indicator with smoothly pulsing state dot (`Not connected`, `Scanning...`, `Connecting...`, `Connected`).
+- **`empty_state`**: Clean zero-data illustration with hero icon circle, single message, and exactly ONE primary action button.
+
+
 
 
