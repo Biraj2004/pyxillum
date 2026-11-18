@@ -13,14 +13,13 @@ use core::cmp::Ordering;
 use core::fmt;
 use core::future::Future;
 use core::hash;
-use core::iter::FusedIterator;
 use core::ops::{Deref, DerefMut};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use std::error::Error;
 use std::io;
 
-use super::{InnerIvarType, Ivar, IvarType};
+use super::{Ivar, IvarType};
 
 impl<T: IvarType> PartialEq for Ivar<T>
 where
@@ -151,6 +150,7 @@ where
     }
 }
 
+/*
 impl<I: IvarType> Iterator for Ivar<I>
 where
     <Self as Deref>::Target: Iterator,
@@ -162,10 +162,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         (**self).size_hint()
     }
-    fn nth(&mut self, n: usize) -> Option<<<Self as Deref>::Target as Iterator>::Item>
-    where
-        <<I as IvarType>::Type as InnerIvarType>::Output: Iterator,
-    {
+    fn nth(&mut self, n: usize) -> Option<<<Self as Deref>::Target as Iterator>::Item> {
         (**self).nth(n)
     }
 }
@@ -177,10 +174,7 @@ where
     fn next_back(&mut self) -> Option<<<Self as Deref>::Target as Iterator>::Item> {
         (**self).next_back()
     }
-    fn nth_back(&mut self, n: usize) -> Option<<<Self as Deref>::Target as Iterator>::Item>
-    where
-        <<I as IvarType>::Type as InnerIvarType>::Output: Iterator,
-    {
+    fn nth_back(&mut self, n: usize) -> Option<<<Self as Deref>::Target as Iterator>::Item> {
         (**self).nth_back(n)
     }
 }
@@ -195,6 +189,7 @@ where
 }
 
 impl<I: IvarType> FusedIterator for Ivar<I> where <Self as Deref>::Target: FusedIterator {}
+*/
 
 // impl<T: IvarType> borrow::Borrow<<Self as Deref>::Target> for Ivar<T> {
 //     fn borrow(&self) -> &<Self as Deref>::Target {
