@@ -769,10 +769,13 @@ impl eframe::App for PyxillumApp {
                     self.state.status_message = if self.saved_devices.is_empty() {
                         "No BLE devices discovered. Ensure controller is powered on.".to_string()
                     } else {
-                        format!(
-                            "Discovered {} Bluetooth device(s). Ready to pair.",
-                            self.saved_devices.len()
-                        )
+                        let count = self.saved_devices.len();
+                        let word = if count == 1 {
+                            "controller"
+                        } else {
+                            "controllers"
+                        };
+                        format!("Discovered {} {}. Ready to pair.", count, word)
                     };
                 }
                 GuiEvent::Connected { address, name } => {
@@ -1107,16 +1110,13 @@ impl eframe::App for PyxillumApp {
                                                         }
                                                         crate::ui::layout::SplitSide::Right => {
                                                             crate::ui::components::card::Card::base().show(ui, |ui| {
-                                                                ui.label(
-                                                                    egui::RichText::new(
-                                                                        "Preset Styles Catalog (146)",
-                                                                    )
-                                                                    .font(
-                                                                        crate::ui::typography::TypeScale::body_strong(),
-                                                                    )
-                                                                    .color(self.tokens.text.primary),
+                                                                crate::ui::components::card::section_header(
+                                                                    ui,
+                                                                    "Preset Styles Catalog (146)",
+                                                                    Some("Browse, search and filter all 146 hardware dynamic styles"),
+                                                                    None::<fn(&mut egui::Ui)>,
                                                                 );
-                                                                ui.add_space(6.0);
+                                                                ui.add_space(8.0);
                                                                 if let Some(code) =
                                                                     render_effect_drawer(ui, &mut self.state)
                                                                 {

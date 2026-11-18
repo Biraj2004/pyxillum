@@ -37,7 +37,7 @@ impl TypeScale {
     }
 
     pub fn subtitle() -> FontId {
-        FontId::new(Self::SUBTITLE, FontFamily::Proportional)
+        FontId::new(Self::SUBTITLE, FontFamily::Name("SegoeBold".into()))
     }
 
     pub fn title() -> FontId {

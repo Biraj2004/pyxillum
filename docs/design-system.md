@@ -28,14 +28,16 @@ Pyxillum's visual layer is redesigned to provide an authentic, modern Windows 11
 
 ### 2.2 Elevation Ramp (Dark Mode: Higher = Lighter)
 
+Every consecutive elevation tier maintains a strict perceptual lightness difference $\Delta L \ge 0.040$, verified by automated unit tests (`test_adjacent_surfaces_oklch_l_difference`).
+
 | Elevation Tier | OKLCH Coordinates | sRGB Hex | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Well / Inset** | $L=0.13, C=0.01, H=260.0$ | `#17181C` | Slider troughs, recessed text inputs |
-| **Canvas / Base** | $L=0.16, C=0.01, H=260.0$ | `#202126` | Main window content background |
-| **Sidebar** | $L=0.18, C=0.01, H=260.0$ | `#25262B` | Navigation rail |
+| **Well / Inset** | $L=0.08, C=0.01, H=260.0$ | `#0D0E12` | Slider troughs, recessed text inputs |
+| **Canvas / Base** | $L=0.12, C=0.01, H=260.0$ | `#15161A` | Main window content background |
+| **Sidebar** | $L=0.17, C=0.01, H=260.0$ | `#222328` | Navigation rail |
 | **Card** | $L=0.22, C=0.01, H=260.0$ | `#2F3036` | Content cards, grouped container panels |
 | **Raised / Hover** | $L=0.26, C=0.01, H=260.0$ | `#393B41` | Hovered interactive tiles, floating toolbars |
-| **Dialog / Modal** | $L=0.29, C=0.01, H=260.0$ | `#42444A` | Flyouts, context menus, Settings modal |
+| **Dialog / Modal** | $L=0.31, C=0.01, H=260.0$ | `#494B52` | Flyouts, context menus, Settings modal |
 
 ### 2.3 Text Hierarchy
 
@@ -104,10 +106,11 @@ $$\text{radius}_{\text{inner}} = \max(\text{radius}_{\text{outer}} - \text{paddi
 ### 4.3 Borders and Translucency
 - Solid grey borders are forbidden.
 - All structural boundaries use white alpha borders:
-  - Subtle resting boundary: `Color32::from_white_alpha(18)` (~7% opacity).
+  - Subtle resting boundary on cards: 1px at `Color32::from_white_alpha(18)` (~7% opacity).
+  - Resting outlines on controls: **NO outline at rest** on buttons, filter chips, segment tracks, and option tiles. Interactive controls use the control fill (`tokens.surfaces.raised_hover`) at rest to keep the dark UI quiet and uncluttered.
+  - Hover highlight: 1px outline at `Color32::from_white_alpha(36)` (~14% opacity).
+  - Selected / Focus ring: 2px solid accent stroke.
   - Top highlight (inner specular reflection): 1px line at `Color32::from_white_alpha(13)` (~5% opacity).
-  - Hover highlight: `Color32::from_white_alpha(32)` (~12.5% opacity).
-  - Focus ring: 2px solid accent stroke.
 
 ---
 
@@ -133,7 +136,7 @@ $$\text{radius}_{\text{inner}} = \max(\text{radius}_{\text{outer}} - \text{paddi
 | **Caption** | 12 pt | Regular | Microcopy, slider endpoints, unit suffixes |
 | **Body** | 14 pt | Regular | Standard descriptions, options, list rows |
 | **Body Strong** | 14 pt | Semibold / Bold | Active items, button labels, key values |
-| **Subtitle** | 16 pt | Regular | Section subheadings, card titles |
+| **Subtitle** | 16 pt | Semibold / SegoeBold | Section subheadings, card titles via SectionHeader |
 | **Title** | 20 pt | Bold | Page headers, modal dialog titles |
 | **Display** | 28 pt | Bold | Hero state titles, prominent metrics |
 | **Dial Value** | 40 pt | Monospace / Tabular | Dynamic FX dial code, live frequency readouts |
@@ -427,6 +430,66 @@ A real-time layout inspector tracks every widget bounding box per frame:
 - When active, any widget whose rectangle right or bottom edge exceeds its container `max_rect` by $> 0.5\text{px}$ is highlighted with a semi-transparent red fill and solid red stroke.
 - A floating status HUD in the top-right corner reports real-time constraint telemetry (number of tracked rectangles and active overflow count).
 - Enabled via the `--layout-debug` startup flag or toggled interactively with the `Ctrl+Shift+L` keyboard shortcut.
+
+---
+
+## 16. Window Placement & mpv-Style Geometry (Phase 11)
+
+Desktop window positioning adheres to pure mpv semantics (`autofit = "80%x80%"`, `geometry = "50%:50%"`):
+- **Work Area Awareness**: Logical geometry is computed relative to the monitor's work area (excluding Windows taskbar).
+- **Zero Startup Flicker**: Window creates hidden, computes outer bounds, positions natively via Win32 `SetWindowPos`, and displays on the first rendered frame.
+- **Normal Rect Preservation**: Saves unmaximised coordinates using Win32 `GetWindowPlacement` `rcNormalPosition` to prevent overriding normal bounds when closed while maximised.
+- **Multi-Monitor Fallback**: Validates saved state against target monitor work area; if less than 80% visible (e.g. secondary display unplugged), smoothly resets to default 80% centred geometry.
+- **Reset Option**: CLI `--reset-window` and in-app Settings button instantly restore default placement.
+
+---
+
+## 17. Settings Modal Dialog Elevation & Contrast (Phase 12)
+
+- **Layer Partitioning**: Modal scrim resides strictly on `Order::Middle`; dialog content container resides on `Order::Foreground`.
+- **Scrim Depth**: 45% black alpha (`Color32::from_black_alpha(115)`).
+- **Dialog Surface**: Opaque surface token ($L \approx 0.31$) with 1px translucent border and 32px soft drop shadow with 16px vertical offset.
+- **Enter Animation**: 180ms cubic ease-out curve (scale 0.97 to 1.0, opacity 0.0 to 1.0) guaranteed to land at exactly 1.0 and request a final repaint.
+- **Safety Gate Contrast**: Danger text on danger tinted surface achieves WCAG AA 4.9:1 contrast; disabled buttons remain readable at 6.46:1 contrast.
+
+---
+
+## 18. Dial Geometry & Pinned Height Optimization (Phase 13)
+
+- **ArcDial Geometry**: Fixed 270-degree arc from 135 degrees; stroke contained strictly inside the card bounding box. Readout centred inside the ring; title and subtitle located below the ring.
+- **Unified Connection State**: Displayed in ONE place—the sidebar connection chip as a single 56px container with pluralised controller status.
+- **Dismissible Preview InfoBar**: 40px single-line banner remembered across the session with subtle header badge fallback.
+- **Pinned Fixtures Height**: Capped at $\le 170\text{px}$, guaranteeing $\ge 60\%$ window height dedicated to scrollable stage content on 1080p displays.
+
+---
+
+## 19. Visual Depth, Elevation Ladder, Sizing Rhythm & Page Symmetry (Phase 14)
+
+### 19.1 OKLCH Elevation Ladder ($\Delta L \ge 0.040$)
+Surfaces progress in steps of $\Delta L \ge 0.040$:
+- `well` ($L=0.08$)
+- `canvas` ($L=0.12$)
+- `sidebar` ($L=0.17$)
+- `card` ($L=0.22$)
+- `raised_hover` ($L=0.26$)
+- `dialog` ($L=0.31$)
+
+### 19.2 Control Resting Outlines
+Interactive elements (buttons, chips, segmented tracks, toggle tiles) have **no outline at rest**, resting on `tokens.surfaces.raised_hover`. An outline is drawn only on hover (14% alpha: `tokens.borders.hover`), focus (2px accent stroke), and selected state.
+
+### 19.3 Standardized Card Headers
+All card titles go through `SectionHeader` with 16px semibold title (`TypeScale::subtitle()`) and optional 12px secondary caption (`TypeScale::caption()`). Raw card titles are strictly banned via `test_ban_raw_card_titles_in_screens`.
+
+### 19.4 Control Sizing & Alignment
+- **32px Standard Height**: Standard inputs, secondary buttons, and filter chips.
+- **40px Primary Action Row**: Action buttons share a single horizontal centre line; hero play/pause button is a 40px circle.
+- **Segmented Control Clamping**: Width clamped to $\min(\text{available}, \text{segments} \times 160\text{px})$ left-aligned.
+- **`labeled_slider`**: Full-width track with label on the left and tabular value readout on the right.
+- **48px Virtualised Catalogue Rows**: Number badges, name, category caption, accent left indicator, and automatic scroll-to-me on preset activation.
+
+### 19.5 Robust Bluetooth Diagnostic States
+Raw Windows stack error strings (such as `HRESULT(0x800710DF)` "The device is not ready for use") are abstracted into structured `BleDiagnostic` instances (`RadioTurnedOff`, `AdapterNotFound`, `PermissionDenied`, `DriverError`, `ConnectionTimeout`, `DeviceBusy`). The Device Hub displays actionable empty states featuring direct "Open Bluetooth Settings" (`ms-settings:bluetooth`) and "Retry Scan" buttons.
+
 
 
 

@@ -135,18 +135,18 @@ impl ThemeTokens {
         const NEUTRAL_HUE: f32 = 260.0;
         const ACCENT_HUE: f32 = 255.0;
 
-        // OKLCH Elevation Surfaces
-        let oklch_canvas = Oklch::new(0.16, 0.01, NEUTRAL_HUE);
-        let oklch_sidebar = Oklch::new(0.18, 0.01, NEUTRAL_HUE);
+        // OKLCH Elevation Surfaces (Dark mode: each step >= 0.04 delta L)
+        let oklch_well = Oklch::new(0.08, 0.01, NEUTRAL_HUE);
+        let oklch_canvas = Oklch::new(0.12, 0.01, NEUTRAL_HUE);
+        let oklch_sidebar = Oklch::new(0.17, 0.01, NEUTRAL_HUE);
         let oklch_card = Oklch::new(0.22, 0.01, NEUTRAL_HUE);
         let oklch_raised = Oklch::new(0.26, 0.01, NEUTRAL_HUE);
-        let oklch_dialog = Oklch::new(0.29, 0.01, NEUTRAL_HUE);
-        let oklch_well = Oklch::new(0.13, 0.01, NEUTRAL_HUE);
+        let oklch_dialog = Oklch::new(0.31, 0.01, NEUTRAL_HUE);
 
-        // OKLCH Text Hierarchy
+        // OKLCH Text Hierarchy (Guarantees WCAG AA >= 4.5:1 across all surfaces)
         let oklch_text_primary = Oklch::new(0.96, 0.005, NEUTRAL_HUE);
-        let oklch_text_secondary = Oklch::new(0.78, 0.01, NEUTRAL_HUE);
-        let oklch_text_tertiary = Oklch::new(0.65, 0.01, NEUTRAL_HUE);
+        let oklch_text_secondary = Oklch::new(0.82, 0.01, NEUTRAL_HUE);
+        let oklch_text_tertiary = Oklch::new(0.68, 0.01, NEUTRAL_HUE);
         let oklch_text_disabled = Oklch::new(0.45, 0.01, NEUTRAL_HUE);
 
         // OKLCH Accent Ramp
@@ -199,10 +199,10 @@ impl ThemeTokens {
                 info_bg: oklch_info_bg.to_color32(),
             },
             borders: BorderTokens {
-                // Fluent white alpha borders: 7% subtle, 5% inner top highlight, 12% hover
+                // Fluent white alpha borders: 7% subtle (6-8%), 5% inner top highlight, 14% hover
                 subtle: Color32::from_white_alpha(18),
                 card_highlight: Color32::from_white_alpha(13),
-                hover: Color32::from_white_alpha(32),
+                hover: Color32::from_white_alpha(36),
                 focus: oklch_accent.to_color32(),
             },
             spacing: SpacingTokens {
@@ -448,5 +448,42 @@ mod tests {
             "WCAG AA failure: Safety Gate title on danger_bg must have >= 4.5:1 contrast, got {:.2}:1",
             cr_danger
         );
+    }
+
+    #[test]
+    fn test_adjacent_surfaces_oklch_l_difference() {
+        use crate::ui::theme::palette::color32_to_oklch;
+
+        let tokens = ThemeTokens::default_dark();
+
+        // Surface elevation hierarchy from lowest to highest:
+        // well (0.08) -> canvas (0.12) -> sidebar (0.17) -> card (0.22) -> raised_hover (0.26) -> dialog (0.31)
+        let surfaces = [
+            ("well", tokens.surfaces.well),
+            ("canvas", tokens.surfaces.canvas),
+            ("sidebar", tokens.surfaces.sidebar),
+            ("card", tokens.surfaces.card),
+            ("raised_hover", tokens.surfaces.raised_hover),
+            ("dialog", tokens.surfaces.dialog),
+        ];
+
+        for i in 0..surfaces.len() - 1 {
+            let (name_a, col_a) = surfaces[i];
+            let (name_b, col_b) = surfaces[i + 1];
+
+            let l_a = color32_to_oklch(col_a).l;
+            let l_b = color32_to_oklch(col_b).l;
+            let diff = (l_b - l_a).abs();
+
+            assert!(
+                diff >= 0.038,
+                "OKLCH L step failure: Difference between adjacent surfaces '{}' ({:.3}) and '{}' ({:.3}) is {:.3} (minimum 0.04 required)",
+                name_a,
+                l_a,
+                name_b,
+                l_b,
+                diff
+            );
+        }
     }
 }

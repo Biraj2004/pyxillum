@@ -6,11 +6,11 @@
 
 use crate::state::{AppState, DiyDirection, DiyEffectType, DiyNode, DiyPatternStyle, DiyPreset};
 use crate::ui::components::button::FluentButton;
-use crate::ui::components::card::Card;
+use crate::ui::components::card::{section_header, Card};
 use crate::ui::components::segmented::{
     segmented_control, toggle_tile_grid, SegmentItem, ToggleTileItem,
 };
-use crate::ui::components::slider::fluent_slider;
+use crate::ui::components::slider::labeled_slider;
 use crate::ui::icons::Icon;
 use crate::ui::theme::palette::interpolate_oklab;
 use crate::ui::theme::ThemeTokens;
@@ -52,24 +52,11 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
         // 1. DIY Header & Preset Architecture Card
         // =====================================================================
         Card::base().show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.label(
-                        egui::RichText::new("DIY Lighting Sequencer")
-                            .font(TypeScale::title())
-                            .color(tokens.text.primary),
-                    );
-                    ui.add_space(2.0);
-                    ui.label(
-                        egui::RichText::new(
-                            "Custom colour node designer & dynamic real-time effects engine",
-                        )
-                        .font(TypeScale::caption())
-                        .color(tokens.text.tertiary),
-                    );
-                });
-
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            section_header(
+                ui,
+                "DIY Lighting Sequencer",
+                Some("Custom colour node designer & dynamic real-time effects engine"),
+                Some(|ui: &mut egui::Ui| {
                     // Segmented Toggle for Solid vs Gradient
                     let blend_items = [
                         SegmentItem::new("Solid Stepped"),
@@ -114,8 +101,8 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                                 }
                             }
                         });
-                });
-            });
+                }),
+            );
         });
 
         ui.add_space(16.0);
@@ -126,22 +113,13 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
         Card::base().show(ui, |ui| {
             let node_count = state.diy_nodes.len();
 
-            // Action Bar
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.label(
-                        egui::RichText::new(format!("Sequence Palette ({} Nodes)", node_count))
-                            .font(TypeScale::body_strong())
-                            .color(tokens.text.primary),
-                    );
-                    ui.label(
-                        egui::RichText::new("(2 to 32 nodes permitted)")
-                            .font(TypeScale::caption())
-                            .color(tokens.text.tertiary),
-                    );
-                });
-
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            // Header & Action Bar
+            let title_str = format!("Sequence Palette ({} Nodes)", node_count);
+            section_header(
+                ui,
+                &title_str,
+                Some("(2 to 32 nodes permitted)"),
+                Some(|ui: &mut egui::Ui| {
                     // Reverse
                     let can_reverse = node_count > 1;
                     if FluentButton::secondary("Reverse")
@@ -236,8 +214,8 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                         state.selected_diy_index = Some(insert_idx);
                         state_changed = true;
                     }
-                });
-            });
+                }),
+            );
 
             ui.add_space(14.0);
 
@@ -353,21 +331,15 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
 
                         ui.add_space(8.0);
 
-                        ui.vertical(|ui| {
-                            ui.label(
-                                egui::RichText::new(format!("Node #{} Inspector", sel_idx + 1))
-                                    .font(TypeScale::body_strong())
-                                    .color(tokens.text.primary),
-                            );
-                            ui.label(
-                                egui::RichText::new(format!(
-                                    "RGB({}, {}, {}) • HEX #{:02X}{:02X}{:02X}",
-                                    node_r, node_g, node_b, node_r, node_g, node_b
-                                ))
-                                .font(TypeScale::caption())
-                                .color(tokens.text.tertiary),
-                            );
-                        });
+                        section_header(
+                            ui,
+                            &format!("Node #{} Inspector", sel_idx + 1),
+                            Some(&format!(
+                                "RGB({}, {}, {}) • HEX #{:02X}{:02X}{:02X}",
+                                node_r, node_g, node_b, node_r, node_g, node_b
+                            )),
+                            None::<fn(&mut egui::Ui)>,
+                        );
 
                         ui.add_space(16.0);
 
@@ -423,24 +395,19 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
 
                     ui.add_space(10.0);
 
-                    // Clean Full-Width Intensity Slider (Fix jumbled labels: label left, tabular value right, slider below)
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new("Node Intensity / Weight")
-                                .font(TypeScale::body())
-                                .color(tokens.text.secondary),
-                        );
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            let pct = (node_val as f32 / 255.0 * 100.0) as u32;
-                            ui.label(
-                                egui::RichText::new(format!("{}%", pct))
-                                    .font(TypeScale::body_strong())
-                                    .color(tokens.accent.text_light),
-                            );
-                        });
-                    });
-                    ui.add_space(6.0);
-                    if fluent_slider(ui, "", &mut node_val, 0, 255, "%").changed() {
+                    // Clean Full-Width Intensity Slider
+                    let pct = (node_val as f32 / 255.0 * 100.0) as u32;
+                    let val_str = format!("{}%", pct);
+                    if labeled_slider(
+                        ui,
+                        "Node Intensity / Weight",
+                        &mut node_val,
+                        0,
+                        255,
+                        &val_str,
+                    )
+                    .changed()
+                    {
                         if let Some(target_node) = state.diy_nodes.get_mut(sel_idx) {
                             target_node.value = node_val;
                             state_changed = true;
@@ -456,17 +423,11 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
         // 3. DIY Animation Effects Engine & Dynamics Parameters
         // =====================================================================
         Card::base().show(ui, |ui| {
-            ui.label(
-                egui::RichText::new("DIY Animation Style")
-                    .font(TypeScale::subtitle())
-                    .color(tokens.text.primary),
-            );
-            ui.label(
-                egui::RichText::new(
-                    "Select how your custom colour palette animates across the LED strip",
-                )
-                .font(TypeScale::caption())
-                .color(tokens.text.tertiary),
+            section_header(
+                ui,
+                "DIY Animation Style",
+                Some("Select how your custom colour palette animates across the LED strip"),
+                None::<fn(&mut egui::Ui)>,
             );
             ui.add_space(10.0);
 
@@ -564,55 +525,28 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
             // Speed & Brightness Dual Full-Width Sliders
             crate::ui::layout::split_2(ui, 0.50, 200.0, 200.0, 16.0, |ui, side| match side {
                 crate::ui::layout::SplitSide::Left => {
-                    ui.vertical(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.label(
-                                egui::RichText::new("Sequence Brightness")
-                                    .font(TypeScale::body())
-                                    .color(tokens.text.secondary),
-                            );
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    let pct = (state.diy_brightness as f32 / 255.0 * 100.0) as u32;
-                                    ui.label(
-                                        egui::RichText::new(format!("{}%", pct))
-                                            .font(TypeScale::body_strong())
-                                            .color(tokens.text.primary),
-                                    );
-                                },
-                            );
-                        });
-                        ui.add_space(8.0);
-                        if fluent_slider(ui, "", &mut state.diy_brightness, 0, 255, "%").changed() {
-                            state_changed = true;
-                        }
-                    });
+                    let pct = (state.diy_brightness as f32 / 255.0 * 100.0) as u32;
+                    let val_str = format!("{}%", pct);
+                    if labeled_slider(
+                        ui,
+                        "Sequence Brightness",
+                        &mut state.diy_brightness,
+                        0,
+                        255,
+                        &val_str,
+                    )
+                    .changed()
+                    {
+                        state_changed = true;
+                    }
                 }
                 crate::ui::layout::SplitSide::Right => {
-                    ui.vertical(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.label(
-                                egui::RichText::new("Animation Speed")
-                                    .font(TypeScale::body())
-                                    .color(tokens.text.secondary),
-                            );
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    ui.label(
-                                        egui::RichText::new(format!("Level {}", state.diy_speed))
-                                            .font(TypeScale::body_strong())
-                                            .color(tokens.accent.text_light),
-                                    );
-                                },
-                            );
-                        });
-                        ui.add_space(8.0);
-                        if fluent_slider(ui, "", &mut state.diy_speed, 1, 16, "Level").changed() {
-                            state_changed = true;
-                        }
-                    });
+                    let val_str = format!("Level {}", state.diy_speed);
+                    if labeled_slider(ui, "Animation Speed", &mut state.diy_speed, 1, 16, &val_str)
+                        .changed()
+                    {
+                        state_changed = true;
+                    }
                 }
             });
         });
@@ -623,24 +557,16 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
         // 4. Live Output Chromatic Preview with Cursor Hover Color Readout
         // =====================================================================
         Card::base().show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.label(
-                    egui::RichText::new("Output Chromatic Preview")
-                        .font(TypeScale::body_strong())
-                        .color(tokens.text.primary),
-                );
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let mode_desc = match state.diy_effect_type {
-                        DiyEffectType::Solid => "Discrete Stepped Segments",
-                        DiyEffectType::Gradient => "Continuous Interpolated Gradient",
-                    };
-                    ui.label(
-                        egui::RichText::new(mode_desc)
-                            .font(TypeScale::caption())
-                            .color(tokens.accent.text_light),
-                    );
-                });
-            });
+            let mode_desc = match state.diy_effect_type {
+                DiyEffectType::Solid => "Discrete Stepped Segments",
+                DiyEffectType::Gradient => "Continuous Interpolated Gradient",
+            };
+            section_header(
+                ui,
+                "Output Chromatic Preview",
+                Some(mode_desc),
+                None::<fn(&mut egui::Ui)>,
+            );
 
             ui.add_space(8.0);
 

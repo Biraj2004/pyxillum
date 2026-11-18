@@ -7,13 +7,13 @@
 
 use crate::state::{AppState, DeviceCardInfo};
 use crate::ui::components::button::FluentButton;
-use crate::ui::components::card::Card;
+use crate::ui::components::card::{section_header, Card};
 use crate::ui::components::infobar::InfoBar;
-use crate::ui::components::status_chip::empty_state;
+use crate::ui::components::status_chip::{empty_state, empty_state_with_secondary};
 use crate::ui::icons::Icon;
 use crate::ui::theme::ThemeTokens;
 use crate::ui::typography::TypeScale;
-use eframe::egui::{self, Pos2, Rect, Vec2};
+use eframe::egui::{self, Pos2, Rect, Sense, Vec2};
 
 /// Actions originating from the Device Hub interface.
 #[derive(Debug, Clone)]
@@ -42,24 +42,11 @@ pub fn render_device_hub(
     ui.vertical(|ui| {
         // 1. Fluent Command Header Card
         Card::base().show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.label(
-                        egui::RichText::new("Bluetooth Controllers")
-                            .font(TypeScale::title())
-                            .color(tokens.text.primary),
-                    );
-                    ui.add_space(2.0);
-                    ui.label(
-                        egui::RichText::new(
-                            "Direct Bluetooth Low Energy communication (GATT 0xFFE0 / Manufacturer 0x5053)",
-                        )
-                        .font(TypeScale::caption())
-                        .color(tokens.text.tertiary),
-                    );
-                });
-
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            section_header(
+                ui,
+                "Bluetooth Controllers",
+                Some("Direct Bluetooth Low Energy communication (GATT 0xFFE0 / Manufacturer 0x5053)"),
+                Some(|ui: &mut egui::Ui| {
                     if state.is_scanning {
                         if FluentButton::secondary("Cancel")
                             .icon(Icon::Close)
@@ -75,14 +62,14 @@ pub fn render_device_hub(
                     {
                         triggered_action = Some(DeviceHubAction::Scan);
                     }
-                });
-            });
+                }),
+            );
 
             ui.add_space(10.0);
             ui.separator();
             ui.add_space(8.0);
 
-            // Connection summary line
+            // Connection summary line (pluralised properly)
             ui.horizontal(|ui| {
                 let (dot_col, summary_text) = if state.is_connected {
                     (
@@ -102,9 +89,11 @@ pub fn render_device_hub(
                         "Ready to scan for nearby Bluetooth Low Energy LED controllers.".to_string(),
                     )
                 } else {
+                    let count = devices.len();
+                    let s_or_none = if count == 1 { "controller" } else { "controllers" };
                     (
                         tokens.accent.text_light,
-                        format!("{} controller(s) discovered. Ready to pair.", devices.len()),
+                        format!("{} {} discovered. Ready to pair.", count, s_or_none),
                     )
                 };
 
@@ -121,21 +110,23 @@ pub fn render_device_hub(
 
         ui.add_space(16.0);
 
-        // 2. Single Diagnostic InfoBar (When Bluetooth issue detected)
-        if let Some(diag) = &state.last_ble_diagnostic {
-            let desc = diag.description();
-            let mut bar = InfoBar::warning(diag.title(), &desc);
-            if let Some((action_label, action_target)) = diag.action() {
-                bar = bar.action(action_label);
-                let (action_clicked, _) = bar.show(ui);
-                if action_clicked {
-                    triggered_action =
-                        Some(DeviceHubAction::OpenSystemTarget(action_target.to_string()));
+        // 2. Single Diagnostic InfoBar (When Bluetooth issue detected and devices are already discovered)
+        if !devices.is_empty() {
+            if let Some(diag) = &state.last_ble_diagnostic {
+                let desc = diag.description();
+                let mut bar = InfoBar::warning(diag.title(), &desc);
+                if let Some((action_label, action_target)) = diag.action() {
+                    bar = bar.action(action_label);
+                    let (action_clicked, _) = bar.show(ui);
+                    if action_clicked {
+                        triggered_action =
+                            Some(DeviceHubAction::OpenSystemTarget(action_target.to_string()));
+                    }
+                } else {
+                    bar.show(ui);
                 }
-            } else {
-                bar.show(ui);
+                ui.add_space(16.0);
             }
-            ui.add_space(16.0);
         }
 
         // 3. Scanning Progress Banner
@@ -147,29 +138,48 @@ pub fn render_device_hub(
                     Icon::Spinner.paint(ui.painter(), spinner_rect, tokens.accent.base);
 
                     ui.add_space(10.0);
-                    ui.vertical(|ui| {
-                        ui.label(
-                            egui::RichText::new("Scanning for BLE controllers...")
-                                .font(TypeScale::body_strong())
-                                .color(tokens.text.primary),
-                        );
-                        ui.label(
-                            egui::RichText::new(
-                                "Looking for SP621E, SP530E, and SP630E broadcast packets...",
-                            )
-                            .font(TypeScale::caption())
-                            .color(tokens.text.tertiary),
-                        );
-                    });
+                    section_header(
+                        ui,
+                        "Scanning for BLE controllers...",
+                        Some("Looking for SP621E, SP530E, and SP630E broadcast packets..."),
+                        None::<fn(&mut egui::Ui)>,
+                    );
                 });
             });
             ui.add_space(16.0);
         }
 
-        // 4. Discovered Devices Grid or Clean Empty State
+        // 4. Discovered Devices Grid or Clean Empty / Diagnostic State
         if devices.is_empty() && !state.is_scanning {
             Card::base().show(ui, |ui| {
-                if empty_state(
+                if let Some(diag) = &state.last_ble_diagnostic {
+                    let desc = diag.description();
+                    let (action_label, action_target) =
+                        diag.action().unwrap_or(("Retry Scan", ""));
+                    let (primary_clicked, secondary_clicked) = empty_state_with_secondary(
+                        ui,
+                        Icon::BluetoothOff,
+                        diag.title(),
+                        &desc,
+                        action_label,
+                        if !action_target.is_empty() {
+                            Some("Retry Scan")
+                        } else {
+                            None
+                        },
+                    );
+                    if primary_clicked {
+                        if !action_target.is_empty() {
+                            triggered_action =
+                                Some(DeviceHubAction::OpenSystemTarget(action_target.to_string()));
+                        } else {
+                            triggered_action = Some(DeviceHubAction::Scan);
+                        }
+                    }
+                    if secondary_clicked {
+                        triggered_action = Some(DeviceHubAction::Scan);
+                    }
+                } else if empty_state(
                     ui,
                     Icon::BluetoothOff,
                     "No Bluetooth Devices Discovered",
@@ -180,22 +190,61 @@ pub fn render_device_hub(
                 }
             });
         } else if !devices.is_empty() {
-            crate::ui::layout::grid_cols(ui, devices, 340.0, 16.0, |ui, _idx, dev, _col_w| {
+            crate::ui::layout::grid_cols(ui, devices, 420.0, 16.0, |ui, _idx, dev, _col_w| {
                 let is_this_connected = dev.is_connected;
 
                 Card::base().show(ui, |ui| {
-                    // Card Header: Device Name + Signal Strength Bars
                     ui.horizontal(|ui| {
-                        let text_w = (ui.available_width() - 80.0).max(50.0);
-                        crate::ui::layout::truncated_label(
-                            ui,
-                            &dev.name,
-                            TypeScale::body_strong(),
-                            tokens.text.primary,
-                            text_w,
+                        // 1. 40px Icon Tile
+                        let (tile_rect, _) = ui.allocate_exact_size(Vec2::splat(40.0), Sense::hover());
+                        let tp = ui.painter_at(tile_rect);
+                        tp.rect_filled(
+                            tile_rect,
+                            tokens.radius.control_rounding(),
+                            tokens.surfaces.raised_hover,
+                        );
+                        let icon = if dev.is_simulated {
+                            Icon::HardwareChip
+                        } else {
+                            Icon::Bluetooth
+                        };
+                        let icon_col = if is_this_connected {
+                            tokens.semantic.success
+                        } else {
+                            tokens.accent.text_light
+                        };
+                        icon.paint(
+                            &tp,
+                            Rect::from_center_size(tile_rect.center(), Vec2::splat(20.0)),
+                            icon_col,
                         );
 
+                        ui.add_space(10.0);
+
+                        // Right side widgets (Connect / Disconnect button + Signal strength)
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if is_this_connected {
+                                if FluentButton::destructive("Disconnect")
+                                    .icon(Icon::Close)
+                                    .min_width(90.0)
+                                    .show(ui)
+                                    .clicked()
+                                {
+                                    triggered_action = Some(DeviceHubAction::Disconnect);
+                                }
+                            } else if FluentButton::primary("Connect")
+                                .icon(Icon::Bluetooth)
+                                .min_width(85.0)
+                                .show(ui)
+                                .clicked()
+                            {
+                                triggered_action =
+                                    Some(DeviceHubAction::Connect(dev.id.clone()));
+                            }
+
+                            ui.add_space(12.0);
+
+                            // Signal icon + dBm
                             let (sig_rect, _) =
                                 ui.allocate_exact_size(Vec2::new(20.0, 16.0), egui::Sense::hover());
                             paint_signal_bars(ui.painter(), sig_rect, dev.rssi, &tokens);
@@ -207,78 +256,57 @@ pub fn render_device_hub(
                                     .color(tokens.text.tertiary),
                             );
                         });
-                    });
 
-                    ui.add_space(4.0);
-
-                    // MAC Address + Honest Capability Tag
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new(&dev.id)
-                                .font(TypeScale::caption())
-                                .color(tokens.text.tertiary),
-                        );
-                        ui.add_space(6.0);
-
-                        // Honest Capability Rule: physical controllers tagged "implemented, untested on hardware"
-                        let badge_text = if dev.is_simulated {
-                            "Virtual Simulator"
-                        } else {
-                            "SP-Family • implemented, untested on hardware"
-                        };
-                        ui.label(
-                            egui::RichText::new(badge_text)
-                                .font(TypeScale::caption())
-                                .color(tokens.text.secondary),
-                        );
-                    });
-
-                    ui.add_space(8.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-
-                    // Action Row
-                    ui.horizontal(|ui| {
-                        if is_this_connected {
+                        // 2. Middle Column: Name + middle-truncated MAC with tooltip + BLE GATT 0xFFE0 chip
+                        ui.vertical(|ui| {
                             ui.label(
-                                egui::RichText::new("Connected (Active)")
+                                egui::RichText::new(&dev.name)
                                     .font(TypeScale::body_strong())
-                                    .color(tokens.semantic.success),
+                                    .color(tokens.text.primary),
                             );
 
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    if FluentButton::destructive("Disconnect")
-                                        .icon(Icon::Close)
-                                        .show(ui)
-                                        .clicked()
-                                    {
-                                        triggered_action = Some(DeviceHubAction::Disconnect);
-                                    }
-                                },
-                            );
-                        } else {
-                            ui.label(
-                                egui::RichText::new("BLE GATT (0xFFE0)")
-                                    .font(TypeScale::caption())
-                                    .color(tokens.text.tertiary),
-                            );
+                            ui.add_space(2.0);
 
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    if FluentButton::primary("Connect")
-                                        .icon(Icon::Bluetooth)
-                                        .show(ui)
-                                        .clicked()
-                                    {
-                                        triggered_action =
-                                            Some(DeviceHubAction::Connect(dev.id.clone()));
-                                    }
-                                },
-                            );
-                        }
+                            ui.horizontal(|ui| {
+                                let mac_trunc = truncate_middle(&dev.id, 14);
+                                ui.label(
+                                    egui::RichText::new(mac_trunc)
+                                        .font(TypeScale::caption())
+                                        .color(tokens.text.tertiary),
+                                )
+                                .on_hover_text(&dev.id);
+
+                                ui.add_space(6.0);
+
+                                let chip_text = if dev.is_simulated {
+                                    "Virtual Simulator"
+                                } else {
+                                    "BLE GATT 0xFFE0"
+                                };
+
+                                let (chip_rect, chip_resp) =
+                                    ui.allocate_exact_size(Vec2::new(96.0, 18.0), Sense::hover());
+                                let cp = ui.painter_at(chip_rect);
+                                cp.rect_filled(
+                                    chip_rect,
+                                    tokens.radius.chip_rounding(),
+                                    tokens.surfaces.well,
+                                );
+                                cp.text(
+                                    chip_rect.center(),
+                                    egui::Align2::CENTER_CENTER,
+                                    chip_text,
+                                    TypeScale::caption(),
+                                    tokens.text.secondary,
+                                );
+
+                                if !dev.is_simulated {
+                                    chip_resp.on_hover_text(
+                                        "Standard SP-Family GATT Service • implemented, untested on hardware",
+                                    );
+                                }
+                            });
+                        });
                     });
                 });
             });
@@ -286,6 +314,19 @@ pub fn render_device_hub(
     });
 
     triggered_action
+}
+
+/// Truncates a string in the middle if it exceeds `max_len`: e.g. "28:CD:…:45:9F"
+fn truncate_middle(s: &str, max_len: usize) -> String {
+    let char_count = s.chars().count();
+    if char_count <= max_len {
+        s.to_string()
+    } else {
+        let keep = (max_len.saturating_sub(1)) / 2;
+        let prefix: String = s.chars().take(keep).collect();
+        let suffix: String = s.chars().skip(char_count.saturating_sub(keep)).collect();
+        format!("{}…{}", prefix, suffix)
+    }
 }
 
 /// Renders signal bars according to RSSI values.

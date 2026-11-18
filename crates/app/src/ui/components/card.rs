@@ -104,7 +104,8 @@ impl Card {
     }
 }
 
-/// Fluent section header with title, subtitle, and optional right-aligned action widget.
+/// Fluent section header with 16px semibold title, optional 12px secondary description,
+/// and optional right-aligned action widget.
 pub fn section_header(
     ui: &mut Ui,
     title: &str,
@@ -116,10 +117,11 @@ pub fn section_header(
         ui.vertical(|ui| {
             ui.label(
                 egui::RichText::new(title)
-                    .font(crate::ui::typography::TypeScale::title())
+                    .font(crate::ui::typography::TypeScale::subtitle())
                     .color(tokens.text.primary),
             );
             if let Some(sub) = subtitle {
+                ui.add_space(2.0);
                 ui.label(
                     egui::RichText::new(sub)
                         .font(crate::ui::typography::TypeScale::caption())
@@ -132,4 +134,45 @@ pub fn section_header(
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), act);
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::path::Path;
+
+    #[test]
+    fn test_ban_raw_card_titles_in_screens() {
+        let screens_dir = Path::new("src/screens");
+        if !screens_dir.exists() {
+            return;
+        }
+
+        let entries = fs::read_dir(screens_dir).expect("Failed to read screens directory");
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("rs") {
+                let content = fs::read_to_string(&path).expect("Failed to read screen file");
+                let lines: Vec<&str> = content.lines().collect();
+                for (i, line) in lines.iter().enumerate() {
+                    if line.contains("Card::base().show") {
+                        for j in 1..=6 {
+                            if let Some(next_line) = lines.get(i + j) {
+                                if next_line.contains("ui.label(egui::RichText::new")
+                                    && (next_line.contains("TypeScale::title()")
+                                        || next_line.contains("TypeScale::body_strong()"))
+                                {
+                                    panic!(
+                                        "Architecture rule violation in {}:{}: Raw RichText title used inside Card instead of section_header()",
+                                        path.display(),
+                                        i + j + 1
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

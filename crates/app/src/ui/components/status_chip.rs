@@ -77,8 +77,21 @@ pub fn empty_state(
     description: &str,
     action_label: &str,
 ) -> bool {
+    empty_state_with_secondary(ui, icon, title, description, action_label, None).0
+}
+
+/// Renders a unified empty state with hero icon, message, primary action, and optional secondary action button.
+pub fn empty_state_with_secondary(
+    ui: &mut Ui,
+    icon: Icon,
+    title: &str,
+    description: &str,
+    primary_label: &str,
+    secondary_label: Option<&str>,
+) -> (bool, bool) {
     let tokens = ThemeTokens::default_dark();
-    let mut action_clicked = false;
+    let mut primary_clicked = false;
+    let mut secondary_clicked = false;
 
     ui.vertical_centered(|ui| {
         ui.add_space(32.0);
@@ -115,13 +128,24 @@ pub fn empty_state(
 
         ui.add_space(20.0);
 
-        // Single Primary Action Button
-        if FluentButton::primary(action_label).show(ui).clicked() {
-            action_clicked = true;
+        // Action Buttons
+        if let Some(sec) = secondary_label {
+            ui.horizontal(|ui| {
+                ui.add_space((ui.available_width() - 280.0).max(0.0) / 2.0);
+                if FluentButton::primary(primary_label).show(ui).clicked() {
+                    primary_clicked = true;
+                }
+                ui.add_space(12.0);
+                if FluentButton::secondary(sec).show(ui).clicked() {
+                    secondary_clicked = true;
+                }
+            });
+        } else if FluentButton::primary(primary_label).show(ui).clicked() {
+            primary_clicked = true;
         }
 
         ui.add_space(32.0);
     });
 
-    action_clicked
+    (primary_clicked, secondary_clicked)
 }

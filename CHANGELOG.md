@@ -96,6 +96,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Designed 40px single-line dismissible Preview InfoBar remembered across the session, with subtle header badge fallback when dismissed or on compact screens.
   - Enforced pinned fixtures height cap of <=170px (152px at >=800px; collapses to 88px with 40px monitor at <800px), guaranteeing >=60% window height allocated to stage content at 1080p.
   - Expanded test suite to 33 unit tests covering dial geometry, stroke containment, connection state transitions, and pinned height / content area ratios.
+- **Phase 14: Visual Depth, Elevation Ladder, Sizing Rhythm & Page Symmetry**:
+  - Restructured elevation surface ladder: `well` ($L=0.08$), `canvas` ($L=0.12$), `sidebar` ($L=0.17$), `card` ($L=0.22$), `raised_hover` ($L=0.26$), and `dialog` ($L=0.31$) guaranteeing $\Delta L \ge 0.040$ between all adjacent surfaces, verified by automated unit tests.
+  - Eliminated resting outlines on buttons, chips, tracks, and tiles, applying control fill (`tokens.surfaces.raised_hover`) at rest and 14% alpha outline on hover (`Color32::from_white_alpha(36)`) for a quiet, authentic Fluent aesthetic.
+  - Standardized all card headers to `SectionHeader` (16px semibold `TypeScale::subtitle()`, optional 12px caption) with architectural unit test `test_ban_raw_card_titles_in_screens` banning raw `RichText::strong` in screen cards.
+  - Standardized control sizing: 32px standard height, 40px primary action row sharing a single centre line, and 40px circular hero play/pause button.
+  - Constrained `SegmentedControl` width to $\min(\text{available}, \text{segments} \times 160\text{px})$ left-aligned, avoiding full-bleed sprawl.
+  - Implemented `labeled_slider` helper with label on left, tabular value on right, and full-width track across Dynamic FX, Music Rhythm, Solid Colour, and DIY Custom.
+  - Upgraded catalogue rows in `widgets/effect_drawer.rs` to 48px with number badges, category captions, accent left indicators, and automatic `scroll_to_me(Some(Align::Center))` on page load or active preset changes.
+  - Reconstructed Device Hub device card layout: `[40px icon tile | name + middle-truncated MAC with tooltip + "BLE GATT 0xFFE0" chip | signal icon + dBm | Connect button]`, perfectly bounded to card width with pluralised status messaging.
+  - Enhanced Bluetooth error handling: `BleDiagnostic` cleanly classifies Windows stack errors (such as `0x800710DF` "The device is not ready for use"), and `device_hub.rs` renders tailored empty states with direct "Open Bluetooth Settings" (`ms-settings:bluetooth`) and "Retry Scan" action buttons, eliminating raw HRESULT string dumps.
+  - Mode tiles in `MusicMode` use responsive 2/3 columns with minimum 360px tile width, 1-line title, and 2-line descriptions with ellipsis; selected tiles use accent tint with accent border.
+  - Dual-column speed and brightness sliders in `DiyMode` with live chromatic output preview.
+  - Expanded test suite to 35 unit tests with full Clippy, rustfmt, and headless integration pass.
 
 ### New Files Added
 - `crates/app/src/ui/components/checkbox.rs`

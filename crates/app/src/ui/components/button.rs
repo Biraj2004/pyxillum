@@ -22,6 +22,7 @@ pub struct FluentButton<'a> {
     icon: Option<Icon>,
     variant: ButtonVariant,
     min_width: f32,
+    height: f32,
     enabled: bool,
 }
 
@@ -32,6 +33,7 @@ impl<'a> FluentButton<'a> {
             icon: None,
             variant: ButtonVariant::Secondary,
             min_width: 80.0,
+            height: 32.0,
             enabled: true,
         }
     }
@@ -46,6 +48,7 @@ impl<'a> FluentButton<'a> {
             icon: None,
             variant: ButtonVariant::Primary,
             min_width: 90.0,
+            height: 32.0,
             enabled: true,
         }
     }
@@ -56,6 +59,7 @@ impl<'a> FluentButton<'a> {
             icon: None,
             variant: ButtonVariant::Subtle,
             min_width: 60.0,
+            height: 32.0,
             enabled: true,
         }
     }
@@ -66,6 +70,7 @@ impl<'a> FluentButton<'a> {
             icon: None,
             variant: ButtonVariant::Destructive,
             min_width: 80.0,
+            height: 32.0,
             enabled: true,
         }
     }
@@ -77,6 +82,16 @@ impl<'a> FluentButton<'a> {
 
     pub fn min_width(mut self, min_w: f32) -> Self {
         self.min_width = min_w;
+        self
+    }
+
+    pub fn height(mut self, height: f32) -> Self {
+        self.height = height;
+        self
+    }
+
+    pub fn large(mut self) -> Self {
+        self.height = 40.0;
         self
     }
 
@@ -97,7 +112,7 @@ impl<'a> FluentButton<'a> {
         });
         let content_width = text_size.x + icon_width + 24.0;
         let final_width = content_width.max(self.min_width);
-        let height = 32.0_f32;
+        let height = self.height;
 
         let (rect, resp) = ui.allocate_exact_size(Vec2::new(final_width, height), Sense::click());
 
@@ -138,11 +153,7 @@ impl<'a> FluentButton<'a> {
                     }
                     ButtonVariant::Secondary => {
                         if is_pressed {
-                            (
-                                tokens.surfaces.well,
-                                tokens.text.secondary,
-                                Stroke::new(1.0_f32, tokens.borders.subtle),
-                            )
+                            (tokens.surfaces.well, tokens.text.secondary, Stroke::NONE)
                         } else if is_hovered {
                             (
                                 tokens.surfaces.raised_hover,
@@ -151,9 +162,9 @@ impl<'a> FluentButton<'a> {
                             )
                         } else {
                             (
-                                tokens.surfaces.card,
+                                tokens.surfaces.raised_hover,
                                 tokens.text.primary,
-                                Stroke::new(1.0_f32, tokens.borders.subtle),
+                                Stroke::NONE,
                             )
                         }
                     }
@@ -165,7 +176,11 @@ impl<'a> FluentButton<'a> {
                                 Stroke::NONE,
                             )
                         } else if is_hovered {
-                            (tokens.surfaces.card, tokens.text.primary, Stroke::NONE)
+                            (
+                                tokens.surfaces.raised_hover,
+                                tokens.text.primary,
+                                Stroke::new(1.0_f32, tokens.borders.hover),
+                            )
                         } else {
                             (Color32::TRANSPARENT, tokens.text.secondary, Stroke::NONE)
                         }
@@ -183,7 +198,7 @@ impl<'a> FluentButton<'a> {
                             (
                                 tokens.semantic.danger_bg,
                                 tokens.semantic.danger,
-                                Stroke::new(1.0_f32, tokens.semantic.danger),
+                                Stroke::NONE,
                             )
                         }
                     }

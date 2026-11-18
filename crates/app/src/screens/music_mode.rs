@@ -7,10 +7,10 @@
 
 use crate::catalog::{get_music_mode_name, MUSIC_MODES};
 use crate::state::AppState;
-use crate::ui::components::card::Card;
+use crate::ui::components::card::{section_header, Card};
 use crate::ui::components::dial::ArcDial;
 use crate::ui::components::segmented::{segmented_control, SegmentItem};
-use crate::ui::components::slider::fluent_slider;
+use crate::ui::components::slider::labeled_slider;
 use crate::ui::icons::Icon;
 use crate::ui::theme::ThemeTokens;
 use crate::ui::typography::TypeScale;
@@ -54,10 +54,11 @@ pub fn render_music_mode(
                 Card::base().show(ui, |ui| {
                     ui.vertical(|ui| {
                         // Audio Input Selector via Segmented Control
-                        ui.label(
-                            egui::RichText::new("Audio Input Source")
-                                .font(TypeScale::body_strong())
-                                .color(tokens.text.primary),
+                        section_header(
+                            ui,
+                            "Audio Input Source",
+                            Some("Select hardware or software audio capture pipeline"),
+                            None::<fn(&mut egui::Ui)>,
                         );
                         ui.add_space(8.0);
 
@@ -131,10 +132,11 @@ pub fn render_music_mode(
                         ui.add_space(10.0);
 
                         // Graphic Equalizer Visualizer with Peak Hold
-                        ui.label(
-                            egui::RichText::new("Acoustic Spectrum & Peak Visualizer")
-                                .font(TypeScale::body_strong())
-                                .color(tokens.text.primary),
+                        section_header(
+                            ui,
+                            "Acoustic Spectrum & Peak Visualizer",
+                            Some("Real-time multi-band FFT frequency analyzer with peak hold"),
+                            None::<fn(&mut egui::Ui)>,
                         );
                         ui.add_space(8.0);
                         render_peak_equalizer_bars(ui, state, &tokens);
@@ -149,45 +151,35 @@ pub fn render_music_mode(
         crate::ui::layout::split_2(ui, 0.50, 240.0, 240.0, 16.0, |ui, side| match side {
             crate::ui::layout::SplitSide::Left => {
                 Card::base().show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new("Acoustic Sensitivity")
-                                .font(TypeScale::body())
-                                .color(tokens.text.secondary),
-                        );
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            ui.label(
-                                egui::RichText::new(format!("Level {} / 16", state.ui_sensitivity))
-                                    .font(TypeScale::body_strong())
-                                    .color(tokens.accent.text_light),
-                            );
-                        });
-                    });
-                    ui.add_space(8.0);
-                    if fluent_slider(ui, "", &mut state.ui_sensitivity, 1, 16, "Level").changed() {
+                    let val_str = format!("Level {} / 16", state.ui_sensitivity);
+                    if labeled_slider(
+                        ui,
+                        "Acoustic Sensitivity",
+                        &mut state.ui_sensitivity,
+                        1,
+                        16,
+                        &val_str,
+                    )
+                    .changed()
+                    {
                         state_changed = true;
                     }
                 });
             }
             crate::ui::layout::SplitSide::Right => {
                 Card::base().show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new("Master Brightness")
-                                .font(TypeScale::body())
-                                .color(tokens.text.secondary),
-                        );
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
-                            ui.label(
-                                egui::RichText::new(format!("{}%", pct))
-                                    .font(TypeScale::body_strong())
-                                    .color(tokens.text.primary),
-                            );
-                        });
-                    });
-                    ui.add_space(8.0);
-                    if fluent_slider(ui, "", &mut state.ui_brightness, 0, 255, "%").changed() {
+                    let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+                    let val_str = format!("{}%", pct);
+                    if labeled_slider(
+                        ui,
+                        "Master Brightness",
+                        &mut state.ui_brightness,
+                        0,
+                        255,
+                        &val_str,
+                    )
+                    .changed()
+                    {
                         state_changed = true;
                     }
                 });
@@ -196,63 +188,71 @@ pub fn render_music_mode(
 
         ui.add_space(16.0);
 
-        // 5. All 18 Music Modes Quick Selection Matrix (Zero Truncation)
+        // 3. All 18 Music Modes Quick Selection Matrix
         Card::base().show(ui, |ui| {
-            ui.label(
-                egui::RichText::new("All 18 Rhythm Modes")
-                    .font(TypeScale::body_strong())
-                    .color(tokens.text.primary),
+            section_header(
+                ui,
+                "All 18 Rhythm Modes",
+                Some("Select responsive acoustic algorithm for live audio tracking"),
+                None::<fn(&mut egui::Ui)>,
             );
-            ui.add_space(8.0);
+            ui.add_space(10.0);
 
-            crate::ui::layout::grid_cols(ui, MUSIC_MODES, 240.0, 10.0, |ui, _idx, m, col_w| {
+            // 2 cols at >= 1100px, 3 cols at >= 1500px, min tile width 360px
+            crate::ui::layout::grid_cols(ui, MUSIC_MODES, 360.0, 12.0, |ui, _idx, m, col_w| {
                 let is_active = state.music_mode_index == m.index;
                 let (card_rect, resp) =
-                    ui.allocate_exact_size(Vec2::new(col_w, 48.0), Sense::click());
+                    ui.allocate_exact_size(Vec2::new(col_w, 64.0), Sense::click());
                 let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                 let p = ui.painter_at(card_rect);
 
                 let is_hovered = resp.hovered();
-                let bg = if is_active {
-                    tokens.accent.base.linear_multiply(0.20)
-                } else if is_hovered {
-                    tokens.surfaces.raised_hover
-                } else {
-                    tokens.surfaces.well
-                };
-                p.rect_filled(card_rect, tokens.radius.control_rounding(), bg);
 
-                let border = if is_active {
-                    tokens.accent.text_light
+                // Selected: accent tint + accent border (not solid blue fill).
+                // At rest: control fill (L about 0.26) with NO outline.
+                // Hover: 14% alpha outline.
+                let (bg, border) = if is_active {
+                    (
+                        tokens.accent.base.linear_multiply(0.20),
+                        Stroke::new(1.5_f32, tokens.accent.text_light),
+                    )
                 } else if is_hovered {
-                    tokens.borders.hover
+                    (
+                        tokens.surfaces.raised_hover,
+                        Stroke::new(1.0_f32, tokens.borders.hover),
+                    )
                 } else {
-                    tokens.borders.subtle
+                    (tokens.surfaces.raised_hover, Stroke::NONE)
                 };
-                p.rect_stroke(
-                    card_rect,
+
+                // Draw background strictly inside clip
+                p.rect_filled(
+                    card_rect.intersect(ui.clip_rect()),
                     tokens.radius.control_rounding(),
-                    Stroke::new(1.0_f32, border),
+                    bg,
                 );
+                if border != Stroke::NONE {
+                    p.rect_stroke(card_rect, tokens.radius.control_rounding(), border);
+                }
 
-                // Left indicator
+                // Left 3px accent indicator for active selection
                 if is_active {
                     let ind = Rect::from_min_size(
-                        Pos2::new(card_rect.min.x + 2.0, card_rect.min.y + 10.0),
-                        Vec2::new(3.0, 28.0),
+                        Pos2::new(card_rect.min.x + 2.0, card_rect.min.y + 12.0),
+                        Vec2::new(3.0, card_rect.height() - 24.0),
                     );
                     p.rect_filled(ind, tokens.radius.chip_rounding(), tokens.accent.base);
                 }
 
-                // Mode index badge
-                let badge_rect = Rect::from_min_size(
-                    Pos2::new(card_rect.min.x + 8.0, card_rect.center().y - 11.0),
-                    Vec2::new(26.0, 22.0),
+                // Mode index badge (28x22)
+                let badge_rect = Rect::from_center_size(
+                    Pos2::new(card_rect.min.x + 24.0, card_rect.center().y),
+                    Vec2::new(28.0, 22.0),
                 );
                 p.rect_filled(
                     badge_rect,
                     tokens.radius.chip_rounding(),
-                    tokens.surfaces.dialog,
+                    tokens.surfaces.well,
                 );
                 p.text(
                     badge_rect.center(),
@@ -266,9 +266,9 @@ pub fn render_music_mode(
                     },
                 );
 
-                // Name & Subtitle with truncation
-                let text_x = badge_rect.max.x + 8.0;
-                let text_avail_w = (card_rect.max.x - text_x - 6.0).max(10.0);
+                // Text block: 1-line title and 2-line description with ellipsis
+                let text_x = badge_rect.max.x + 10.0;
+                let text_avail_w = (card_rect.max.x - text_x - 10.0).max(20.0);
                 let title_col = if is_active {
                     tokens.text.primary
                 } else {
@@ -290,27 +290,32 @@ pub fn render_music_mode(
                     f.layout_job(job)
                 });
                 p.galley(
-                    Pos2::new(text_x, card_rect.min.y + 6.0),
+                    Pos2::new(text_x, card_rect.min.y + 8.0),
                     title_galley,
                     title_col,
                 );
 
                 let desc_galley = ui.fonts(|f| {
-                    let mut job = egui::text::LayoutJob::simple_singleline(
-                        m.description.to_owned(),
-                        TypeScale::caption(),
-                        tokens.text.tertiary,
+                    let mut job = egui::text::LayoutJob::default();
+                    job.append(
+                        m.description,
+                        0.0,
+                        egui::TextFormat {
+                            font_id: TypeScale::caption(),
+                            color: tokens.text.tertiary,
+                            ..Default::default()
+                        },
                     );
                     job.wrap = egui::text::TextWrapping {
                         max_width: text_avail_w,
-                        max_rows: 1,
+                        max_rows: 2,
                         break_anywhere: false,
                         overflow_character: Some('…'),
                     };
                     f.layout_job(job)
                 });
                 p.galley(
-                    Pos2::new(text_x, card_rect.min.y + 26.0),
+                    Pos2::new(text_x, card_rect.min.y + 28.0),
                     desc_galley,
                     tokens.text.tertiary,
                 );

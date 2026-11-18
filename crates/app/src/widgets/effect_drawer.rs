@@ -116,19 +116,35 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
 
         ui.add_space(4.0);
 
-        // High-Performance Virtualized Preset List (Fixed 38px rows via show_rows)
-        let row_height = 38.0_f32;
+        // High-Performance Virtualized Preset List (Fixed 48px rows via show_rows)
+        let row_height = 48.0_f32;
+        let last_scrolled_id = ui.make_persistent_id("effect_drawer_last_scrolled_effect");
+        let last_scrolled: Option<u8> = ui.data(|d| d.get_temp(last_scrolled_id));
+        let need_scroll = last_scrolled != Some(state.ui_effect);
+        let mut did_scroll = false;
+
         egui::ScrollArea::vertical()
             .auto_shrink([false, false])
-            .max_height(380.0)
+            .max_height(420.0)
             .show_rows(ui, row_height, filtered.len(), |ui, row_range| {
                 for idx in row_range {
                     if let Some(style) = filtered.get(idx) {
                         let is_active = state.ui_effect == style.code;
                         let is_fav = state.is_favourite && is_active;
 
-                        let row = ListRow::new(style.name, style.code, is_active, is_fav);
-                        let (row_clicked, fav_toggled) = row.show(ui);
+                        let row = ListRow::new(
+                            style.name,
+                            style.code,
+                            Some(style.category.name()),
+                            is_active,
+                            is_fav,
+                        );
+                        let (row_clicked, fav_toggled, row_resp) = row.show(ui);
+
+                        if is_active && need_scroll {
+                            row_resp.scroll_to_me(Some(egui::Align::Center));
+                            did_scroll = true;
+                        }
 
                         if row_clicked {
                             selected_effect = Some(style.code);
@@ -141,6 +157,10 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
                     }
                 }
             });
+
+        if did_scroll {
+            ui.data_mut(|d| d.insert_temp(last_scrolled_id, state.ui_effect));
+        }
     });
 
     selected_effect

@@ -90,13 +90,8 @@ pub fn fluent_slider(
             Vec2::new(track_w, track_h),
         );
 
-        // Background track (well)
+        // Background track (well, no outline at rest)
         p.rect_filled(track_rect, Rounding::same(2.0), tokens.surfaces.well);
-        p.rect_stroke(
-            track_rect,
-            Rounding::same(2.0),
-            Stroke::new(1.0_f32, tokens.borders.subtle),
-        );
 
         // Active accent track (filled left portion)
         let fill_w = track_w * current_norm;
@@ -135,6 +130,38 @@ pub fn fluent_slider(
     }
 
     resp
+}
+
+/// Renders a labeled slider: label on the left, tabular formatted value on the right,
+/// and track spanning the full width of its container.
+pub fn labeled_slider(
+    ui: &mut Ui,
+    label: &str,
+    value: &mut u8,
+    min: u8,
+    max: u8,
+    value_display: &str,
+) -> Response {
+    let tokens = ThemeTokens::default_dark();
+    let font_body = TypeScale::body();
+    let font_val = TypeScale::body_strong();
+
+    ui.horizontal(|ui| {
+        ui.label(
+            egui::RichText::new(label)
+                .font(font_body)
+                .color(tokens.text.secondary),
+        );
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            ui.label(
+                egui::RichText::new(value_display)
+                    .font(font_val)
+                    .color(tokens.text.primary),
+            );
+        });
+    });
+    ui.add_space(6.0);
+    fluent_slider(ui, "", value, min, max, "")
 }
 
 /// Renders a channel-specific colour gradient slider (R, G, or B).

@@ -11,7 +11,7 @@ pub fn chip_group(ui: &mut Ui, items: &[&str], selected_index: Option<usize>) ->
     let font = TypeScale::caption();
     let mut new_selection = selected_index;
 
-    egui::ScrollArea::horizontal()
+    let area_resp = egui::ScrollArea::horizontal()
         .auto_shrink([false, false])
         .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
         .show(ui, |ui| {
@@ -38,18 +38,19 @@ pub fn chip_group(ui: &mut Ui, items: &[&str], selected_index: Option<usize>) ->
                         let p = ui.painter();
                         let is_hovered = resp.hovered();
 
+                        // No outline at rest: use control fill (L about 0.26); outline only on hover (about 14% alpha)
                         let (bg, border, text_color) = if is_selected {
                             (tokens.accent.base, Stroke::NONE, Color32::WHITE)
                         } else if is_hovered {
                             (
                                 tokens.surfaces.raised_hover,
-                                tokens.card_stroke_hover(),
+                                Stroke::new(1.0_f32, tokens.borders.hover),
                                 tokens.text.primary,
                             )
                         } else {
                             (
-                                tokens.surfaces.card,
-                                tokens.card_stroke(),
+                                tokens.surfaces.raised_hover,
+                                Stroke::NONE,
                                 tokens.text.secondary,
                             )
                         };
@@ -75,6 +76,30 @@ pub fn chip_group(ui: &mut Ui, items: &[&str], selected_index: Option<usize>) ->
                 }
             });
         });
+
+    // Subtle edge fades on the horizontal scroll container
+    let container_rect = area_resp.inner_rect;
+    let fade_w = 12.0_f32;
+    let p = ui.painter();
+    let left_fade = egui::Rect::from_min_size(
+        container_rect.min,
+        Vec2::new(fade_w, container_rect.height()),
+    );
+    let right_fade = egui::Rect::from_min_size(
+        Pos2::new(container_rect.max.x - fade_w, container_rect.min.y),
+        Vec2::new(fade_w, container_rect.height()),
+    );
+    let fade_col = tokens.surfaces.card;
+    p.rect_filled(
+        left_fade,
+        egui::Rounding::ZERO,
+        fade_col.linear_multiply(0.4),
+    );
+    p.rect_filled(
+        right_fade,
+        egui::Rounding::ZERO,
+        fade_col.linear_multiply(0.4),
+    );
 
     new_selection
 }

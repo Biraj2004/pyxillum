@@ -8,9 +8,9 @@
 use crate::catalog::find_closest_hardware_effect;
 use crate::state::{AppState, CustomColorEffect, DashboardMode};
 use crate::ui::components::button::FluentButton;
-use crate::ui::components::card::Card;
+use crate::ui::components::card::{section_header, Card};
 use crate::ui::components::segmented::{segmented_control, SegmentItem};
-use crate::ui::components::slider::{colour_channel_slider, fluent_slider};
+use crate::ui::components::slider::{colour_channel_slider, labeled_slider};
 use crate::ui::icons::Icon;
 use crate::ui::theme::ThemeTokens;
 use crate::ui::typography::TypeScale;
@@ -28,10 +28,11 @@ pub fn render_solid_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                 // Left Column: Chromatic Wheel, Hex Input, RGB Sliders
                 Card::base().show(col, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.label(
-                            egui::RichText::new("Chromatic Colour Wheel")
-                                .font(TypeScale::body_strong())
-                                .color(tokens.text.primary),
+                        section_header(
+                            ui,
+                            "Chromatic Colour Wheel",
+                            Some("Fine-tune RGB and HSL spectrum coordinates"),
+                            None::<fn(&mut egui::Ui)>,
                         );
                         ui.add_space(8.0);
 
@@ -130,26 +131,18 @@ pub fn render_solid_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                 Card::base().show(col, |ui| {
                     ui.vertical(|ui| {
                         // 1. Master Brightness
-                        ui.horizontal(|ui| {
-                            ui.label(
-                                egui::RichText::new("Master Brightness")
-                                    .font(TypeScale::body())
-                                    .color(tokens.text.secondary),
-                            );
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
-                                    ui.label(
-                                        egui::RichText::new(format!("{}%", pct))
-                                            .font(TypeScale::body_strong())
-                                            .color(tokens.text.primary),
-                                    );
-                                },
-                            );
-                        });
-                        ui.add_space(8.0);
-                        if fluent_slider(ui, "", &mut state.ui_brightness, 0, 255, "%").changed() {
+                        let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+                        let val_str = format!("{}%", pct);
+                        if labeled_slider(
+                            ui,
+                            "Master Brightness",
+                            &mut state.ui_brightness,
+                            0,
+                            255,
+                            &val_str,
+                        )
+                        .changed()
+                        {
                             state_changed = true;
                         }
 
@@ -289,11 +282,11 @@ pub fn render_solid_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                                         tokens.radius.card_rounding(),
                                         Stroke::new(2.0_f32, tokens.accent.text_light),
                                     );
-                                } else {
+                                } else if s_resp.hovered() {
                                     p.rect_stroke(
                                         s_rect,
                                         tokens.radius.control_rounding(),
-                                        Stroke::new(1.0_f32, tokens.borders.subtle),
+                                        Stroke::new(1.0_f32, tokens.borders.hover),
                                     );
                                 }
 
@@ -313,21 +306,14 @@ pub fn render_solid_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
         // 2. Custom Colour Dynamic Styles Card
         Card::base().show(ui, |ui| {
             ui.vertical(|ui| {
-                ui.horizontal(|ui| {
-                    ui.label(
-                        egui::RichText::new("Custom Colour Dynamic Styles")
-                            .font(TypeScale::subtitle())
-                            .color(tokens.text.primary),
-                    );
-                });
-
-                ui.label(
-                    egui::RichText::new(state.custom_color_effect.description())
-                        .font(TypeScale::caption())
-                        .color(tokens.text.tertiary),
+                section_header(
+                    ui,
+                    "Custom Colour Dynamic Styles",
+                    Some(state.custom_color_effect.description()),
+                    None::<fn(&mut egui::Ui)>,
                 );
 
-                ui.add_space(12.0);
+                ui.add_space(10.0);
 
                 // Style Selector via Segmented Control (Solid, Breathe, Strobe, Pulse, Wave, Comet, Stars, Sweep)
                 let all_effects = CustomColorEffect::all();
@@ -369,41 +355,19 @@ pub fn render_solid_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                         12.0,
                         |ui, side| match side {
                             crate::ui::layout::SplitSide::Left => {
-                                ui.vertical(|ui| {
-                                    ui.horizontal(|ui| {
-                                        ui.label(
-                                            egui::RichText::new("Animation Speed")
-                                                .font(TypeScale::body())
-                                                .color(tokens.text.secondary),
-                                        );
-                                        ui.with_layout(
-                                            egui::Layout::right_to_left(egui::Align::Center),
-                                            |ui| {
-                                                ui.label(
-                                                    egui::RichText::new(format!(
-                                                        "Level {}",
-                                                        state.custom_effect_speed
-                                                    ))
-                                                    .font(TypeScale::body_strong())
-                                                    .color(tokens.accent.text_light),
-                                                );
-                                            },
-                                        );
-                                    });
-                                    ui.add_space(8.0);
-                                    if fluent_slider(
-                                        ui,
-                                        "",
-                                        &mut state.custom_effect_speed,
-                                        1,
-                                        10,
-                                        "Level",
-                                    )
-                                    .changed()
-                                    {
-                                        state_changed = true;
-                                    }
-                                });
+                                let val_str = format!("Level {}", state.custom_effect_speed);
+                                if labeled_slider(
+                                    ui,
+                                    "Animation Speed",
+                                    &mut state.custom_effect_speed,
+                                    1,
+                                    10,
+                                    &val_str,
+                                )
+                                .changed()
+                                {
+                                    state_changed = true;
+                                }
                             }
                             crate::ui::layout::SplitSide::Right => {
                                 ui.vertical(|ui| {

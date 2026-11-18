@@ -128,7 +128,14 @@ impl BleDiagnostic {
             Self::DriverError(_) => "The Bluetooth controller driver encountered a hardware fault. Restarting Bluetooth or updating the driver in Device Manager may resolve this.".to_string(),
             Self::ConnectionTimeout => "The controller did not respond within the connection window. Ensure the device is powered on, within range, and unbonded from mobile devices.".to_string(),
             Self::DeviceBusy => "SP621E controllers support only one active BLE connection at a time. Ensure companion mobile apps are closed and disconnected.".to_string(),
-            Self::Other(raw) => format!("Bluetooth transport error: {}", raw),
+            Self::Other(raw) => {
+                let cleaned = raw
+                    .trim_start_matches("transport error:")
+                    .trim()
+                    .trim_start_matches("bluetooth error:")
+                    .trim();
+                format!("Bluetooth communication issue: {}", cleaned)
+            }
         }
     }
 

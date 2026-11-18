@@ -6,29 +6,37 @@
 use crate::ui::icons::Icon;
 use crate::ui::theme::ThemeTokens;
 use crate::ui::typography::TypeScale;
-use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Sense, Ui, Vec2};
+use eframe::egui::{self, Color32, Pos2, Rect, Response, Rounding, Sense, Ui, Vec2};
 
 pub struct ListRow<'a> {
     title: &'a str,
     code: u8,
+    category: Option<&'a str>,
     is_selected: bool,
     is_favourite: bool,
 }
 
 impl<'a> ListRow<'a> {
-    pub fn new(title: &'a str, code: u8, is_selected: bool, is_favourite: bool) -> Self {
+    pub fn new(
+        title: &'a str,
+        code: u8,
+        category: Option<&'a str>,
+        is_selected: bool,
+        is_favourite: bool,
+    ) -> Self {
         Self {
             title,
             code,
+            category,
             is_selected,
             is_favourite,
         }
     }
 
-    /// Renders the row. Returns `(row_clicked, fav_toggled)`.
-    pub fn show(self, ui: &mut Ui) -> (bool, bool) {
+    /// Renders the 48px row. Returns `(row_clicked, fav_toggled, response)`.
+    pub fn show(self, ui: &mut Ui) -> (bool, bool, Response) {
         let tokens = ThemeTokens::default_dark();
-        let height = 38.0_f32;
+        let height = 48.0_f32;
         let full_w = ui.available_width();
 
         let (rect, resp) = ui.allocate_exact_size(Vec2::new(full_w, height), Sense::click());
@@ -43,7 +51,8 @@ impl<'a> ListRow<'a> {
             let p = ui.painter();
             let is_hovered = resp.hovered();
 
-            // Background fill
+            // Background fill (clipped strictly inside ui.clip_rect() to avoid bleed)
+            let draw_rect = rect.intersect(ui.clip_rect());
             let bg = if self.is_selected {
                 tokens.accent.base.linear_multiply(0.20)
             } else if is_hovered {
@@ -52,9 +61,9 @@ impl<'a> ListRow<'a> {
                 Color32::TRANSPARENT
             };
 
-            p.rect_filled(rect, tokens.radius.control_rounding(), bg);
+            p.rect_filled(draw_rect, tokens.radius.control_rounding(), bg);
 
-            // Left 3px accent indicator bar for active row (animates in height on selection)
+            // Left 3px accent indicator bar for active selection
             let anim_id = ui.make_persistent_id(format!("list_row_bar_anim_{}", self.code));
             let client_anim = crate::platform::windows::is_client_animation_enabled();
             let anim_t = if client_anim {
@@ -67,27 +76,43 @@ impl<'a> ListRow<'a> {
             };
 
             if anim_t > 0.01 {
-                let max_h = rect.height() - 12.0;
-                let bar_h = (max_h * anim_t).max(3.0);
+                let max_h = rect.height() - 14.0;
+                let bar_h = (max_h * anim_t).max(4.0);
                 let bar = Rect::from_center_size(
-                    Pos2::new(rect.min.x + 3.5, rect.center().y),
+                    Pos2::new(rect.min.x + 2.5, rect.center().y),
                     Vec2::new(3.0, bar_h),
                 );
                 p.rect_filled(bar, Rounding::same(1.5), tokens.accent.base);
             }
 
-            // Numeric ID tag (e.g. "#146")
-            let id_str = format!("{:03}", self.code);
-            let id_galley =
-                ui.fonts(|f| f.layout_no_wrap(id_str, TypeScale::caption(), tokens.text.tertiary));
-            p.galley(
-                Pos2::new(rect.min.x + 16.0, rect.center().y - 6.0),
-                id_galley,
-                tokens.text.tertiary,
+            // Number badge container (32x22 rounded chip)
+            let badge_rect = Rect::from_center_size(
+                Pos2::new(rect.min.x + 24.0, rect.center().y),
+                Vec2::new(32.0, 22.0),
+            );
+            p.rect_filled(
+                badge_rect,
+                tokens.radius.chip_rounding(),
+                tokens.surfaces.well,
+            );
+            let badge_text_col = if self.is_selected {
+                tokens.accent.text_light
+            } else {
+                tokens.text.tertiary
+            };
+            p.text(
+                badge_rect.center(),
+                egui::Align2::CENTER_CENTER,
+                format!("{:03}", self.code),
+                TypeScale::caption(),
+                badge_text_col,
             );
 
-            // Title
-            let text_color = if self.is_selected {
+            // Title and Category Caption
+            let text_x = badge_rect.max.x + 10.0;
+            let max_text_w = (rect.max.x - text_x - 38.0).max(20.0);
+
+            let title_color = if self.is_selected {
                 tokens.accent.text_light
             } else if is_hovered {
                 tokens.text.primary
@@ -95,20 +120,14 @@ impl<'a> ListRow<'a> {
                 tokens.text.secondary
             };
 
-            let title_font = if self.is_selected {
-                TypeScale::body_strong()
-            } else {
-                TypeScale::body()
-            };
-            let max_title_w = (full_w - 52.0 - 36.0).max(30.0);
             let title_galley = ui.fonts(|f| {
                 let mut job = egui::text::LayoutJob::simple_singleline(
                     self.title.to_owned(),
-                    title_font,
-                    text_color,
+                    TypeScale::body_strong(),
+                    title_color,
                 );
                 job.wrap = egui::text::TextWrapping {
-                    max_width: max_title_w,
+                    max_width: max_text_w,
                     max_rows: 1,
                     break_anywhere: false,
                     overflow_character: Some('…'),
@@ -116,10 +135,33 @@ impl<'a> ListRow<'a> {
                 f.layout_job(job)
             });
             p.galley(
-                Pos2::new(rect.min.x + 52.0, rect.center().y - 7.0),
+                Pos2::new(text_x, rect.min.y + 6.0),
                 title_galley,
-                text_color,
+                title_color,
             );
+
+            // Category caption
+            if let Some(cat) = self.category {
+                let cat_galley = ui.fonts(|f| {
+                    let mut job = egui::text::LayoutJob::simple_singleline(
+                        cat.to_owned(),
+                        TypeScale::caption(),
+                        tokens.text.tertiary,
+                    );
+                    job.wrap = egui::text::TextWrapping {
+                        max_width: max_text_w,
+                        max_rows: 1,
+                        break_anywhere: false,
+                        overflow_character: Some('…'),
+                    };
+                    f.layout_job(job)
+                });
+                p.galley(
+                    Pos2::new(text_x, rect.min.y + 26.0),
+                    cat_galley,
+                    tokens.text.tertiary,
+                );
+            }
 
             // Favorite star on the right
             let fav_rect = Rect::from_center_size(
@@ -155,11 +197,13 @@ impl<'a> ListRow<'a> {
             }
         }
 
-        if resp.hovered() {
+        let resp = if resp.hovered() {
             ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
-            resp.on_hover_text(format!("#{:03} {}", self.code, self.title));
-        }
+            resp.on_hover_text(format!("#{:03} {}", self.code, self.title))
+        } else {
+            resp
+        };
 
-        (row_clicked, fav_toggled)
+        (row_clicked, fav_toggled, resp)
     }
 }

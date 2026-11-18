@@ -29,6 +29,7 @@ impl<'a> SegmentItem<'a> {
 }
 
 /// Renders a horizontal Fluent SegmentedControl with animated sliding indicator.
+/// Width is clamped to `min(available, segments * 160px)`, left-aligned, never full-bleed.
 pub fn segmented_control(
     ui: &mut Ui,
     id_source: &str,
@@ -39,21 +40,29 @@ pub fn segmented_control(
     let font = TypeScale::body();
     let num_items = items.len().max(1);
     let height = 34.0_f32;
-    let full_w = ui.available_width();
+    let desired_w = ui.available_width().min(num_items as f32 * 160.0);
 
-    let (rect, resp) = ui.allocate_exact_size(Vec2::new(full_w, height), Sense::click());
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(desired_w, height), Sense::click());
     let mut new_selection = selected_index;
 
     if ui.is_rect_visible(rect) {
         let p = ui.painter();
 
-        // Inset well container
-        p.rect_filled(rect, tokens.radius.control_rounding(), tokens.surfaces.well);
-        p.rect_stroke(
+        // Control fill (L about 0.26) with NO outline at rest; outline on hover (14% alpha)
+        let is_hovered = resp.hovered();
+        let border = if is_hovered {
+            Stroke::new(1.0_f32, tokens.borders.hover)
+        } else {
+            Stroke::NONE
+        };
+        p.rect_filled(
             rect,
             tokens.radius.control_rounding(),
-            Stroke::new(1.0_f32, tokens.borders.subtle),
+            tokens.surfaces.raised_hover,
         );
+        if border != Stroke::NONE {
+            p.rect_stroke(rect, tokens.radius.control_rounding(), border);
+        }
 
         let segment_w = (rect.width() - 4.0) / num_items as f32;
 
@@ -158,6 +167,7 @@ impl<'a> ToggleTileItem<'a> {
 }
 
 /// Renders a responsive 2D grid of toggle tiles (e.g. for DIY Animation Styles).
+/// Tiles use minimum width of 260px, control fill at rest with NO outline, and accent tint + border on selection.
 pub fn toggle_tile_grid(
     ui: &mut Ui,
     items: &[ToggleTileItem],
@@ -166,9 +176,9 @@ pub fn toggle_tile_grid(
 ) -> usize {
     let tokens = ThemeTokens::default_dark();
     let mut new_selection = selected_index;
-    let min_col_w = 180.0_f32;
-    let gap = 8.0_f32;
-    let item_h = 58.0_f32;
+    let min_col_w = 260.0_f32;
+    let gap = 10.0_f32;
+    let item_h = 64.0_f32;
 
     crate::ui::layout::grid_cols(ui, items, min_col_w, gap, |ui, i, item, col_w| {
         let is_selected = i == selected_index;
@@ -178,32 +188,46 @@ pub fn toggle_tile_grid(
             let p = ui.painter();
             let is_hovered = resp.hovered();
 
+            // Selected: accent tint + accent border (not solid blue fill).
+            // At rest: control fill (L about 0.26) with NO outline.
+            // Hover: 14% alpha outline.
             let (bg, border, text_color) = if is_selected {
                 (
-                    tokens.accent.base,
-                    Stroke::new(1.0_f32, tokens.accent.text_light),
-                    Color32::WHITE,
+                    tokens.accent.base.linear_multiply(0.20),
+                    Stroke::new(1.5_f32, tokens.accent.text_light),
+                    tokens.text.primary,
                 )
             } else if is_hovered {
                 (
                     tokens.surfaces.raised_hover,
-                    tokens.card_stroke_hover(),
+                    Stroke::new(1.0_f32, tokens.borders.hover),
                     tokens.text.primary,
                 )
             } else {
                 (
-                    tokens.surfaces.card,
-                    tokens.card_stroke(),
+                    tokens.surfaces.raised_hover,
+                    Stroke::NONE,
                     tokens.text.secondary,
                 )
             };
 
             p.rect_filled(rect, tokens.radius.control_rounding(), bg);
-            p.rect_stroke(rect, tokens.radius.control_rounding(), border);
+            if border != Stroke::NONE {
+                p.rect_stroke(rect, tokens.radius.control_rounding(), border);
+            }
+
+            // Left 3px accent indicator for active selection
+            if is_selected {
+                let ind = Rect::from_min_size(
+                    Pos2::new(rect.min.x + 2.0, rect.min.y + 12.0),
+                    Vec2::new(3.0, rect.height() - 24.0),
+                );
+                p.rect_filled(ind, tokens.radius.chip_rounding(), tokens.accent.base);
+            }
 
             // Left icon
             let icon_box = Rect::from_center_size(
-                Pos2::new(rect.min.x + 20.0, rect.center().y),
+                Pos2::new(rect.min.x + 22.0, rect.center().y),
                 Vec2::splat(20.0),
             );
             item.icon.paint(p, icon_box, text_color);
