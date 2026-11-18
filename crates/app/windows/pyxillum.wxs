@@ -22,8 +22,8 @@
     <MediaTemplate EmbedCab="yes" />
 
     <!-- Application and Installer Icons -->
-    <Icon Id="PyxillumIcon" SourceFile="pyxillum.ico" />
-    <Property Id="ARPPRODUCTICON" Value="PyxillumIcon" />
+    <Icon Id="PyxillumIcon.exe" SourceFile="pyxillum.ico" />
+    <Property Id="ARPPRODUCTICON" Value="PyxillumIcon.exe" />
     <Property Id="ARPHELPLINK" Value="https://github.com/example/pyxillum" />
 
     <!-- WiX Standard UI Custom Bitmaps -->
@@ -56,7 +56,8 @@
             Name="Pyxillum"
             Description="Launch Pyxillum Pixel LED Controller"
             WorkingDirectory="INSTALLFOLDER"
-            Icon="PyxillumIcon"
+            Icon="PyxillumIcon.exe"
+            IconIndex="0"
             Advertise="yes" />
           <!-- Start Menu Shortcut -->
           <Shortcut
@@ -65,7 +66,8 @@
             Name="Pyxillum"
             Description="Launch Pyxillum Pixel LED Controller"
             WorkingDirectory="INSTALLFOLDER"
-            Icon="PyxillumIcon"
+            Icon="PyxillumIcon.exe"
+            IconIndex="0"
             Advertise="yes" />
         </File>
         <File Id="PyxillumCliExe" Name="pyxillum.exe" Source="..\..\..\target\release\pyxillum.exe" />

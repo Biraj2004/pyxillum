@@ -24,8 +24,18 @@ env:
 
 jobs:
   build-linux:
-    name: Build Linux (.deb, .tar.gz)
-    runs-on: ubuntu-latest
+    name: Build Linux (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            arch: x86_64
+            deb_arch: amd64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+            deb_arch: arm64
 
     steps:
       - name: Checkout repository
@@ -52,9 +62,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-release-
+            ${{ runner.os }}-${{ matrix.arch }}-cargo-release-
 
       - name: Compute Build Version
         id: version
@@ -94,17 +104,19 @@ jobs:
       - name: Package Linux Artifacts
         run: |
           version="${{ steps.version.outputs.version }}"
+          arch="${{ matrix.arch }}"
+          deb_arch="${{ matrix.deb_arch }}"
           mkdir -p staging
 
           # 1. Standalone Executables
-          cp target/release/pyxillum-desktop "staging/Pyxillum-Desktop-Linux-x86_64-v${version}"
-          chmod +x "staging/Pyxillum-Desktop-Linux-x86_64-v${version}"
+          cp target/release/pyxillum-desktop "staging/Pyxillum-Desktop-Linux-${arch}-v${version}"
+          chmod +x "staging/Pyxillum-Desktop-Linux-${arch}-v${version}"
 
-          cp target/release/pyxillum "staging/pyxillum-cli-Linux-x86_64-v${version}"
-          chmod +x "staging/pyxillum-cli-Linux-x86_64-v${version}"
+          cp target/release/pyxillum "staging/pyxillum-cli-Linux-${arch}-v${version}"
+          chmod +x "staging/pyxillum-cli-Linux-${arch}-v${version}"
 
           # 2. Portable Tarball Bundle
-          tar_root="Pyxillum-Linux-x86_64-v${version}"
+          tar_root="Pyxillum-Linux-${arch}-v${version}"
           mkdir -p "${tar_root}"
           cp target/release/pyxillum-desktop "${tar_root}/pyxillum-desktop"
           cp target/release/pyxillum "${tar_root}/pyxillum"
@@ -122,10 +134,10 @@ jobs:
           Categories=Utility;HardwareSettings;
           EOF
 
-          tar -czvf "staging/Pyxillum-Linux-x86_64-v${version}.tar.gz" "${tar_root}"
+          tar -czvf "staging/Pyxillum-Linux-${arch}-v${version}.tar.gz" "${tar_root}"
 
           # 3. Debian / Ubuntu Package (.deb)
-          deb_root="deb_build/pyxillum_${version}_amd64"
+          deb_root="deb_build/pyxillum_${version}_${deb_arch}"
           mkdir -p "${deb_root}/DEBIAN"
           mkdir -p "${deb_root}/usr/bin"
           mkdir -p "${deb_root}/usr/share/applications"
@@ -143,7 +155,7 @@ jobs:
           Version: ${version}
           Section: utils
           Priority: optional
-          Architecture: amd64
+          Architecture: ${deb_arch}
           Maintainer: Pyxillum Contributors <pyxillum@github.com>
           Depends: libdbus-1-3, libxkbcommon0, libgl1
           Description: Native Bluetooth Low Energy pixel LED controller
@@ -151,11 +163,11 @@ jobs:
            of the SP621E/SP6xxE hardware family.
           EOF
 
-          dpkg-deb --build "${deb_root}" "staging/pyxillum_${version}_amd64.deb"
+          dpkg-deb --build "${deb_root}" "staging/pyxillum_${version}_${deb_arch}.deb"
 
           # 4. Compute SHA-256 Checksums
           cd staging
-          sha256sum * > linux-checksums-sha256.txt
+          sha256sum * > linux-${arch}-checksums-sha256.txt
           cd ..
 
           ls -lh staging/

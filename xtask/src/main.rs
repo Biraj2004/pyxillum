@@ -115,6 +115,8 @@ fn main() -> Result<()> {
                         .args([
                             "-ext",
                             "WixUIExtension",
+                            "-sice:ICE50",
+                            "-sice:ICE69",
                             "-out",
                             out_msi.to_str().unwrap(),
                             obj.to_str().unwrap(),
