@@ -99,17 +99,20 @@ impl<'a> FluentButton<'a> {
         let final_width = content_width.max(self.min_width);
         let height = 32.0_f32;
 
-        let sense = if self.enabled {
-            Sense::click()
-        } else {
-            Sense::hover()
-        };
-        let (rect, resp) = ui.allocate_exact_size(Vec2::new(final_width, height), sense);
+        let (rect, resp) = ui.allocate_exact_size(Vec2::new(final_width, height), Sense::click());
 
         if ui.is_rect_visible(rect) {
             let p = ui.painter();
             let is_pressed = resp.is_pointer_button_down_on() && self.enabled;
             let is_hovered = resp.hovered() && self.enabled;
+
+            // Micro-interaction: tactile 1px depression when pressed
+            let client_anim = crate::platform::windows::is_client_animation_enabled();
+            let display_rect = if is_pressed && client_anim {
+                rect.translate(Vec2::new(0.0, 1.0))
+            } else {
+                rect
+            };
 
             // Background & text colours by variant and state
             let (bg, fg, border) = if !self.enabled {
@@ -189,17 +192,18 @@ impl<'a> FluentButton<'a> {
 
             // Render container box with 8px control rounding
             let rounding = tokens.radius.control_rounding();
-            p.rect_filled(rect, rounding, bg);
+            p.rect_filled(display_rect, rounding, bg);
             if border != Stroke::NONE {
-                p.rect_stroke(rect, rounding, border);
+                p.rect_stroke(display_rect, rounding, border);
             }
 
-            // Draw icon and text with optical centering
-            let mut cursor_x = rect.center().x - (text_size.x + icon_width) / 2.0;
+            // Draw icon and text with optical centering and x-height alignment
+            let mut cursor_x = display_rect.center().x - (text_size.x + icon_width) / 2.0;
 
             if let Some(icon) = self.icon {
+                // Optical adjustment: nudge -0.5px vertically to align with font x-height
                 let icon_box = Rect::from_center_size(
-                    Pos2::new(cursor_x + 8.0, rect.center().y),
+                    Pos2::new(cursor_x + 8.0, display_rect.center().y - 0.5),
                     Vec2::splat(16.0),
                 );
                 let snapped = crate::ui::icons::snap_rect_to_pixels(icon_box, ppp);
@@ -207,7 +211,7 @@ impl<'a> FluentButton<'a> {
                 cursor_x += 24.0;
             }
 
-            let text_pos = Pos2::new(cursor_x, rect.center().y - text_size.y / 2.0);
+            let text_pos = Pos2::new(cursor_x, display_rect.center().y - text_size.y / 2.0);
             let galley = ui.fonts(|f| f.layout_no_wrap(self.text.to_owned(), font, fg));
             p.galley(text_pos, galley, fg);
         }

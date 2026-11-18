@@ -54,11 +54,24 @@ impl<'a> ListRow<'a> {
 
             p.rect_filled(rect, tokens.radius.control_rounding(), bg);
 
-            // Left 3px accent indicator bar for active row
-            if self.is_selected {
-                let bar = Rect::from_min_size(
-                    Pos2::new(rect.min.x + 2.0, rect.min.y + 6.0),
-                    Vec2::new(3.0, rect.height() - 12.0),
+            // Left 3px accent indicator bar for active row (animates in height on selection)
+            let anim_id = ui.make_persistent_id(format!("list_row_bar_anim_{}", self.code));
+            let client_anim = crate::platform::windows::is_client_animation_enabled();
+            let anim_t = if client_anim {
+                ui.ctx()
+                    .animate_bool_with_time(anim_id, self.is_selected, 0.16)
+            } else if self.is_selected {
+                1.0
+            } else {
+                0.0
+            };
+
+            if anim_t > 0.01 {
+                let max_h = rect.height() - 12.0;
+                let bar_h = (max_h * anim_t).max(3.0);
+                let bar = Rect::from_center_size(
+                    Pos2::new(rect.min.x + 3.5, rect.center().y),
+                    Vec2::new(3.0, bar_h),
                 );
                 p.rect_filled(bar, Rounding::same(1.5), tokens.accent.base);
             }

@@ -391,4 +391,24 @@ mod tests {
         // Extreme padding clamp
         assert_eq!(RadiusTokens::concentric_inner(8.0, 10.0), 4.0);
     }
+
+    #[test]
+    fn test_concentric_radii_hierarchy_audit() {
+        let tokens = ThemeTokens::default_dark();
+
+        // 1. Cards (outer radius 12px) containing nested controls
+        let card_inner_at_4px_pad = RadiusTokens::concentric_inner(tokens.radius.card, 4.0);
+        assert_eq!(card_inner_at_4px_pad, tokens.radius.control); // 12 - 4 = 8px
+
+        let card_inner_at_6px_pad = RadiusTokens::concentric_inner(tokens.radius.card, 6.0);
+        assert_eq!(card_inner_at_6px_pad, tokens.radius.chip); // 12 - 6 = 6px
+
+        // 2. Dialogs / Elevated Surfaces (outer radius 12px)
+        let dialog_inner = RadiusTokens::concentric_inner(tokens.radius.card, 4.0);
+        assert_eq!(dialog_inner, tokens.radius.control);
+
+        // 3. Controls (outer radius 8px) with 4px padding
+        let control_inner = RadiusTokens::concentric_inner(tokens.radius.control, 4.0);
+        assert_eq!(control_inner, 4.0);
+    }
 }

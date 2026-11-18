@@ -313,6 +313,45 @@ Every screen in Pyxillum has been completely reconstructed using the Fluent comp
 - **Chip Order Configuration**: Segmented selector for IC color sequences (RGB, BGR, RBG, GBR, BRG).
 - **Non-Volatile Hardware Safety Gate**: Danger-tinted InfoBar warning user of EEPROM register mutation, paired with an explicit confirmation checkbox that enables the primary "Apply Configuration" button.
 
+---
+
+## 12. Design, Motion & Animation Hacks (Phase 8)
+
+Pyxillum incorporates the design and motion techniques from native Windows desktop engineering best practices:
+
+### 12.1 Perceptual Oklab Gradients
+- **UI Surface Interpolation**: The Output Chromatic Preview and color swatches utilize `interpolate_oklab()` in `palette.rs`. Interpolating in Oklab avoids the desaturated "grey dead zone" that plagues standard linear and gamma sRGB blending between complementary hues (e.g. blue to yellow or magenta to green).
+- **Hardware Isolation**: Perceptual interpolation is strictly isolated to UI display shaders and canvases. All outbound BLE byte frames transmitted to physical hardware remain in their native unadulterated RGB byte representation.
+- **Automated Verification**: `test_oklab_gradient_avoids_grey_dead_zone` verifies that the midpoint of complementary color ramps maintains high perceptual relative luminance ($Y > 0.25$).
+
+### 12.2 Concentric Radii Mathematical Hierarchy
+- **Concentric Formula**: For every container housing nested controls or chips, radii strictly satisfy:
+  $$\text{inner\_radius} = \max(\text{outer\_radius} - \text{padding}, \, 4.0\text{px})$$
+- **Hierarchy Audit**:
+  - Cards ($12\text{px}$) with $4\text{px}$ nested well margins produce $8\text{px}$ inner radius, exactly matching standard control buttons.
+  - Cards ($12\text{px}$) with $6\text{px}$ nested margins produce $6\text{px}$ inner radius, matching status chips and segmented toggle items.
+  - Controls ($8\text{px}$) with $4\text{px}$ internal padding produce $4\text{px}$ inner radius, matching inner indicator pills.
+- Verified by automated unit test `test_concentric_radii_hierarchy_audit`.
+
+### 12.3 Optical Alignment & Text-Box Trim
+- **Font x-Height Snapping**: Icons paired with text labels in buttons and list rows are nudged vertically by $-0.5\text{px}$. This counteracts font ascent leading and aligns the geometric visual weight of the icon with the lowercase x-height of Segoe UI Variable rather than the uppercase ascender boundary.
+- **Sub-Pixel Snapping**: All vector icons pass through `snap_rect_to_pixels(rect, ppp)` to eliminate bilinear filtering blur on standard $100\%$, $125\%$, $150\%$, and $200\%$ Windows display scaling.
+
+### 12.4 Micro-Interactions & Tactile Feedback
+- **Active Button Depression**: Pressing any button applies a subtle $1\text{px}$ vertical downward displacement (`rect.translate(Vec2::new(0.0, 1.0))`), providing an immediate tactile impression of physical button actuation.
+- **Elastic Toggle Overshoot**: Toggle switches execute a non-linear spring overshoot on thumb release ($\Delta x = \sin(t \cdot \pi) \cdot 0.06$), mimicking physical spring-loaded rocker switches.
+- **Animated List Selection Indicator**: In the 146-effect preset drawer, the $3\text{px}$ accent bar smoothly expands vertically from center $(bar\_h = max\_h \times anim\_t)$ over $160\text{ms}$ upon selection.
+
+### 12.5 Error Shake Feedback
+- When an unauthorized or blocked action occurs—such as attempting to click "Apply Configuration" in the Controller Settings dialog without checking the EEPROM safety gate—the modal executes a decaying sinusoidal shake:
+  $$\text{offset\_x} = 6.0\text{px} \cdot \sin(t \cdot 8\pi) \cdot (1.0 - t), \quad t \in [0.0, 1.0] \text{ over } 300\text{ms}$$
+  This provides immediate visual feedback without annoying modal alerts or system beeps.
+
+### 12.6 Windows Accessibility Respect (`is_client_animation_enabled`)
+- All animations (button press translations, toggle overshoots, list indicator expansions, and error shakes) query `crate::platform::windows::is_client_animation_enabled()`, which maps to Windows `SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION)`.
+- If the user has disabled "Animation effects" in Windows 11 Settings (Accessibility > Visual effects), all transitions instantaneously resolve with zero animation delay.
+
+
 
 
 

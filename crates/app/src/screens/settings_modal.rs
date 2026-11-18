@@ -253,16 +253,19 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let can_apply = state.ui_confirm_safety;
 
-                    if FluentButton::primary("Apply Configuration")
+                    let apply_resp = FluentButton::primary("Apply Configuration")
                         .icon(Icon::HardwareChip)
                         .enabled(can_apply)
                         .min_width(150.0)
-                        .show(ui)
-                        .clicked()
-                        && can_apply
-                    {
-                        commit_changes = true;
-                        state.show_settings_modal = false;
+                        .show(ui);
+
+                    if apply_resp.clicked() {
+                        if can_apply {
+                            commit_changes = true;
+                            state.show_settings_modal = false;
+                        } else {
+                            crate::ui::components::dialog::trigger_dialog_shake(ui.ctx());
+                        }
                     }
 
                     ui.add_space(10.0);

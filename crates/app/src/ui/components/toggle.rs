@@ -37,9 +37,24 @@ pub fn toggle_switch(
         let p = ui.painter();
         let switch_rect = Rect::from_min_size(rect.min, Vec2::new(width, height));
 
-        // Animated travel factor [0.0 = Off, 1.0 = On]
+        // Animated travel factor with elastic overshoot on thumb travel
         let anim_id = ui.make_persistent_id(format!("{}_switch_anim", id_source));
-        let t = ui.ctx().animate_bool_with_time(anim_id, *is_on, 0.14);
+        let client_anim = crate::platform::windows::is_client_animation_enabled();
+        let t_raw = if client_anim {
+            ui.ctx().animate_bool_with_time(anim_id, *is_on, 0.16)
+        } else if *is_on {
+            1.0
+        } else {
+            0.0
+        };
+
+        // Elastic overshoot on release when animations enabled
+        let t = if client_anim && t_raw > 0.0 && t_raw < 1.0 {
+            let overshoot = (t_raw * std::f32::consts::PI).sin() * 0.06;
+            (t_raw + if *is_on { overshoot } else { -overshoot }).clamp(0.0, 1.0)
+        } else {
+            t_raw
+        };
 
         let (bg, border, thumb_color) = if t > 0.5 {
             (tokens.accent.base, Stroke::NONE, Color32::WHITE)

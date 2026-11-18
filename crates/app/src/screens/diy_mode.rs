@@ -12,6 +12,7 @@ use crate::ui::components::segmented::{
 };
 use crate::ui::components::slider::fluent_slider;
 use crate::ui::icons::Icon;
+use crate::ui::theme::palette::interpolate_oklab;
 use crate::ui::theme::ThemeTokens;
 use crate::ui::typography::TypeScale;
 use eframe::egui::{self, Color32, Pos2, Rect, Sense, Stroke, Vec2};
@@ -659,7 +660,7 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                         {
                             let c1 = Color32::from_rgb(n1.color.r, n1.color.g, n1.color.b);
                             let c2 = Color32::from_rgb(n2.color.r, n2.color.g, n2.color.b);
-                            let blend = crate::theme::lerp_color_egui(c1, c2, local_t);
+                            let blend = interpolate_oklab(c1, c2, local_t);
 
                             let seg_rect = Rect::from_min_size(
                                 Pos2::new(p_rect.min.x + (s as f32) * step_w, p_rect.min.y),
@@ -697,14 +698,10 @@ pub fn render_diy_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
                             let local_t = frac_pos.fract();
                             let n1 = &state.diy_nodes[idx1];
                             let n2 = &state.diy_nodes[idx2];
-                            (
-                                (n1.color.r as f32 * (1.0 - local_t) + n2.color.r as f32 * local_t)
-                                    as u8,
-                                (n1.color.g as f32 * (1.0 - local_t) + n2.color.g as f32 * local_t)
-                                    as u8,
-                                (n1.color.b as f32 * (1.0 - local_t) + n2.color.b as f32 * local_t)
-                                    as u8,
-                            )
+                            let c1 = Color32::from_rgb(n1.color.r, n1.color.g, n1.color.b);
+                            let c2 = Color32::from_rgb(n2.color.r, n2.color.g, n2.color.b);
+                            let mid = interpolate_oklab(c1, c2, local_t);
+                            (mid.r(), mid.g(), mid.b())
                         } else {
                             let idx = ((t * n_count as f32) as usize).min(n_count - 1);
                             let n = &state.diy_nodes[idx];

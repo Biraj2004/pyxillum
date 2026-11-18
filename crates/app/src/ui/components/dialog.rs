@@ -9,6 +9,14 @@ use crate::ui::theme::ThemeTokens;
 use crate::ui::typography::TypeScale;
 use eframe::egui::{self, Color32, Pos2, Rounding, Ui, Vec2};
 
+/// Triggers an error shake animation (+/-6px decaying over 300ms) on active modal dialogs.
+pub fn trigger_dialog_shake(ctx: &egui::Context) {
+    let shake_id = egui::Id::new("content_dialog_shake_timestamp");
+    let now = ctx.input(|i| i.time);
+    ctx.data_mut(|d| d.insert_temp(shake_id, now));
+    ctx.request_repaint();
+}
+
 pub struct ContentDialog<'a> {
     title: &'a str,
     subtitle: Option<&'a str>,
@@ -83,9 +91,27 @@ impl<'a> ContentDialog<'a> {
                 );
             });
 
-        // Centered Content Dialog Window
+        // Compute shake offset if recently triggered
+        let shake_id = egui::Id::new("content_dialog_shake_timestamp");
+        let now = ctx.input(|i| i.time);
+        let shake_start: Option<f64> = ctx.data(|d| d.get_temp(shake_id));
+        let shake_offset_x = if let Some(start) = shake_start {
+            let elapsed = (now - start) as f32;
+            if elapsed < 0.30 && crate::platform::windows::is_client_animation_enabled() {
+                ctx.request_repaint();
+                let progress = elapsed / 0.30;
+                let decay = 1.0 - progress;
+                (progress * std::f32::consts::PI * 8.0).sin() * 6.0 * decay
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        };
+
+        // Centered Content Dialog Window (with optional error shake offset)
         egui::Area::new(egui::Id::new("dialog_window"))
-            .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
+            .anchor(egui::Align2::CENTER_CENTER, Vec2::new(shake_offset_x, 0.0))
             .order(egui::Order::Foreground)
             .show(ctx, |ui| {
                 let frame = egui::Frame::none()

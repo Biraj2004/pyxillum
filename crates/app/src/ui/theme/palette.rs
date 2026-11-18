@@ -168,6 +168,11 @@ pub fn oklab_lerp(c1: Color32, c2: Color32, t: f32) -> Color32 {
     blended_ok.to_color32_alpha(alpha)
 }
 
+/// Convenience alias for perceptual Oklab gradient interpolation on UI surfaces.
+pub fn interpolate_oklab(c1: Color32, c2: Color32, t: f32) -> Color32 {
+    oklab_lerp(c1, c2, t)
+}
+
 /// Calculates relative luminance directly from a `Color32`.
 pub fn color32_relative_luminance(c: Color32) -> f32 {
     let r_lin = srgb_to_linear(c.r() as f32 / 255.0);
@@ -247,5 +252,21 @@ mod tests {
 
         let contrast = color32_contrast_ratio(white, black);
         assert!((contrast - 21.0).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_oklab_gradient_avoids_grey_dead_zone() {
+        // Complementary colours: saturated Blue and Yellow
+        let blue = Color32::from_rgb(0, 80, 255);
+        let yellow = Color32::from_rgb(255, 230, 0);
+
+        let oklab_mid = interpolate_oklab(blue, yellow, 0.5);
+        let oklab_luma = color32_relative_luminance(oklab_mid);
+
+        // Oklab midpoint maintains healthy perceptual brightness (> 0.25)
+        assert!(
+            oklab_luma > 0.25,
+            "Oklab midpoint must avoid grey dead zone"
+        );
     }
 }
