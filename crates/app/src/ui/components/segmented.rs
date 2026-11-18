@@ -178,7 +178,7 @@ pub fn toggle_tile_grid(
     let mut new_selection = selected_index;
     let min_col_w = 260.0_f32;
     let gap = 10.0_f32;
-    let item_h = 64.0_f32;
+    let item_h = 72.0_f32;
 
     crate::ui::layout::grid_cols(ui, items, min_col_w, gap, |ui, i, item, col_w| {
         let is_selected = i == selected_index;
@@ -254,7 +254,7 @@ pub fn toggle_tile_grid(
                 f.layout_job(job)
             });
             p.galley(
-                Pos2::new(text_x, rect.min.y + 8.0),
+                Pos2::new(text_x, rect.min.y + 10.0),
                 title_galley,
                 text_color,
             );
@@ -284,7 +284,7 @@ pub fn toggle_tile_grid(
                 };
                 f.layout_job(job)
             });
-            p.galley(Pos2::new(text_x, rect.min.y + 26.0), desc_galley, sub_color);
+            p.galley(Pos2::new(text_x, rect.min.y + 30.0), desc_galley, sub_color);
         }
 
         if resp.clicked() {

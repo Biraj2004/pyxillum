@@ -125,7 +125,8 @@ pub fn render_effect_drawer(ui: &mut egui::Ui, state: &mut AppState) -> Option<u
 
         egui::ScrollArea::vertical()
             .auto_shrink([false, false])
-            .max_height(420.0)
+            .min_scrolled_height(340.0)
+            .max_height(460.0)
             .show_rows(ui, row_height, filtered.len(), |ui, row_range| {
                 for idx in row_range {
                     if let Some(style) = filtered.get(idx) {

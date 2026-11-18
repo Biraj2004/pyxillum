@@ -1048,7 +1048,7 @@ impl eframe::App for PyxillumApp {
                 egui::ScrollArea::vertical()
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
-                        ui.horizontal(|ui| {
+                        ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
                             ui.add_space(side_margin);
 
                             ui.allocate_ui_with_layout(
@@ -1110,6 +1110,7 @@ impl eframe::App for PyxillumApp {
                                                         }
                                                         crate::ui::layout::SplitSide::Right => {
                                                             crate::ui::components::card::Card::base().show(ui, |ui| {
+                                                                ui.set_min_height(490.0);
                                                                 crate::ui::components::card::section_header(
                                                                     ui,
                                                                     "Preset Styles Catalog (146)",

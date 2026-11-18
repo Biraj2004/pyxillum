@@ -202,7 +202,7 @@ pub fn render_music_mode(
             crate::ui::layout::grid_cols(ui, MUSIC_MODES, 360.0, 12.0, |ui, _idx, m, col_w| {
                 let is_active = state.music_mode_index == m.index;
                 let (card_rect, resp) =
-                    ui.allocate_exact_size(Vec2::new(col_w, 64.0), Sense::click());
+                    ui.allocate_exact_size(Vec2::new(col_w, 72.0), Sense::click());
                 let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                 let p = ui.painter_at(card_rect);
 
@@ -290,7 +290,7 @@ pub fn render_music_mode(
                     f.layout_job(job)
                 });
                 p.galley(
-                    Pos2::new(text_x, card_rect.min.y + 8.0),
+                    Pos2::new(text_x, card_rect.min.y + 10.0),
                     title_galley,
                     title_col,
                 );
@@ -315,7 +315,7 @@ pub fn render_music_mode(
                     f.layout_job(job)
                 });
                 p.galley(
-                    Pos2::new(text_x, card_rect.min.y + 28.0),
+                    Pos2::new(text_x, card_rect.min.y + 30.0),
                     desc_galley,
                     tokens.text.tertiary,
                 );

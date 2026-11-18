@@ -220,7 +220,7 @@ impl PageScaffold {
         ScrollArea::vertical()
             .auto_shrink([false, false])
             .show(ui, |ui| {
-                ui.horizontal(|ui| {
+                ui.with_layout(Layout::left_to_right(egui::Align::TOP), |ui| {
                     ui.add_space(side_margin);
 
                     let res = ui.allocate_ui_with_layout(
@@ -301,7 +301,7 @@ where
     let num_rows = items.len().div_ceil(num_cols);
 
     for row_idx in 0..num_rows {
-        ui.horizontal(|ui| {
+        ui.with_layout(Layout::left_to_right(egui::Align::TOP), |ui| {
             ui.spacing_mut().item_spacing.x = gap;
 
             for col_idx in 0..num_cols {
@@ -343,7 +343,7 @@ where
         let left_w = ((avail_w - gap) * ratio).clamp(min_left, avail_w - gap - min_right);
         let right_w = avail_w - gap - left_w;
 
-        ui.horizontal(|ui| {
+        ui.with_layout(Layout::left_to_right(egui::Align::TOP), |ui| {
             ui.spacing_mut().item_spacing.x = gap;
 
             ui.allocate_ui_with_layout(
