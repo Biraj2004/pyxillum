@@ -830,7 +830,9 @@ impl eframe::App for PyxillumApp {
                 ui.add_space(10.0);
 
                 // Centered LED Strip Monitor
-                let strip_max_w = 760.0_f32.min(ui.available_width());
+                let strip_max_w = (ui.available_width() * 0.78)
+                    .clamp(760.0, 940.0)
+                    .min(ui.available_width());
                 let strip_pad = ((ui.available_width() - strip_max_w) / 2.0).max(0.0);
                 ui.horizontal(|ui| {
                     ui.add_space(strip_pad);
@@ -1278,38 +1280,121 @@ impl PyxillumApp {
     }
 
     fn render_help_modal(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Pyxillum Help & Architecture Guide")
+        let screen_rect = ctx.screen_rect();
+        let scrim_painter = ctx.layer_painter(egui::LayerId::new(
+            egui::Order::Middle,
+            egui::Id::new("help_scrim"),
+        ));
+        scrim_painter.rect_filled(screen_rect, Rounding::ZERO, Color32::from_black_alpha(150));
+
+        egui::Window::new("Pyxillum Help Window")
+            .title_bar(false)
             .collapsible(false)
             .resizable(false)
             .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
-            .default_width(460.0)
+            .fixed_size(Vec2::new(490.0, 360.0))
+            .frame(
+                egui::Frame::none()
+                    .fill(Theme::CARD_BG)
+                    .rounding(Rounding::same(12.0))
+                    .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
+                    .inner_margin(egui::Margin::symmetric(22.0, 18.0)),
+            )
             .show(ctx, |ui| {
-                ui.label(
-                    egui::RichText::new("About Pyxillum")
-                        .strong()
-                        .size(15.0)
-                        .color(Theme::TEXT_PRIMARY),
-                );
-                ui.add_space(4.0);
-                ui.label(
-                    "Pyxillum is a native, offline-first Windows controller for SP621E/SP6xxE Bluetooth Low Energy pixel LED devices.",
-                );
-                ui.add_space(10.0);
-                ui.label(
-                    egui::RichText::new("Protocol Tenets")
-                        .strong()
-                        .size(13.0)
-                        .color(Theme::TEXT_PRIMARY),
-                );
-                ui.label("- Write Pacing: 30 ms automatic delay between outbound GATT frames.");
-                ui.label("- Clean-Room Interoperability: Direct implementation of unencrypted GATT framing.");
-                ui.label("- Hardware Safety: EEPROM register updates are gated behind safety flags.");
-                ui.add_space(18.0);
+                ui.set_width(ui.available_width());
+
+                // Header Row
+                ui.horizontal(|ui| {
+                    let (badge_rect, _) = ui.allocate_exact_size(Vec2::splat(28.0), egui::Sense::hover());
+                    let bp = ui.painter_at(badge_rect);
+                    bp.rect_filled(badge_rect, Rounding::same(6.0), Theme::ACCENT_CYAN);
+                    bp.text(
+                        badge_rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        "i",
+                        egui::FontId::proportional(15.0),
+                        Color32::from_rgb(20, 20, 20),
+                    );
+
+                    ui.add_space(8.0);
+                    ui.vertical(|ui| {
+                        ui.label(
+                            egui::RichText::new("About Pyxillum")
+                                .strong()
+                                .size(15.5)
+                                .color(Theme::TEXT_PRIMARY),
+                        );
+                        ui.label(
+                            egui::RichText::new("Pixel LED Studio & Hardware Architecture Guide")
+                                .size(11.0)
+                                .color(Theme::TEXT_MUTED),
+                        );
+                    });
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let (close_rect, close_resp) =
+                            ui.allocate_exact_size(Vec2::splat(26.0), egui::Sense::click());
+                        let is_hovered = close_resp.hovered();
+                        let cp = ui.painter_at(close_rect);
+                        if is_hovered {
+                            cp.rect_filled(close_rect, Rounding::same(6.0), Theme::CARD_HOVER);
+                        }
+                        cp.text(
+                            close_rect.center(),
+                            egui::Align2::CENTER_CENTER,
+                            "✕",
+                            egui::FontId::proportional(12.0),
+                            if is_hovered {
+                                Theme::TEXT_PRIMARY
+                            } else {
+                                Theme::TEXT_MUTED
+                            },
+                        );
+                        if close_resp.clicked() {
+                            self.state.show_help_modal = false;
+                        }
+                    });
+                });
+
+                ui.add_space(14.0);
                 ui.separator();
                 ui.add_space(12.0);
 
+                ui.label(
+                    egui::RichText::new(
+                        "Pyxillum is a native, offline-first Windows controller for SP621E/SP6xxE Bluetooth Low Energy pixel LED devices.",
+                    )
+                    .size(12.0)
+                    .color(Theme::TEXT_SECONDARY),
+                );
+                ui.add_space(12.0);
+
+                egui::Frame::none()
+                    .fill(Theme::WELL_BG)
+                    .rounding(Rounding::same(8.0))
+                    .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
+                    .inner_margin(egui::Margin::symmetric(14.0, 10.0))
+                    .show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        ui.label(
+                            egui::RichText::new("Core Architecture Tenets")
+                                .strong()
+                                .size(12.0)
+                                .color(Theme::ACCENT_CYAN),
+                        );
+                        ui.add_space(4.0);
+                        ui.label(egui::RichText::new("• Write Pacing: 30 ms automatic delay between outbound GATT frames to prevent buffer overflow.").size(11.0).color(Theme::TEXT_SECONDARY));
+                        ui.label(egui::RichText::new("• Clean-Room Interoperability: Pure functional Rust codec adhering to statutory exemptions.").size(11.0).color(Theme::TEXT_SECONDARY));
+                        ui.label(egui::RichText::new("• Hardware Safety: Non-volatile EEPROM updates are gated behind explicit confirmation.").size(11.0).color(Theme::TEXT_SECONDARY));
+                        ui.label(egui::RichText::new("• Zero Telemetry: Completely local operation with no background network calls.").size(11.0).color(Theme::TEXT_SECONDARY));
+                    });
+
+                ui.add_space(16.0);
+                ui.separator();
+                ui.add_space(10.0);
+
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if render_secondary_button(ui, "Close", 96.0).clicked() {
+                    if render_secondary_button(ui, "Close", 90.0).clicked() {
                         self.state.show_help_modal = false;
                     }
                 });

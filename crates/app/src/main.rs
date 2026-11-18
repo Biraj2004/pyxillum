@@ -116,26 +116,36 @@ fn main() -> eframe::Result<()> {
         });
     });
 
-    let initial_width = 1120.0_f32;
-    let initial_height = 780.0_f32;
-
-    #[allow(unused_mut)]
-    let mut viewport = egui::ViewportBuilder::default()
-        .with_inner_size([initial_width, initial_height])
-        .with_min_inner_size([680.0, 520.0])
-        .with_title("Pyxillum - Pixel LED Studio")
-        .with_icon(generate_window_icon());
-
     #[cfg(windows)]
-    {
+    let (initial_width, initial_height, initial_pos) = {
         use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
         let screen_width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
         let screen_height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
         if screen_width > 0 && screen_height > 0 {
-            let pos_x = ((screen_width as f32 - initial_width) / 2.0).max(0.0);
-            let pos_y = ((screen_height as f32 - initial_height) / 2.0).max(0.0);
-            viewport = viewport.with_position([pos_x, pos_y]);
+            // autofit="85%x85%"
+            let w = (screen_width as f32 * 0.85).round();
+            let h = (screen_height as f32 * 0.85).round();
+            // geometry=50%:50% (centered)
+            let pos_x = ((screen_width as f32 - w) / 2.0).max(0.0);
+            let pos_y = ((screen_height as f32 - h) / 2.0).max(0.0);
+            (w, h, Some([pos_x, pos_y]))
+        } else {
+            (1180.0_f32, 800.0_f32, None)
         }
+    };
+
+    #[cfg(not(windows))]
+    let (initial_width, initial_height, initial_pos) = (1180.0_f32, 800.0_f32, None);
+
+    #[allow(unused_mut)]
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size([initial_width, initial_height])
+        .with_min_inner_size([760.0, 540.0])
+        .with_title("Pyxillum - Pixel LED Studio")
+        .with_icon(generate_window_icon());
+
+    if let Some(pos) = initial_pos {
+        viewport = viewport.with_position(pos);
     }
 
     let native_options = eframe::NativeOptions {

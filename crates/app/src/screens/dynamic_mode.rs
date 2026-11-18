@@ -12,7 +12,9 @@ use eframe::egui;
 pub fn render_dynamic_mode(ui: &mut egui::Ui, state: &mut AppState) -> bool {
     let mut state_changed = false;
 
-    let max_w = 760.0_f32.min(ui.available_width());
+    let max_w = (ui.available_width() * 0.78)
+        .clamp(760.0, 940.0)
+        .min(ui.available_width());
     let pad = ((ui.available_width() - max_w) / 2.0).max(0.0);
 
     ui.horizontal(|ui| {
