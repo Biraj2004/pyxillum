@@ -222,7 +222,7 @@ Configured directly on the native Win32 `HWND` via `crates/app/src/platform/wind
 ### 9.3 Range & Value Inputs
 - **`fluent_slider`**: Full-width $4\text{px}$ track with active accent fill, $20\text{px}$ white thumb with an inner accent dot that expands on hover/press ($3.5\text{px} \to 5.0\text{px}$), tabular right-aligned readout to prevent dragging jitter, and keyboard arrow / mouse wheel support.
 - **`colour_channel_slider`**: Live 16-step channel gradient tracks for precise R, G, and B channel manipulation.
-- **`ArcDial`**: $240^\circ$ rotary circular dial with live accent gradient track, $40\text{pt}$ tabular centre value, mode subtitle, and integrated step chevrons.
+- **`ArcDial`**: $270^\circ$ rotary dial spanning from $135^\circ$ with $8\text{px}$ track stroke, size $S = \min(240, 50\% \text{ of available width})$, stroke contained at least $16\text{px} + \text{half\_stroke}$ inside bounds, numeric readout centered in ring, $40\text{px}$ flanking previous/next icon buttons on the centre line, keyboard arrow navigation, and non-overlapping title and 2-line description below the ring.
 - **`search_box`**: $32\text{px}$ input with leading search icon, placeholder text, and automatic clear button.
 
 ### 9.4 Feedback, Alerts & Modals

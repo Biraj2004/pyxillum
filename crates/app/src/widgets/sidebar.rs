@@ -7,7 +7,7 @@
 use crate::state::{AppScreen, AppState, DashboardMode};
 use crate::ui::icons::Icon;
 use crate::ui::theme::ThemeTokens;
-use crate::ui::typography::{render_safe_label, reserve_bold_width, TypeScale};
+use crate::ui::typography::{reserve_bold_width, TypeScale};
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 
 /// Renders the left-hand navigation sidebar with responsive compact rail support.
@@ -30,9 +30,9 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState, is_compact: bool)
             ui.separator();
             ui.add_space(8.0);
 
-            // 2. Compact Device Status Dot
+            // 2. Compact Device Status Icon
             let (dot_rect, dot_resp) =
-                ui.allocate_exact_size(Vec2::splat(32.0), egui::Sense::click());
+                ui.allocate_exact_size(Vec2::splat(36.0), egui::Sense::click());
             let dot_resp = dot_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
             let dp = ui.painter_at(dot_rect);
 
@@ -45,21 +45,39 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState, is_compact: bool)
                 );
             }
 
-            let status_dot_color = if state.is_connected {
-                tokens.semantic.success
-            } else if state.is_scanning {
-                tokens.semantic.warning
-            } else {
-                tokens.text.disabled
+            let conn_state = state.connection_state();
+            let (dot_col, icon) = match conn_state {
+                crate::state::ConnectionState::Connected => {
+                    (tokens.semantic.success, Icon::Bluetooth)
+                }
+                crate::state::ConnectionState::Scanning => (tokens.semantic.warning, Icon::Devices),
+                crate::state::ConnectionState::Connecting => {
+                    (tokens.semantic.warning, Icon::Bluetooth)
+                }
+                crate::state::ConnectionState::Disconnected => {
+                    (tokens.text.disabled, Icon::Devices)
+                }
             };
-            dp.circle_filled(dot_rect.center(), 4.0, status_dot_color);
 
-            let tooltip_text = if state.is_connected {
-                format!("Connected: {}", state.active_device_id)
-            } else if state.is_scanning {
-                "Scanning for BLE controllers...".to_string()
-            } else {
-                "No Device Connected - Click to Pair".to_string()
+            icon.paint(
+                &dp,
+                Rect::from_center_size(dot_rect.center(), Vec2::splat(18.0)),
+                dot_col,
+            );
+
+            let tooltip_text = match conn_state {
+                crate::state::ConnectionState::Connected => {
+                    format!("Connected: {}", state.active_device_id)
+                }
+                crate::state::ConnectionState::Scanning => format!(
+                    "Scanning... ({})",
+                    crate::state::format_controller_count(state.discovered_count)
+                ),
+                crate::state::ConnectionState::Connecting => "Connecting...".to_string(),
+                crate::state::ConnectionState::Disconnected => format!(
+                    "Not connected ({}) - Click to pair",
+                    crate::state::format_controller_count(state.discovered_count)
+                ),
             };
             let dot_resp = dot_resp.on_hover_text(tooltip_text);
 
@@ -237,84 +255,106 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState, is_compact: bool)
         ui.separator();
         ui.add_space(10.0);
 
-        // 2. Hardware Controller Status Card
-        let dev_card_bg = if is_hub {
+        // 2. Persistent Single Connection State Chip (56px Container, No nested buttons, Blue border only on focus)
+        let container_h = 56.0_f32;
+        let (card_rect, card_resp) = ui.allocate_exact_size(
+            Vec2::new(ui.available_width(), container_h),
+            egui::Sense::click(),
+        );
+        let card_resp = card_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+        let cp = ui.painter_at(card_rect);
+
+        let is_hovered = card_resp.hovered();
+        let has_focus = card_resp.has_focus();
+
+        let bg = if is_hovered {
             tokens.surfaces.raised_hover
         } else {
             tokens.surfaces.well
         };
+        cp.rect_filled(card_rect, tokens.radius.control_rounding(), bg);
 
-        egui::Frame::none()
-            .fill(dev_card_bg)
-            .rounding(tokens.radius.control_rounding())
-            .stroke(Stroke::new(
-                1.0_f32,
-                if is_hub {
-                    tokens.borders.focus
+        // Blue border ONLY on focus
+        let border_color = if has_focus {
+            tokens.borders.focus
+        } else {
+            tokens.borders.subtle
+        };
+        let border_width = if has_focus { 2.0_f32 } else { 1.0_f32 };
+        cp.rect_stroke(
+            card_rect,
+            tokens.radius.control_rounding(),
+            Stroke::new(border_width, border_color),
+        );
+
+        let conn_state = state.connection_state();
+        let (icon_col, icon, primary_text, subline_text) = match conn_state {
+            crate::state::ConnectionState::Connected => {
+                let short_id = if state.active_device_id.len() >= 8 {
+                    &state.active_device_id[..8]
+                } else if !state.active_device_id.is_empty() {
+                    &state.active_device_id
                 } else {
-                    tokens.borders.subtle
-                },
-            ))
-            .inner_margin(egui::Margin::symmetric(10.0, 8.0))
-            .show(ui, |ui| {
-                let dev_name = if state.is_connected && !state.active_device_id.is_empty() {
-                    let short_id = if state.active_device_id.len() >= 8 {
-                        &state.active_device_id[..8]
-                    } else {
-                        &state.active_device_id
-                    };
-                    format!("SP621E ({})", short_id)
-                } else {
-                    "No Device Connected".to_string()
+                    "SP621E"
                 };
+                (
+                    tokens.semantic.success,
+                    Icon::Bluetooth,
+                    conn_state.label().to_string(),
+                    format!("SP621E ({})", short_id),
+                )
+            }
+            crate::state::ConnectionState::Scanning => (
+                tokens.semantic.warning,
+                Icon::Devices,
+                conn_state.label().to_string(),
+                crate::state::format_controller_count(state.discovered_count),
+            ),
+            crate::state::ConnectionState::Connecting => (
+                tokens.semantic.warning,
+                Icon::Bluetooth,
+                conn_state.label().to_string(),
+                "Establishing link".to_string(),
+            ),
+            crate::state::ConnectionState::Disconnected => (
+                tokens.text.disabled,
+                Icon::Devices,
+                conn_state.label().to_string(),
+                if state.discovered_count > 0 {
+                    crate::state::format_controller_count(state.discovered_count)
+                } else {
+                    "1 controller found".to_string()
+                },
+            ),
+        };
 
-                if ui
-                    .add(
-                        egui::Button::new(
-                            egui::RichText::new(dev_name)
-                                .font(TypeScale::body_strong())
-                                .color(if state.is_connected {
-                                    tokens.text.primary
-                                } else {
-                                    tokens.text.secondary
-                                }),
-                        )
-                        .fill(Color32::TRANSPARENT),
-                    )
-                    .on_hover_cursor(egui::CursorIcon::PointingHand)
-                    .clicked()
-                {
-                    state.current_screen = AppScreen::DeviceHub;
-                }
+        // Render Icon
+        let icon_box = Rect::from_center_size(
+            Pos2::new(card_rect.min.x + 20.0, card_rect.center().y),
+            Vec2::splat(18.0),
+        );
+        icon.paint(&cp, icon_box, icon_col);
 
-                ui.horizontal(|ui| {
-                    let dot_col = if state.is_connected {
-                        tokens.semantic.success
-                    } else if state.is_scanning {
-                        tokens.semantic.warning
-                    } else {
-                        tokens.text.disabled
-                    };
+        // Primary Title & Sub-line
+        let text_x = card_rect.min.x + 36.0;
+        cp.text(
+            Pos2::new(text_x, card_rect.center().y - 8.0),
+            egui::Align2::LEFT_CENTER,
+            primary_text,
+            TypeScale::body_strong(),
+            tokens.text.primary,
+        );
+        cp.text(
+            Pos2::new(text_x, card_rect.center().y + 8.0),
+            egui::Align2::LEFT_CENTER,
+            subline_text,
+            TypeScale::caption(),
+            tokens.text.secondary,
+        );
 
-                    let (d_rect, _) =
-                        ui.allocate_exact_size(Vec2::splat(8.0), egui::Sense::hover());
-                    ui.painter().circle_filled(d_rect.center(), 3.0, dot_col);
-
-                    let status_txt = if state.is_connected {
-                        "Connected (BLE)"
-                    } else if state.is_scanning {
-                        "Scanning..."
-                    } else {
-                        "Click to Pair"
-                    };
-
-                    ui.label(
-                        egui::RichText::new(status_txt)
-                            .font(TypeScale::caption())
-                            .color(tokens.text.tertiary),
-                    );
-                });
-            });
+        if card_resp.clicked() {
+            state.current_screen = AppScreen::DeviceHub;
+        }
 
         ui.add_space(14.0);
 
@@ -508,15 +548,24 @@ pub fn render_sidebar(ui: &mut egui::Ui, state: &mut AppState, is_compact: bool)
         ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
             ui.add_space(6.0);
 
-            // Diagnostics / Status Line with safe tooltip on hover
-            let caption_font = TypeScale::caption();
-            render_safe_label(
-                ui,
-                &state.status_message,
-                ui.available_width() - 8.0,
-                &caption_font,
-                tokens.text.tertiary,
-            );
+            // Diagnostics / Status Line: exactly one line with full text in tooltip, no fragments
+            if !state.status_message.is_empty() {
+                let clean_msg = state
+                    .status_message
+                    .split('.')
+                    .next()
+                    .unwrap_or(&state.status_message)
+                    .trim();
+                ui.add(
+                    egui::Label::new(
+                        egui::RichText::new(clean_msg)
+                            .font(TypeScale::caption())
+                            .color(tokens.text.tertiary),
+                    )
+                    .truncate(),
+                )
+                .on_hover_text(&state.status_message);
+            }
 
             ui.add_space(6.0);
 

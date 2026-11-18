@@ -11,10 +11,10 @@ use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 use pyxillum_protocol::RgbColor;
 
 /// Renders the 60 FPS animated LED pixel strip monitor with precision fixture chassis.
-pub fn render_neon_strip(ui: &mut egui::Ui, pixels: &[RgbColor], power: bool) {
+pub fn render_neon_strip(ui: &mut egui::Ui, pixels: &[RgbColor], power: bool, compact: bool) {
     let tokens = ThemeTokens::default_dark();
     let avail_w = ui.available_width().max(360.0);
-    let height = 56.0_f32;
+    let height = if compact { 40.0_f32 } else { 56.0_f32 };
     let (rect, _) = ui.allocate_exact_size(Vec2::new(avail_w, height), egui::Sense::hover());
     let painter = ui.painter_at(rect);
 
@@ -51,7 +51,11 @@ pub fn render_neon_strip(ui: &mut egui::Ui, pixels: &[RgbColor], power: bool) {
     };
 
     // 2. Fixture Status Header Bar
-    let status_y = rect.min.y + 11.0;
+    let status_y = if compact {
+        rect.min.y + 8.0
+    } else {
+        rect.min.y + 11.0
+    };
 
     // Power / Transmission Indicator LED
     let ind_col = if power {
@@ -93,10 +97,17 @@ pub fn render_neon_strip(ui: &mut egui::Ui, pixels: &[RgbColor], power: bool) {
     );
 
     // 3. Recessed Optical Absorption Channel (Track Bed)
-    let track_rect = Rect::from_min_max(
-        Pos2::new(rect.min.x + 12.0, rect.min.y + 22.0),
-        Pos2::new(rect.max.x - 12.0, rect.max.y - 8.0),
-    );
+    let track_rect = if compact {
+        Rect::from_min_max(
+            Pos2::new(rect.min.x + 12.0, rect.min.y + 18.0),
+            Pos2::new(rect.max.x - 12.0, rect.max.y - 4.0),
+        )
+    } else {
+        Rect::from_min_max(
+            Pos2::new(rect.min.x + 12.0, rect.min.y + 22.0),
+            Pos2::new(rect.max.x - 12.0, rect.max.y - 8.0),
+        )
+    };
 
     // Deep optical well
     painter.rect_filled(
@@ -178,7 +189,12 @@ pub fn render_neon_strip(ui: &mut egui::Ui, pixels: &[RgbColor], power: bool) {
     // Gold/Copper Busbar Contact Traces
     let cy = track_rect.center().y;
     let pad_gold = Color32::from_rgb(185, 140, 60);
-    for offset_y in [-6.0_f32, 0.0_f32, 6.0_f32] {
+    let offsets = if compact {
+        [-4.0_f32, 0.0_f32, 4.0_f32]
+    } else {
+        [-6.0_f32, 0.0_f32, 6.0_f32]
+    };
+    for offset_y in offsets {
         painter.circle_filled(
             Pos2::new(left_term.center().x, cy + offset_y),
             1.4,
@@ -196,7 +212,8 @@ pub fn render_neon_strip(ui: &mut egui::Ui, pixels: &[RgbColor], power: bool) {
     let start_x = track_rect.min.x + 22.0;
 
     let step = usable_w / count as f32;
-    let radius = (step * 0.38).clamp(1.2, 5.0);
+    let max_radius = if compact { 3.6 } else { 5.0 };
+    let radius = (step * 0.38).clamp(1.2, max_radius);
 
     for i in 0..count {
         let cx = start_x + (i as f32 + 0.5) * step;

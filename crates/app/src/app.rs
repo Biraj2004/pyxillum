@@ -734,6 +734,7 @@ impl eframe::App for PyxillumApp {
                     self.state.is_scanning = false;
                     self.state.last_ble_diagnostic = None;
                     self.saved_devices.clear();
+                    self.state.discovered_count = 0;
                     for dev in devices {
                         let model = if let Some(n) = &dev.name {
                             if n.contains("621") {
@@ -764,6 +765,7 @@ impl eframe::App for PyxillumApp {
                             rssi: dev.rssi.unwrap_or(-75) as i8,
                         });
                     }
+                    self.state.discovered_count = self.saved_devices.len();
                     self.state.status_message = if self.saved_devices.is_empty() {
                         "No BLE devices discovered. Ensure controller is powered on.".to_string()
                     } else {
@@ -918,6 +920,9 @@ impl eframe::App for PyxillumApp {
                 let (content_w, side_margin, gutter) =
                     crate::ui::layout::PageScaffold::compute_geometry(ui.available_width(), is_compact);
 
+                let win_h = ctx.screen_rect().height();
+                let is_compact_height = win_h < 800.0;
+
                 // Pinned Top Fixtures: Header, InfoBar, Neon Strip
                 ui.horizontal(|ui| {
                     ui.add_space(side_margin);
@@ -926,31 +931,109 @@ impl eframe::App for PyxillumApp {
                         egui::Layout::top_down(egui::Align::LEFT),
                         |top_ui| {
                             top_ui.set_max_width(content_w);
-                            // Top Header Action Bar
-                            self.render_top_header(top_ui);
+                            // Top Header Action Bar (40px)
+                            self.render_top_header(top_ui, win_h);
 
-                            top_ui.add_space(12.0);
+                            top_ui.add_space(8.0);
 
-                            // Disconnected / Preview Mode Warning InfoBar
-                            if !self.state.is_connected
-                                && !matches!(self.state.current_screen, AppScreen::DeviceHub)
-                            {
-                                let (action_clicked, _) =
-                                    crate::ui::components::infobar::InfoBar::info(
-                                        "Preview Mode Active",
-                                        "Changes affect the virtual strip only. Connect a physical controller to stream live lighting commands.",
-                                    )
-                                    .action("Scan & Connect")
-                                    .show(top_ui);
+                            // Disconnected / Preview Mode Warning InfoBar:
+                            // One line, 40 px high, dismissible and remembered for the session, hidden if height < 800
+                            let show_preview_bar = !self.state.is_connected
+                                && !self.state.preview_infobar_dismissed
+                                && !is_compact_height
+                                && !matches!(self.state.current_screen, AppScreen::DeviceHub);
 
-                                if action_clicked {
-                                    self.state.current_screen = AppScreen::DeviceHub;
-                                }
-                                top_ui.add_space(12.0);
+                            if show_preview_bar {
+                                let bar_h = 40.0_f32;
+                                let (bar_rect, _) = top_ui
+                                    .allocate_exact_size(Vec2::new(content_w, bar_h), egui::Sense::hover());
+                                let bp = top_ui.painter_at(bar_rect);
+                                bp.rect_filled(
+                                    bar_rect,
+                                    self.tokens.radius.control_rounding(),
+                                    self.tokens.surfaces.card,
+                                );
+                                bp.rect_stroke(
+                                    bar_rect,
+                                    self.tokens.radius.control_rounding(),
+                                    Stroke::new(1.0_f32, self.tokens.borders.subtle),
+                                );
+
+                                top_ui.allocate_ui_at_rect(bar_rect, |bar_ui| {
+                                    bar_ui.horizontal_centered(|bar_ui| {
+                                        bar_ui.add_space(12.0);
+                                        let (icon_rect, _) = bar_ui
+                                            .allocate_exact_size(Vec2::splat(16.0), egui::Sense::hover());
+                                        crate::ui::icons::Icon::Info.paint(
+                                            bar_ui.painter(),
+                                            icon_rect,
+                                            self.tokens.accent.text_light,
+                                        );
+
+                                        bar_ui.add_space(8.0);
+                                        bar_ui.label(
+                                            egui::RichText::new(
+                                                "Preview mode: changes affect the virtual strip only.",
+                                            )
+                                            .font(crate::ui::typography::TypeScale::caption())
+                                            .color(self.tokens.text.primary),
+                                        );
+
+                                        bar_ui.with_layout(
+                                            egui::Layout::right_to_left(egui::Align::Center),
+                                            |right_ui| {
+                                                right_ui.add_space(8.0);
+                                                // Dismiss 'x' button
+                                                let (x_rect, x_resp) = right_ui.allocate_exact_size(
+                                                    Vec2::splat(24.0),
+                                                    egui::Sense::click(),
+                                                );
+                                                let x_resp = x_resp
+                                                    .on_hover_cursor(egui::CursorIcon::PointingHand)
+                                                    .on_hover_text("Dismiss preview notice for this session");
+                                                if x_resp.hovered() {
+                                                    right_ui.painter().rect_filled(
+                                                        x_rect,
+                                                        self.tokens.radius.control_rounding(),
+                                                        self.tokens.surfaces.raised_hover,
+                                                    );
+                                                }
+                                                crate::ui::icons::Icon::Close.paint(
+                                                    right_ui.painter(),
+                                                    Rect::from_center_size(
+                                                        x_rect.center(),
+                                                        Vec2::splat(12.0),
+                                                    ),
+                                                    self.tokens.text.secondary,
+                                                );
+                                                if x_resp.clicked() {
+                                                    self.state.preview_infobar_dismissed = true;
+                                                }
+
+                                                right_ui.add_space(8.0);
+                                                if crate::ui::components::button::FluentButton::subtle(
+                                                    "Scan & Connect",
+                                                )
+                                                .show(right_ui)
+                                                .clicked()
+                                                {
+                                                    self.state.current_screen = AppScreen::DeviceHub;
+                                                }
+                                            },
+                                        );
+                                    });
+                                });
+
+                                top_ui.add_space(8.0);
                             }
 
-                            // Pinned Adaptive Virtual Pixel Hardware Monitor (Always visible across all screens)
-                            render_neon_strip(top_ui, &self.state.strip_pixels, self.state.ui_power);
+                            // Pinned Adaptive Virtual Pixel Hardware Monitor (56px normal, 40px compact)
+                            render_neon_strip(
+                                top_ui,
+                                &self.state.strip_pixels,
+                                self.state.ui_power,
+                                is_compact_height,
+                            );
                         },
                     );
                     ui.add_space(gutter);
@@ -1155,10 +1238,10 @@ impl eframe::App for PyxillumApp {
 }
 
 impl PyxillumApp {
-    fn render_top_header(&mut self, ui: &mut egui::Ui) {
+    fn render_top_header(&mut self, ui: &mut egui::Ui, win_h: f32) {
         let tokens = crate::ui::theme::ThemeTokens::default_dark();
         let (rect, _) =
-            ui.allocate_exact_size(Vec2::new(ui.available_width(), 46.0), egui::Sense::hover());
+            ui.allocate_exact_size(Vec2::new(ui.available_width(), 40.0), egui::Sense::hover());
         let p = ui.painter_at(rect);
         p.rect_filled(rect, tokens.radius.control_rounding(), tokens.surfaces.card);
         p.rect_stroke(
@@ -1177,7 +1260,7 @@ impl PyxillumApp {
         );
 
         // Left Section: Breadcrumb & Title
-        let left_w = 420.0;
+        let left_w = 460.0;
         let left_rect = Rect::from_min_size(
             Pos2::new(rect.min.x + 10.0, rect.min.y),
             Vec2::new(left_w, rect.height()),
@@ -1188,7 +1271,7 @@ impl PyxillumApp {
                 |left_ui| {
                     if let AppScreen::Dashboard(_) = &self.state.current_screen {
                         let (bc_rect, bc_resp) = left_ui
-                            .allocate_exact_size(Vec2::new(88.0, 30.0), egui::Sense::click());
+                            .allocate_exact_size(Vec2::new(88.0, 28.0), egui::Sense::click());
                         let bc_resp = bc_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                         let bcp = left_ui.painter_at(bc_rect);
                         let bc_hovered = bc_resp.hovered();
@@ -1236,46 +1319,66 @@ impl PyxillumApp {
 
                         left_ui.add_space(10.0);
 
-                        // True state reconciliation (never falsely claim connected)
-                        let (display_title, dot_col) =
-                            if self.state.is_connected && !self.state.active_device_id.is_empty() {
-                                let short_id = if self.state.active_device_id.len() >= 8 {
-                                    &self.state.active_device_id[..8]
-                                } else {
-                                    &self.state.active_device_id
-                                };
-                                (
-                                    format!("SP621E ({}) • Connected", short_id),
-                                    tokens.semantic.success,
-                                )
-                            } else {
-                                (
-                                    "No Controller Connected (Preview Mode)".to_string(),
-                                    tokens.semantic.warning,
-                                )
-                            };
+                        // Header title is the page title only
+                        let page_title = match self.state.dashboard_mode {
+                            DashboardMode::Dynamic => "Dynamic FX",
+                            DashboardMode::Solid => "Solid Colour",
+                            DashboardMode::Music => "Music Rhythm",
+                            DashboardMode::Diy => "DIY Custom",
+                        };
 
                         left_ui.label(
-                            egui::RichText::new(display_title)
+                            egui::RichText::new(page_title)
                                 .font(crate::ui::typography::TypeScale::body_strong())
                                 .color(tokens.text.primary),
                         );
 
-                        left_ui.add_space(4.0);
-                        let (d_rect, _) =
-                            left_ui.allocate_exact_size(Vec2::splat(8.0), egui::Sense::hover());
-                        left_ui
-                            .painter()
-                            .circle_filled(d_rect.center(), 3.5, dot_col);
+                        // Device name appears ONLY when truly connected
+                        if self.state.is_connected && !self.state.active_device_id.is_empty() {
+                            let short_id = if self.state.active_device_id.len() >= 8 {
+                                &self.state.active_device_id[..8]
+                            } else {
+                                &self.state.active_device_id
+                            };
+                            left_ui.add_space(8.0);
+                            left_ui.label(
+                                egui::RichText::new(format!("• SP621E ({})", short_id))
+                                    .font(crate::ui::typography::TypeScale::caption())
+                                    .color(tokens.semantic.success),
+                            );
+                        } else if self.state.preview_infobar_dismissed || win_h < 800.0 {
+                            // Subtle "Preview mode" badge when dismissed or height < 800
+                            left_ui.add_space(8.0);
+                            let (badge_rect, _) = left_ui
+                                .allocate_exact_size(Vec2::new(88.0, 22.0), egui::Sense::hover());
+                            let bp = left_ui.painter_at(badge_rect);
+                            bp.rect_filled(
+                                badge_rect,
+                                tokens.radius.chip_rounding(),
+                                tokens.surfaces.well,
+                            );
+                            bp.rect_stroke(
+                                badge_rect,
+                                tokens.radius.chip_rounding(),
+                                Stroke::new(1.0_f32, tokens.borders.subtle),
+                            );
+                            bp.text(
+                                badge_rect.center(),
+                                egui::Align2::CENTER_CENTER,
+                                "Preview mode",
+                                crate::ui::typography::TypeScale::caption(),
+                                tokens.text.tertiary,
+                            );
+                        }
                     } else {
                         left_ui.label(
-                            egui::RichText::new("Pyxillum Device Studio")
+                            egui::RichText::new("Devices & Pairing")
                                 .font(crate::ui::typography::TypeScale::body_strong())
                                 .color(tokens.text.primary),
                         );
                         left_ui.add_space(8.0);
                         left_ui.label(
-                            egui::RichText::new("Bluetooth Low Energy Peripheral Hub")
+                            egui::RichText::new("Bluetooth Low Energy Controller Hub")
                                 .font(crate::ui::typography::TypeScale::caption())
                                 .color(tokens.text.tertiary),
                         );

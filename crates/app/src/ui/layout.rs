@@ -603,6 +603,7 @@ mod tests {
                                             top_ui,
                                             &state.strip_pixels,
                                             state.ui_power,
+                                            false,
                                         );
                                     },
                                 );

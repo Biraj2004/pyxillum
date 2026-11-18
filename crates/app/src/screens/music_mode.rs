@@ -25,113 +25,127 @@ pub fn render_music_mode(
 ) -> bool {
     let tokens = ThemeTokens::default_dark();
     let mut state_changed = false;
+    let is_wide = ui.ctx().screen_rect().width() >= 1100.0;
 
     ui.vertical(|ui| {
-        // 1. Music Reactive Dial Hero Card
-        Card::base().show(ui, |ui| {
-            ui.vertical_centered(|ui| {
-                let mode_name = get_music_mode_name(state.music_mode_index);
-                let mode_desc = MUSIC_MODES
-                    .iter()
-                    .find(|m| m.index == state.music_mode_index)
-                    .map(|m| m.description)
-                    .unwrap_or("Acoustic rhythm tracking algorithm");
+        // 1. Dual-Column Hero Region (>=1100px: Dial Left, Audio Controls Right; <1100px: Stacked)
+        let min_l = if is_wide { 320.0 } else { 9999.0 };
+        crate::ui::layout::split_2(ui, 0.44, min_l, 360.0, 16.0, |ui, side| match side {
+            crate::ui::layout::SplitSide::Left => {
+                Card::base().show(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        let mode_name = get_music_mode_name(state.music_mode_index);
+                        let mode_desc = MUSIC_MODES
+                            .iter()
+                            .find(|m| m.index == state.music_mode_index)
+                            .map(|m| m.description)
+                            .unwrap_or("Acoustic rhythm tracking algorithm");
 
-                let mut mode_val = state.music_mode_index;
-                let dial = ArcDial::new(&mut mode_val, 1, 18, mode_name, mode_desc);
-                if dial.show(ui).changed() {
-                    state.music_mode_index = mode_val;
-                    state_changed = true;
-                }
-
-                ui.add_space(14.0);
-
-                // Audio Input Selector via Segmented Control (PC Media / Device Mic / Host Mic)
-                let audio_items = [
-                    SegmentItem::with_icon("PC Media (WASAPI)", Icon::Speaker),
-                    SegmentItem::with_icon("Device Internal Mic", Icon::Mic),
-                    SegmentItem::with_icon("Host Microphone", Icon::Mic),
-                ];
-
-                let curr_audio_idx = match state.ui_audio_input {
-                    AudioInput::Player => 0,
-                    AudioInput::InternalMic => 1,
-                    AudioInput::ExternalMic => 2,
-                };
-
-                let (new_audio_idx, resp) = segmented_control(
-                    ui,
-                    "music_audio_input_segmented",
-                    &audio_items,
-                    curr_audio_idx,
-                );
-
-                if resp.clicked() && new_audio_idx != curr_audio_idx {
-                    state.ui_audio_input = match new_audio_idx {
-                        0 => AudioInput::Player,
-                        1 => AudioInput::InternalMic,
-                        _ => AudioInput::ExternalMic,
-                    };
-                    state_changed = true;
-                }
-            });
-        });
-
-        ui.add_space(16.0);
-
-        // 2. Windows Media Transport Banner (GSMTC)
-        Card::base().show(ui, |ui| {
-            ui.horizontal(|ui| {
-                let (icon_rect, _) =
-                    ui.allocate_exact_size(Vec2::splat(28.0), egui::Sense::hover());
-                Icon::Speaker.paint(ui.painter(), icon_rect, tokens.accent.text_light);
-
-                ui.add_space(8.0);
-                ui.vertical(|ui| {
-                    let track_title = if !now_playing.title.is_empty() {
-                        format!("{} • {}", now_playing.title, now_playing.artist)
-                    } else {
-                        "Windows Audio Playback".to_string()
-                    };
-
-                    let track_sub = if !now_playing.app_name.is_empty() {
-                        format!("Playing from {}", now_playing.app_name)
-                    } else {
-                        "Monitoring active system audio playback session".to_string()
-                    };
-
-                    ui.label(
-                        egui::RichText::new(track_title)
-                            .font(TypeScale::body_strong())
-                            .color(tokens.text.primary),
-                    );
-                    ui.label(
-                        egui::RichText::new(track_sub)
-                            .font(TypeScale::caption())
-                            .color(tokens.text.tertiary),
-                    );
+                        let mut mode_val = state.music_mode_index;
+                        let dial = ArcDial::new(&mut mode_val, 1, 18, mode_name, mode_desc);
+                        if dial.show(ui).changed() {
+                            state.music_mode_index = mode_val;
+                            state_changed = true;
+                        }
+                    });
                 });
-            });
+            }
+            crate::ui::layout::SplitSide::Right => {
+                Card::base().show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        // Audio Input Selector via Segmented Control
+                        ui.label(
+                            egui::RichText::new("Audio Input Source")
+                                .font(TypeScale::body_strong())
+                                .color(tokens.text.primary),
+                        );
+                        ui.add_space(8.0);
+
+                        let audio_items = [
+                            SegmentItem::with_icon("PC Media (WASAPI)", Icon::Speaker),
+                            SegmentItem::with_icon("Device Internal Mic", Icon::Mic),
+                            SegmentItem::with_icon("Host Microphone", Icon::Mic),
+                        ];
+
+                        let curr_audio_idx = match state.ui_audio_input {
+                            AudioInput::Player => 0,
+                            AudioInput::InternalMic => 1,
+                            AudioInput::ExternalMic => 2,
+                        };
+
+                        let (new_audio_idx, resp) = segmented_control(
+                            ui,
+                            "music_audio_input_segmented",
+                            &audio_items,
+                            curr_audio_idx,
+                        );
+
+                        if resp.clicked() && new_audio_idx != curr_audio_idx {
+                            state.ui_audio_input = match new_audio_idx {
+                                0 => AudioInput::Player,
+                                1 => AudioInput::InternalMic,
+                                _ => AudioInput::ExternalMic,
+                            };
+                            state_changed = true;
+                        }
+
+                        ui.add_space(12.0);
+                        ui.separator();
+                        ui.add_space(10.0);
+
+                        // Windows Media Transport Banner (GSMTC)
+                        ui.horizontal(|ui| {
+                            let (icon_rect, _) =
+                                ui.allocate_exact_size(Vec2::splat(24.0), egui::Sense::hover());
+                            Icon::Speaker.paint(ui.painter(), icon_rect, tokens.accent.text_light);
+
+                            ui.add_space(8.0);
+                            ui.vertical(|ui| {
+                                let track_title = if !now_playing.title.is_empty() {
+                                    format!("{} • {}", now_playing.title, now_playing.artist)
+                                } else {
+                                    "Windows Audio Playback".to_string()
+                                };
+
+                                let track_sub = if !now_playing.app_name.is_empty() {
+                                    format!("Playing from {}", now_playing.app_name)
+                                } else {
+                                    "Monitoring active system audio playback session".to_string()
+                                };
+
+                                ui.label(
+                                    egui::RichText::new(track_title)
+                                        .font(TypeScale::body())
+                                        .color(tokens.text.primary),
+                                );
+                                ui.label(
+                                    egui::RichText::new(track_sub)
+                                        .font(TypeScale::caption())
+                                        .color(tokens.text.tertiary),
+                                );
+                            });
+                        });
+
+                        ui.add_space(12.0);
+                        ui.separator();
+                        ui.add_space(10.0);
+
+                        // Graphic Equalizer Visualizer with Peak Hold
+                        ui.label(
+                            egui::RichText::new("Acoustic Spectrum & Peak Visualizer")
+                                .font(TypeScale::body_strong())
+                                .color(tokens.text.primary),
+                        );
+                        ui.add_space(8.0);
+                        render_peak_equalizer_bars(ui, state, &tokens);
+                    });
+                });
+            }
         });
 
         ui.add_space(16.0);
 
-        // 3. Graphic Equalizer Visualizer with Peak Hold
-        Card::base().show(ui, |ui| {
-            ui.vertical(|ui| {
-                ui.label(
-                    egui::RichText::new("Acoustic Spectrum & Peak Visualizer")
-                        .font(TypeScale::body_strong())
-                        .color(tokens.text.primary),
-                );
-                ui.add_space(8.0);
-                render_peak_equalizer_bars(ui, state, &tokens);
-            });
-        });
-
-        ui.add_space(16.0);
-
-        // 4. Sensitivity & Brightness Dual Metric Sliders
+        // 2. Sensitivity & Brightness Dual Metric Sliders
         crate::ui::layout::split_2(ui, 0.50, 240.0, 240.0, 16.0, |ui, side| match side {
             crate::ui::layout::SplitSide::Left => {
                 Card::base().show(ui, |ui| {

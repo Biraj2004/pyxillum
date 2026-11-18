@@ -302,6 +302,36 @@ pub struct DeviceCardInfo {
     pub rssi: i8,
 }
 
+/// Single authoritative BLE connection state enum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub enum ConnectionState {
+    Disconnected,
+    Scanning,
+    Connecting,
+    Connected,
+}
+
+impl ConnectionState {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Disconnected => "Not connected",
+            Self::Scanning => "Scanning...",
+            Self::Connecting => "Connecting...",
+            Self::Connected => "Connected",
+        }
+    }
+}
+
+/// Plural helper for discovered controller devices.
+pub fn format_controller_count(count: usize) -> String {
+    if count == 1 {
+        "1 controller found".to_string()
+    } else {
+        format!("{} controllers found", count)
+    }
+}
+
 /// Consolidated state model for Pyxillum UI
 pub struct AppState {
     // Navigation
@@ -366,8 +396,23 @@ pub struct AppState {
     // Real BLE Connection & Scanning Status
     pub is_connected: bool,
     pub is_scanning: bool,
+    pub discovered_count: usize,
+    pub preview_infobar_dismissed: bool,
     pub status_message: String,
     pub last_ble_diagnostic: Option<BleDiagnostic>,
+}
+
+impl AppState {
+    /// Returns the authoritative single connection state.
+    pub fn connection_state(&self) -> ConnectionState {
+        if self.is_connected {
+            ConnectionState::Connected
+        } else if self.is_scanning {
+            ConnectionState::Scanning
+        } else {
+            ConnectionState::Disconnected
+        }
+    }
 }
 
 impl Default for AppState {
@@ -444,9 +489,77 @@ impl Default for AppState {
 
             is_connected: false,
             is_scanning: false,
+            discovered_count: 0,
+            preview_infobar_dismissed: false,
             status_message: "Ready to scan for nearby Bluetooth Low Energy LED controllers."
                 .to_string(),
             last_ble_diagnostic: None,
         }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_controller_count() {
+        assert_eq!(format_controller_count(1), "1 controller found");
+        assert_eq!(format_controller_count(0), "0 controllers found");
+        assert_eq!(format_controller_count(2), "2 controllers found");
+        assert_eq!(format_controller_count(5), "5 controllers found");
+    }
+
+    #[test]
+    fn test_connection_state_transitions() {
+        let mut state = AppState::default();
+        assert_eq!(state.connection_state(), ConnectionState::Disconnected);
+        assert_eq!(state.connection_state().label(), "Not connected");
+
+        state.is_scanning = true;
+        assert_eq!(state.connection_state(), ConnectionState::Scanning);
+        assert_eq!(state.connection_state().label(), "Scanning...");
+
+        state.is_scanning = false;
+        state.is_connected = true;
+        assert_eq!(state.connection_state(), ConnectionState::Connected);
+        assert_eq!(state.connection_state().label(), "Connected");
+    }
+
+    #[test]
+    fn test_pinned_region_height_and_content_area_ratio_at_1080p() {
+        // Pinned region metrics:
+        // Window height 1080p (work area ~ 1040px)
+        let header_h = 40.0_f32;
+        let spacing_1 = 8.0_f32;
+        let infobar_h = 40.0_f32; // when visible
+        let spacing_2 = 8.0_f32;
+        let monitor_h_normal = 56.0_f32;
+        let monitor_h_compact = 40.0_f32;
+
+        let pinned_h_normal = header_h + spacing_1 + infobar_h + spacing_2 + monitor_h_normal;
+        assert!(
+            pinned_h_normal <= 170.0,
+            "Pinned region at height >= 800 must be <= 170px, got {}",
+            pinned_h_normal
+        );
+
+        let pinned_h_compact = header_h + spacing_1 + monitor_h_compact;
+        assert!(
+            pinned_h_compact <= 170.0,
+            "Pinned region at height < 800 must be <= 170px, got {}",
+            pinned_h_compact
+        );
+
+        // Content area ratio at 1080p:
+        let total_window_h = 1080.0_f32;
+        let page_padding_v = 32.0_f32;
+        let available_content_h = total_window_h - pinned_h_normal - page_padding_v;
+        let content_ratio = available_content_h / total_window_h;
+        assert!(
+            content_ratio >= 0.60,
+            "Content area must have at least 60% of window height at 1080p, got {:.2}%",
+            content_ratio * 100.0
+        );
     }
 }

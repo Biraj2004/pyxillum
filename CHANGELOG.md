@@ -86,6 +86,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Built custom 20px Windows 11 `fluent_checkbox` component featuring vector checkmark lines, hover states, and row-wide click target.
   - Enforced focus trapping, outside-click modal dismissal, Esc key shortcut, and standardized 32x32 close button.
   - Expanded test suite to 29 tests with dedicated enter animation convergence tests and automated WCAG AA contrast ratio assertions.
+- **Phase 13: Rotary Dial Component Overhaul, Unified Connection State & Pinned Height Optimization**:
+  - Fixed ArcDial geometry: converted arc to span 270 degrees from 135 degrees with stroke contained strictly inside the bounding box (`radius <= s/2 - 16 - half_stroke`).
+  - Centred numeric readout inside the ring; moved title and subtitle strictly below the ring with hover tooltips to eliminate overlap and clipping.
+  - Added 40px flanking previous and next icon buttons on the horizontal centre line with ArrowLeft / ArrowRight keyboard shortcuts and mouse wheel stepping.
+  - Reorganized Music Rhythm page at >=1100px: left column hosts ArcDial card, right column hosts audio input segmented control, GSMTC now-playing banner, and equalizer visualizer (stacks below 1100px).
+  - Unified connection state to `ConnectionState` enum displayed in ONE place: sidebar chip as a single 56px container with no nested buttons, no blue border except on focus, and plural helper for discovered controllers.
+  - Simplified top header to display page title only ("Music Rhythm", "Dynamic FX", etc.), removed orange dot and "(Preview Mode)", showing device name only when truly connected.
+  - Designed 40px single-line dismissible Preview InfoBar remembered across the session, with subtle header badge fallback when dismissed or on compact screens.
+  - Enforced pinned fixtures height cap of <=170px (152px at >=800px; collapses to 88px with 40px monitor at <800px), guaranteeing >=60% window height allocated to stage content at 1080p.
+  - Expanded test suite to 33 unit tests covering dial geometry, stroke containment, connection state transitions, and pinned height / content area ratios.
 
 ### New Files Added
 - `crates/app/src/ui/components/checkbox.rs`
