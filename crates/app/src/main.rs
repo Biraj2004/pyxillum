@@ -123,34 +123,67 @@ fn main() -> eframe::Result<()> {
         });
     });
 
+    // Handle --reset-window CLI argument
+    let reset_window = std::env::args().any(|arg| arg == "--reset-window");
+    if reset_window {
+        let deleted = window_geom::delete_saved_state();
+        info!(
+            "CLI flag --reset-window active: deleted persisted window state ({})",
+            deleted
+        );
+    }
+
     // 1. Load window configuration (mpv-style autofit and geometry) and previous session state
     let win_cfg = window_geom::load_or_create_config();
-    let saved_state = window_geom::load_saved_state();
+    let saved_state = if reset_window {
+        None
+    } else {
+        window_geom::load_saved_state()
+    };
 
     // 2. Detect target display (screen index, or cursor monitor, or primary) and work area (excluding taskbar)
     let (work_rect, scale, monitor_id) =
         window_geom::get_target_monitor_work_and_scale(win_cfg.screen);
 
-    // 3. Compute target rect using pure maths module
-    let target_rect = window_geom::compute_rect(work_rect, scale, &win_cfg, saved_state.clone());
+    // Convert work area to logical coordinates for visibility validation
+    let work_logical = window_geom::Rect::new(
+        work_rect.x / scale,
+        work_rect.y / scale,
+        work_rect.width / scale,
+        work_rect.height / scale,
+    );
 
-    let is_maximized = saved_state
-        .as_ref()
-        .map(|s| s.is_maximized)
-        .unwrap_or(false);
+    // Validate saved state: must be at least 80% visible on a connected monitor, else fall back to default
+    let (valid_saved_state, decision_source) = match &saved_state {
+        Some(s) if s.rect.is_visible_ratio(&work_logical, 0.80) => (Some(s.clone()), "saved"),
+        _ => (None, "default"),
+    };
+
+    // 3. Compute target rect using pure maths module
+    let target_rect = window_geom::compute_rect(work_rect, scale, &win_cfg, valid_saved_state);
+
+    // The window always opens restored (never maximised) to prevent filling the whole work area on startup
+    let is_maximized = false;
+
+    // Log at info level: monitor work area, scale factor, decision source, maximised flag, and final outer rect
+    info!(
+        "Window placement: work_area={:?}, scale={:.2}, decision_source=\"{}\", is_maximized={}, outer_rect={:?}",
+        work_rect, scale, decision_source, is_maximized, target_rect
+    );
+
+    // Compute inner client area dimensions accounting for Windows non-client margins (borders + title bar)
+    let (nc_w, nc_h) = platform::windows::get_non_client_margins_logical(scale);
+    let inner_w = (target_rect.width - nc_w).max(1000.0);
+    let inner_h = (target_rect.height - nc_h).max(650.0);
 
     // 4. Create the window hidden, apply computed geometry, and clamp to OS minimum size (1000x650)
-    let mut viewport = egui::ViewportBuilder::default()
+    let viewport = egui::ViewportBuilder::default()
         .with_visible(false)
-        .with_inner_size([target_rect.width as f32, target_rect.height as f32])
+        .with_inner_size([inner_w as f32, inner_h as f32])
         .with_position([target_rect.x as f32, target_rect.y as f32])
         .with_min_inner_size([1000.0, 650.0])
         .with_title("Pyxillum - Pixel LED Studio")
         .with_icon(generate_window_icon());
-
-    if is_maximized {
-        viewport = viewport.with_maximized(true);
-    }
 
     let native_options = eframe::NativeOptions {
         viewport,
@@ -168,6 +201,8 @@ fn main() -> eframe::Result<()> {
                 state_reader,
                 sim_ref,
                 monitor_id,
+                scale,
+                target_rect,
             )))
         }),
     )

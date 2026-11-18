@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Complete Windows 11 Fluent UI Redesign (Phases 1-9)
+## [Unreleased] - Complete Windows 11 Fluent UI Redesign (Phases 1-11)
 
 ### Added
 - **Phase 1: Design Tokens Engine (`crates/app/src/ui/theme/`)**:
@@ -67,6 +67,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Zero-truncation protection: `truncated_label` with hover tooltip and `two_line_description` with ellipsis.
   - Fixed horizontal wrapping drift and double frame padding in `card`, `chip_group`, `segmented`, `music_mode`, `device_hub`, `diy_mode`, `dynamic_mode`, and `solid_mode`.
   - Comprehensive layout verification tests (`test_ban_raw_fixed_widths_for_content`, `test_grid_cols_mathematical_guarantee`, `test_page_scaffold_geometry`, `test_split_2_geometry`, `test_headless_screens_no_overflow`).
+- **Phase 11: Window Geometry, Restoration & Multi-Monitor Rectification**:
+  - Replicated authentic mpv-style window positioning and sizing semantics (`autofit = "80%x80%"`, `geometry = "50%:50%"`).
+  - Resolved work area filling / maximised startup bug: windows now consistently launch in the restored state at ~80% x 80% centred across all display scale factors.
+  - Separate unmaximised normal rect preservation via Win32 `GetWindowPlacement` `rcNormalPosition` and non-maximised/non-minimised update gating.
+  - Subtracted non-client decorations (`SM_CXFRAME`, `SM_CYFRAME`, `SM_CYCAPTION`, `SM_CXPADDEDBORDER`) from inner dimensions and aligned outer window rect directly to eliminate title bar centring offsets.
+  - Implemented 80% visibility ratio threshold verification (`is_visible_ratio`) on saved states against target monitor work areas, with clean fallback to defaults for disconnected or removed secondary monitors.
+  - Added `--reset-window` CLI flag and a dedicated "Reset Window" control in the Settings dialog to reset desktop window placement and geometry to defaults.
+  - Added structured startup info-level logging: `work_area`, `scale`, `decision_source`, `is_maximized`, and final `outer_rect`.
+  - Expanded test suite to 27 unit tests including 10 dedicated geometry maths tests covering DPI scales, taskbar offsets, removed monitors, saved maximised state restoration, and 80% visibility thresholds.
 
 ### New Files Added
 - `crates/app/src/ui/layout.rs`

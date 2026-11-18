@@ -53,6 +53,8 @@ pub struct PyxillumApp {
     // Window visibility and session persistence
     has_shown_window: bool,
     monitor_id: Option<String>,
+    scale: f64,
+    target_rect: crate::window_geom::Rect,
     last_valid_rect: Option<crate::window_geom::Rect>,
     is_maximized: bool,
 
@@ -62,6 +64,7 @@ pub struct PyxillumApp {
 }
 
 impl PyxillumApp {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         cc: &eframe::CreationContext<'_>,
         cmd_tx: mpsc::Sender<GuiCommand>,
@@ -69,6 +72,8 @@ impl PyxillumApp {
         state_reader: Arc<tokio::sync::RwLock<DeviceState>>,
         simulator_ref: Option<Arc<Mutex<DeviceSimulator>>>,
         monitor_id: Option<String>,
+        scale: f64,
+        target_rect: crate::window_geom::Rect,
     ) -> Self {
         // Configure authentic Windows 11 Fluent dark tokens and typography
         let tokens = crate::ui::theme::ThemeTokens::default_dark();
@@ -105,7 +110,9 @@ impl PyxillumApp {
 
             has_shown_window: false,
             monitor_id,
-            last_valid_rect: None,
+            scale,
+            target_rect,
+            last_valid_rect: Some(target_rect),
             is_maximized: false,
             tokens,
         }
@@ -623,6 +630,11 @@ impl eframe::App for PyxillumApp {
                 "Pyxillum - Pixel LED Studio",
                 self.tokens.surfaces.canvas,
             );
+            crate::platform::windows::set_window_outer_rect(
+                "Pyxillum - Pixel LED Studio",
+                self.target_rect,
+                self.scale,
+            );
         }
 
         // Layout Debugger Hotkey (Ctrl+Shift+L)
@@ -677,9 +689,11 @@ impl eframe::App for PyxillumApp {
         // Track valid window size, position, and maximised state for persistent session restoration
         ctx.input(|i| {
             let is_max = i.viewport().maximized.unwrap_or(false);
+            let is_min = i.viewport().minimized.unwrap_or(false);
             self.is_maximized = is_max;
-            if !is_max {
-                if let Some(r) = i.viewport().inner_rect {
+            if !is_max && !is_min {
+                let r_opt = i.viewport().outer_rect.or(i.viewport().inner_rect);
+                if let Some(r) = r_opt {
                     if r.width() >= 200.0 && r.height() >= 200.0 {
                         self.last_valid_rect = Some(crate::window_geom::Rect::new(
                             r.min.x as f64,
@@ -1119,7 +1133,18 @@ impl eframe::App for PyxillumApp {
     }
 
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
-        if let Some(rect) = self.last_valid_rect {
+        let win_placement = crate::platform::windows::get_window_normal_placement(
+            "Pyxillum - Pixel LED Studio",
+            self.scale,
+        );
+        let final_rect = if let Some((normal_rect, is_max)) = win_placement {
+            self.is_maximized = is_max;
+            Some(normal_rect)
+        } else {
+            self.last_valid_rect
+        };
+
+        if let Some(rect) = final_rect {
             crate::window_geom::save_window_state(&crate::window_geom::SavedState {
                 rect,
                 is_maximized: self.is_maximized,
@@ -1583,7 +1608,18 @@ impl PyxillumApp {
 
 impl Drop for PyxillumApp {
     fn drop(&mut self) {
-        if let Some(rect) = self.last_valid_rect {
+        let win_placement = crate::platform::windows::get_window_normal_placement(
+            "Pyxillum - Pixel LED Studio",
+            self.scale,
+        );
+        let final_rect = if let Some((normal_rect, is_max)) = win_placement {
+            self.is_maximized = is_max;
+            Some(normal_rect)
+        } else {
+            self.last_valid_rect
+        };
+
+        if let Some(rect) = final_rect {
             crate::window_geom::save_window_state(&crate::window_geom::SavedState {
                 rect,
                 is_maximized: self.is_maximized,

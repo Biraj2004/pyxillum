@@ -32,7 +32,7 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
         .collapsible(false)
         .resizable(false)
         .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
-        .fixed_size(Vec2::new(520.0, 480.0))
+        .fixed_size(Vec2::new(540.0, 550.0))
         .frame(
             egui::Frame::none()
                 .fill(tokens.surfaces.dialog)
@@ -228,12 +228,66 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                     .on_hover_cursor(egui::CursorIcon::PointingHand);
                 });
 
-            ui.add_space(16.0);
+            ui.add_space(14.0);
+            ui.separator();
+            ui.add_space(12.0);
+
+            // =================================================================
+            // Section 4: Desktop Window Layout Preferences
+            // =================================================================
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.label(
+                        egui::RichText::new("Desktop Window Geometry")
+                            .font(TypeScale::body_strong())
+                            .color(tokens.text.primary),
+                    );
+                    ui.label(
+                        egui::RichText::new("Reset saved window placement to 80% centred default")
+                            .font(TypeScale::caption())
+                            .color(tokens.text.tertiary),
+                    );
+                });
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if FluentButton::secondary("Reset Window")
+                        .icon(Icon::Reverse)
+                        .show(ui)
+                        .clicked()
+                    {
+                        crate::window_geom::delete_saved_state();
+                        let cfg = crate::window_geom::load_or_create_config();
+                        let (work, scale, _) =
+                            crate::window_geom::get_target_monitor_work_and_scale(cfg.screen);
+                        let target = crate::window_geom::compute_rect(work, scale, &cfg, None);
+                        let (nc_w, nc_h) =
+                            crate::platform::windows::get_non_client_margins_logical(scale);
+                        let inner_w = (target.width - nc_w).max(1000.0);
+                        let inner_h = (target.height - nc_h).max(650.0);
+
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(false));
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::InnerSize(
+                            egui::Vec2::new(inner_w as f32, inner_h as f32),
+                        ));
+                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::OuterPosition(
+                            egui::Pos2::new(target.x as f32, target.y as f32),
+                        ));
+
+                        crate::platform::windows::set_window_outer_rect(
+                            "Pyxillum - Pixel LED Studio",
+                            target,
+                            scale,
+                        );
+                    }
+                });
+            });
+
+            ui.add_space(14.0);
             ui.separator();
             ui.add_space(14.0);
 
             // =================================================================
-            // Section 4: Modal Footer Action Row
+            // Section 5: Modal Footer Action Row
             // =================================================================
             ui.horizontal(|ui| {
                 if state.ui_confirm_safety {

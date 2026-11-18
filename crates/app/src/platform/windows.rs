@@ -15,9 +15,13 @@ use windows::Win32::Graphics::Dwm::{
     DWMWA_WINDOW_CORNER_PREFERENCE,
 };
 #[cfg(windows)]
+use windows::Win32::UI::HiDpi::GetSystemMetricsForDpi;
+#[cfg(windows)]
 use windows::Win32::UI::WindowsAndMessaging::{
-    FindWindowW, SystemParametersInfoW, SPI_GETCLIENTAREAANIMATION,
-    SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+    FindWindowW, GetWindowPlacement, SetWindowPos, SystemParametersInfoW, SM_CXFRAME,
+    SM_CXPADDEDBORDER, SM_CYCAPTION, SM_CYFRAME, SPI_GETCLIENTAREAANIMATION, SWP_NOACTIVATE,
+    SWP_NOZORDER, SWP_SHOWWINDOW, SW_SHOWMAXIMIZED, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+    WINDOWPLACEMENT,
 };
 
 /// Configures Windows 11 DWM appearance (Dark mode, Mica/Acrylic, rounded corners, caption colour).
@@ -144,3 +148,112 @@ pub fn get_windows_accent_color() -> Option<Color32> {
 pub fn get_windows_accent_color() -> Option<Color32> {
     None
 }
+
+/// Calculates the logical width and height of the non-client decorations (borders and title bar).
+#[cfg(windows)]
+pub fn get_non_client_margins_logical(scale: f64) -> (f64, f64) {
+    let scale = if scale <= 0.0 { 1.0 } else { scale };
+    let dpi = (scale * 96.0).round().max(96.0) as u32;
+    unsafe {
+        let cx_frame = GetSystemMetricsForDpi(SM_CXFRAME, dpi)
+            + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+        let cy_frame = GetSystemMetricsForDpi(SM_CYFRAME, dpi)
+            + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+        let cy_caption = GetSystemMetricsForDpi(SM_CYCAPTION, dpi);
+
+        let delta_w_phys = (2 * cx_frame) as f64;
+        let delta_h_phys = (2 * cy_frame + cy_caption) as f64;
+
+        (delta_w_phys / scale, delta_h_phys / scale)
+    }
+}
+
+/// Fallback for non-Windows platforms.
+#[cfg(not(windows))]
+pub fn get_non_client_margins_logical(_scale: f64) -> (f64, f64) {
+    (16.0, 39.0)
+}
+
+/// Queries Win32 `GetWindowPlacement` to retrieve the unmaximised / restored window rectangle.
+#[cfg(windows)]
+pub fn get_window_normal_placement(
+    window_title: &str,
+    scale: f64,
+) -> Option<(crate::window_geom::Rect, bool)> {
+    unsafe {
+        let title_wide: Vec<u16> = window_title
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+        let hwnd = FindWindowW(None, windows::core::PCWSTR(title_wide.as_ptr()));
+        if hwnd.0 == 0 {
+            return None;
+        }
+
+        let mut wp = WINDOWPLACEMENT {
+            length: std::mem::size_of::<WINDOWPLACEMENT>() as u32,
+            ..Default::default()
+        };
+        if GetWindowPlacement(hwnd, &mut wp).is_ok() {
+            let scale = if scale <= 0.0 { 1.0 } else { scale };
+            let rc = wp.rcNormalPosition;
+            let width = (rc.right - rc.left) as f64;
+            let height = (rc.bottom - rc.top) as f64;
+            if width >= 200.0 && height >= 200.0 {
+                let rect = crate::window_geom::Rect::new(
+                    rc.left as f64 / scale,
+                    rc.top as f64 / scale,
+                    width / scale,
+                    height / scale,
+                );
+                let is_max = wp.showCmd == SW_SHOWMAXIMIZED.0 as u32;
+                return Some((rect, is_max));
+            }
+        }
+        None
+    }
+}
+
+/// Fallback for non-Windows platforms.
+#[cfg(not(windows))]
+pub fn get_window_normal_placement(
+    _window_title: &str,
+    _scale: f64,
+) -> Option<(crate::window_geom::Rect, bool)> {
+    None
+}
+
+/// Positions and sizes the native outer window to exact physical pixels on Windows.
+#[cfg(windows)]
+pub fn set_window_outer_rect(window_title: &str, rect: crate::window_geom::Rect, scale: f64) {
+    unsafe {
+        let title_wide: Vec<u16> = window_title
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+        let hwnd = FindWindowW(None, windows::core::PCWSTR(title_wide.as_ptr()));
+        if hwnd.0 == 0 {
+            return;
+        }
+
+        let scale = if scale <= 0.0 { 1.0 } else { scale };
+        let phys_x = (rect.x * scale).round() as i32;
+        let phys_y = (rect.y * scale).round() as i32;
+        let phys_w = (rect.width * scale).round() as i32;
+        let phys_h = (rect.height * scale).round() as i32;
+
+        let _ = SetWindowPos(
+            hwnd,
+            None,
+            phys_x,
+            phys_y,
+            phys_w,
+            phys_h,
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+        );
+    }
+}
+
+/// Fallback for non-Windows platforms.
+#[cfg(not(windows))]
+pub fn set_window_outer_rect(_window_title: &str, _rect: crate::window_geom::Rect, _scale: f64) {}

@@ -37,6 +37,43 @@ impl Rect {
         }
     }
 
+    /// Calculates the area of the rectangle in logical square pixels.
+    pub fn area(&self) -> f64 {
+        if self.width > 0.0 && self.height > 0.0 {
+            self.width * self.height
+        } else {
+            0.0
+        }
+    }
+
+    /// Computes the intersection rectangle between two rectangles, if any.
+    pub fn intersection(&self, other: &Rect) -> Option<Rect> {
+        let x1 = self.x.max(other.x);
+        let y1 = self.y.max(other.y);
+        let x2 = (self.x + self.width).min(other.x + other.width);
+        let y2 = (self.y + self.height).min(other.y + other.height);
+
+        if x2 > x1 && y2 > y1 {
+            Some(Rect::new(x1, y1, x2 - x1, y2 - y1))
+        } else {
+            None
+        }
+    }
+
+    /// Evaluates whether this rectangle is at least `min_ratio` (e.g. 0.80 for 80%)
+    /// visible within the given work area.
+    pub fn is_visible_ratio(&self, work: &Rect, min_ratio: f64) -> bool {
+        let self_area = self.area();
+        if self_area <= 0.0 {
+            return false;
+        }
+        if let Some(inter) = self.intersection(work) {
+            (inter.area() / self_area) >= min_ratio
+        } else {
+            false
+        }
+    }
+
     /// Evaluates whether another rectangle is fully contained within this rectangle,
     /// allowing a 1.0 pixel tolerance margin for rounding errors.
     pub fn contains_rect(&self, other: &Rect) -> bool {
@@ -273,9 +310,9 @@ pub fn compute_rect(work: Rect, scale: f64, cfg: &WindowCfg, saved: Option<Saved
         work.height / scale,
     );
 
-    // 1. If a saved state exists and is still fully visible on this monitor, restore it
+    // 1. If a saved state exists and is at least 80% visible on this monitor, restore it
     if let Some(s) = saved {
-        if work_logical.contains_rect(&s.rect) {
+        if s.rect.is_visible_ratio(&work_logical, 0.80) {
             let min_w = 1000.0_f64.min(work_logical.width);
             let min_h = 650.0_f64.min(work_logical.height);
             let win_w = s.rect.width.clamp(min_w, work_logical.width);
@@ -401,6 +438,17 @@ pub fn save_window_state(state: &SavedState) {
             let _ = fs::write(state_path, data);
         }
     }
+}
+
+/// Deletes the persisted window state from disk.
+pub fn delete_saved_state() -> bool {
+    if let Some(config_dir) = get_config_dir() {
+        let state_path = config_dir.join("window_state.json");
+        if state_path.exists() {
+            return fs::remove_file(state_path).is_ok();
+        }
+    }
+    false
 }
 
 /// Detects the target monitor's physical work area, DPI scale factor, and device name on Windows.
@@ -699,5 +747,86 @@ mod tests {
         assert_eq!(rect.height, 800.0);
         assert_eq!(rect.x, 100.0);
         assert_eq!(rect.y, 50.0);
+    }
+
+    #[test]
+    fn test_compute_rect_saved_maximised_state() {
+        // Monitor has 1920x1080 work area at 100% scale
+        let work = Rect::new(0.0, 0.0, 1920.0, 1080.0);
+        let scale = 1.0;
+        let cfg = WindowCfg::default();
+
+        // Saved state was closed while maximised, but preserved the unmaximised normal rect
+        let saved = Some(SavedState {
+            rect: Rect::new(200.0, 150.0, 1200.0, 700.0),
+            is_maximized: true,
+            monitor_id: Some("PRIMARY_MONITOR".to_string()),
+        });
+
+        let rect = compute_rect(work, scale, &cfg, saved);
+
+        // compute_rect must restore the normal rect (1200x700 at 200, 150), NOT the maximised screen rect
+        assert_eq!(rect.width, 1200.0);
+        assert_eq!(rect.height, 700.0);
+        assert_eq!(rect.x, 200.0);
+        assert_eq!(rect.y, 150.0);
+    }
+
+    #[test]
+    fn test_compute_rect_80_percent_visibility_threshold() {
+        let work = Rect::new(0.0, 0.0, 1920.0, 1080.0);
+        let scale = 1.0;
+        let cfg = WindowCfg::default();
+
+        // Case 1: Saved rect shifted off-screen to left: x = -100, y = 50, w = 1200, h = 700
+        // Visible width: 1100 / 1200 = 91.67% visible (>= 80% threshold)
+        let saved_91_percent = Some(SavedState {
+            rect: Rect::new(-100.0, 50.0, 1200.0, 700.0),
+            is_maximized: false,
+            monitor_id: None,
+        });
+        let rect_91 = compute_rect(work, scale, &cfg, saved_91_percent);
+        // Validated, restored and clamped to work area bounds:
+        assert_eq!(rect_91.x, 0.0);
+        assert_eq!(rect_91.y, 50.0);
+        assert_eq!(rect_91.width, 1200.0);
+        assert_eq!(rect_91.height, 700.0);
+
+        // Case 2: Saved rect shifted off-screen to left: x = -400, y = 50, w = 1200, h = 700
+        // Visible width: 800 / 1200 = 66.67% visible (< 80% threshold)
+        let saved_66_percent = Some(SavedState {
+            rect: Rect::new(-400.0, 50.0, 1200.0, 700.0),
+            is_maximized: false,
+            monitor_id: None,
+        });
+        let rect_66 = compute_rect(work, scale, &cfg, saved_66_percent);
+        // Rejected (< 80% visible)! Falls back to default 80%x80% centred:
+        assert_eq!(rect_66.width, 1536.0);
+        assert_eq!(rect_66.height, 864.0);
+        assert_eq!(rect_66.x, 192.0);
+        assert_eq!(rect_66.y, 108.0);
+    }
+
+    #[test]
+    fn test_rect_area_intersection_and_visibility() {
+        let r1 = Rect::new(0.0, 0.0, 100.0, 100.0);
+        assert_eq!(r1.area(), 10000.0);
+
+        let r2 = Rect::new(50.0, 50.0, 100.0, 100.0);
+        let inter = r1.intersection(&r2).unwrap();
+        assert_eq!(inter.x, 50.0);
+        assert_eq!(inter.y, 50.0);
+        assert_eq!(inter.width, 50.0);
+        assert_eq!(inter.height, 50.0);
+        assert_eq!(inter.area(), 2500.0);
+
+        // 2500 / 10000 = 25% visible
+        assert!(!r2.is_visible_ratio(&r1, 0.80));
+        assert!(r2.is_visible_ratio(&r1, 0.20));
+
+        // Completely outside
+        let r3 = Rect::new(200.0, 200.0, 50.0, 50.0);
+        assert!(r1.intersection(&r3).is_none());
+        assert!(!r3.is_visible_ratio(&r1, 0.80));
     }
 }
