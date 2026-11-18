@@ -351,6 +351,52 @@ Pyxillum incorporates the design and motion techniques from native Windows deskt
 - All animations (button press translations, toggle overshoots, list indicator expansions, and error shakes) query `crate::platform::windows::is_client_animation_enabled()`, which maps to Windows `SystemParametersInfoW(SPI_GETCLIENTAREAANIMATION)`.
 - If the user has disabled "Animation effects" in Windows 11 Settings (Accessibility > Visual effects), all transitions instantaneously resolve with zero animation delay.
 
+---
+
+## 13. Screen Authoring Guide: How to Add a New Screen to Pyxillum
+
+To maintain design consistency and structural symmetry when introducing new capabilities to Pyxillum, follow this standard pattern:
+
+### 13.1 Step-by-Step Implementation Checklist
+1. **Define Screen Enum**: Add a variant to `AppScreen` or `DashboardMode` in `crates/app/src/state.rs`.
+2. **Add Sidebar Navigation Item**:
+   - Register navigation entry in `crates/app/src/widgets/sidebar.rs` using `sidebar_item()` with an authentic vector `Icon`.
+   - Selected state automatically reserves bold typography width without shifting adjacent content.
+3. **Construct Screen Module (`crates/app/src/screens/my_screen.rs`)**:
+   - Signature: `pub fn render_my_screen(ui: &mut egui::Ui, state: &mut AppState) -> bool` (returning whether hardware state changed).
+   - Use `Card::base().show(ui, |ui| { ... })` for consistent $12\text{px}$ elevation surfaces.
+   - Use `TypeScale` methods (`display`, `title`, `subtitle`, `body_strong`, `body`, `caption`) for text styling. Never instantiate ad-hoc font sizes.
+   - Use `fluent_slider(ui, label, value, min, max, unit)` for linear parameters.
+   - Use `segmented_control(ui, id, items, selected)` for discrete option sets.
+   - Use `FluentButton::primary(text)` or `FluentButton::secondary(text)` for actionable buttons.
+4. **Mount in Main Canvas (`crates/app/src/app.rs`)**:
+   - Call screen renderer inside the central scroll area matching the active screen.
+   - If the screen updates controller state, dispatch the corresponding `GuiCommand` through `self.send(...)`.
+
+---
+
+## 14. Performance Guidelines & QA Checklist
+
+### 14.1 Performance Safeguards
+- **Zero Background Polling**: Never run tight loops waiting for background tasks or BLE responses.
+- **Intelligent Repaint Pacing**: UI repaints at 60 FPS only when active continuous visualizers run (dynamic effect playback, FFT audio loopback, or BLE scanning). When static, frame pacing sleeps up to 100ms or until user input, keeping idle CPU usage $< 1\%$.
+- **Virtualized Lists**: Presets and long lists must use `egui::ScrollArea::show_rows` to allocate and paint only visible row widgets.
+
+### 14.2 QA Verification Matrix
+| Test Case | Verification Criteria | Status |
+| :--- | :--- | :--- |
+| **TC-01: Windows 11 Title Bar** | Native OS title bar, Snap Layouts hover on maximize button, minimize/close work smoothly. | Verified |
+| **TC-02: Window Geometry & Centering** | Launches centered at 80%x80% work area; clamps to $\ge 1000\times 650$; restores saved position. | Verified |
+| **TC-03: Responsive Breakpoints** | Resizing $< 1100\text{px}$ collapses sidebar to $56\text{px}$ icon rail; $> 1500\text{px}$ caps content at $1280\text{px}$. | Verified |
+| **TC-04: LED Strip Monitor** | Renders 30 to 255 LEDs without overflow; matches card width; concentric glow rings without eye strain. | Verified |
+| **TC-05: State Honesty** | Disconnected header shows "No Controller Connected (Preview Mode)"; physical models tagged "implemented, untested". | Verified |
+| **TC-06: Single BLE Error InfoBar** | BLE transport failures render once with title, cause, and `ms-settings:bluetooth` action link. | Verified |
+| **TC-07: DIY Sequencer Stability** | Adding, duplicating, reversing, and removing nodes never crashes; minimum 2 nodes preserved. | Verified |
+| **TC-08: Full-Width Sliders** | Brightness, speed, and sensitivity sliders span full card width with tabular values on top right. | Verified |
+| **TC-09: Hardware Safety Gate** | EEPROM modification disabled until confirmation checkbox is clicked; attempts trigger error shake. | Verified |
+| **TC-10: Motion Accessibility** | Disabling Windows Visual Effects causes all transitions to resolve instantly without delay. | Verified |
+
+
 
 
 

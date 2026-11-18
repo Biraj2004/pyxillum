@@ -1060,8 +1060,22 @@ impl eframe::App for PyxillumApp {
                 });
         }
 
-        // Request 60 FPS continuous animation redraws
-        ctx.request_repaint();
+        // Intelligent repaint pacing: 60 FPS continuous repaints ONLY when active visualizers run;
+        // otherwise sleep or wake on user input to maintain near-zero idle CPU.
+        let needs_continuous_repaint = self.state.is_scanning
+            || (self.state.ui_power
+                && matches!(self.state.current_screen, AppScreen::Dashboard(_))
+                && (self.state.is_playing_dynamic
+                    || self.state.dashboard_mode == DashboardMode::Music
+                    || (self.state.dashboard_mode == DashboardMode::Diy
+                        && self.state.diy_pattern != crate::state::DiyPatternStyle::Static)));
+
+        if needs_continuous_repaint {
+            ctx.request_repaint();
+        } else {
+            // Idle pacing: 10 Hz fallback for background events (BLE notifications / media updates)
+            ctx.request_repaint_after(std::time::Duration::from_millis(100));
+        }
     }
 
     fn save(&mut self, _storage: &mut dyn eframe::Storage) {
