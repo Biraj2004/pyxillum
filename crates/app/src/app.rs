@@ -55,6 +55,10 @@ pub struct PyxillumApp {
     monitor_id: Option<String>,
     last_valid_rect: Option<crate::window_geom::Rect>,
     is_maximized: bool,
+
+    // Design system tokens
+    #[allow(dead_code)]
+    pub tokens: crate::ui::theme::ThemeTokens,
 }
 
 impl PyxillumApp {
@@ -66,37 +70,9 @@ impl PyxillumApp {
         simulator_ref: Option<Arc<Mutex<DeviceSimulator>>>,
         monitor_id: Option<String>,
     ) -> Self {
-        // Configure authentic Windows 11 Dark Mica visuals
-        let mut visuals = egui::Visuals::dark();
-        visuals.panel_fill = Theme::CANVAS_BG;
-        visuals.window_fill = Theme::CARD_BG;
-        visuals.window_stroke = Stroke::new(1.0_f32, Theme::BORDER_LIGHT);
-        visuals.window_rounding = Rounding::same(8.0);
-        visuals.widgets.noninteractive.bg_fill = Theme::CARD_BG;
-        visuals.widgets.noninteractive.bg_stroke = Stroke::new(1.0_f32, Theme::BORDER_LIGHT);
-        visuals.widgets.noninteractive.fg_stroke = Stroke::new(1.0_f32, Theme::TEXT_PRIMARY);
-        visuals.widgets.noninteractive.rounding = Rounding::same(6.0);
-
-        visuals.widgets.inactive.bg_fill = Theme::WELL_BG;
-        visuals.widgets.inactive.bg_stroke = Stroke::new(1.0_f32, Theme::BORDER_LIGHT);
-        visuals.widgets.inactive.fg_stroke = Stroke::new(1.0_f32, Theme::TEXT_SECONDARY);
-        visuals.widgets.inactive.rounding = Rounding::same(6.0);
-
-        visuals.widgets.hovered.bg_fill = Theme::CARD_HOVER;
-        visuals.widgets.hovered.bg_stroke = Stroke::new(1.0_f32, Theme::BORDER_HOVER);
-        visuals.widgets.hovered.fg_stroke = Stroke::new(1.0_f32, Theme::TEXT_PRIMARY);
-        visuals.widgets.hovered.rounding = Rounding::same(6.0);
-
-        visuals.widgets.active.bg_fill = Theme::ACCENT_BLUE;
-        visuals.widgets.active.bg_stroke = Stroke::new(1.0_f32, Theme::ACCENT_BLUE_HOVER);
-        visuals.widgets.active.fg_stroke = Stroke::new(1.0_f32, Color32::WHITE);
-        visuals.widgets.active.rounding = Rounding::same(6.0);
-
-        visuals.selection.bg_fill = Theme::ACCENT_BLUE;
-        visuals.selection.stroke = Stroke::new(1.0_f32, Theme::ACCENT_BLUE_HOVER);
-        visuals.slider_trailing_fill = true;
-
-        cc.egui_ctx.set_visuals(visuals);
+        // Configure authentic Windows 11 Fluent dark tokens
+        let tokens = crate::ui::theme::ThemeTokens::default_dark();
+        crate::ui::theme::configure_egui_theme(&cc.egui_ctx, &tokens);
 
         let audio_service = WindowsAudioService::new();
 
@@ -130,6 +106,7 @@ impl PyxillumApp {
             monitor_id,
             last_valid_rect: None,
             is_maximized: false,
+            tokens,
         }
     }
 

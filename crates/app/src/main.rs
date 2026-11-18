@@ -20,6 +20,7 @@ mod icon_data;
 mod screens;
 mod state;
 mod theme;
+pub mod ui;
 mod widgets;
 mod window_geom;
 mod windows_media;
