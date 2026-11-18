@@ -25,7 +25,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            rust: stable
+          - os: ubuntu-latest
+            rust: stable
+          - os: macos-latest
+            rust: "1.82.0"
 
     steps:
       - name: Checkout code
@@ -38,8 +44,9 @@ jobs:
           sudo apt-get install -y libdbus-1-dev libudev-dev libxkbcommon-dev libgl1-mesa-dev pkg-config
 
       - name: Setup Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ matrix.rust }}
           components: rustfmt, clippy
 
       - name: Cache Cargo Dependencies

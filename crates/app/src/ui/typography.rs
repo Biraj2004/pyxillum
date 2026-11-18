@@ -111,12 +111,28 @@ pub fn configure_fonts(ctx: &egui::Context) {
         }
     }
 
-    // Ensure SegoeBold family always has fallback to proportional
-    fonts
+    // Ensure SegoeBold family has valid fonts in font_data
+    let prop_fallback = fonts.families.get(&FontFamily::Proportional).cloned();
+    let bold_entry = fonts
         .families
         .entry(FontFamily::Name("SegoeBold".into()))
-        .or_default()
-        .push("SegoeUIRegular".to_owned());
+        .or_default();
+    if fonts.font_data.contains_key("SegoeUIBold")
+        && !bold_entry.contains(&"SegoeUIBold".to_owned())
+    {
+        bold_entry.push("SegoeUIBold".to_owned());
+    }
+    if fonts.font_data.contains_key("SegoeUIRegular")
+        && !bold_entry.contains(&"SegoeUIRegular".to_owned())
+    {
+        bold_entry.push("SegoeUIRegular".to_owned());
+    } else if let Some(prop) = prop_fallback {
+        for f in prop {
+            if !bold_entry.contains(&f) {
+                bold_entry.push(f);
+            }
+        }
+    }
 
     // Map default TextStyle sizes to our type scale
     let mut style = (*ctx.style()).clone();
