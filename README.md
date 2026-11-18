@@ -6,17 +6,20 @@
 
 ### Clean-Room Native Desktop Controller & CLI for SP621E Bluetooth Low Energy Pixel LED Hardware
 
-[![Build & Test](https://img.shields.io/badge/Build%20%26%20Test-Passing-success?style=flat-square&logo=rust&logoColor=white)](https://github.com/example/pyxillum/actions)
+[![Latest Release](https://img.shields.io/github/v/release/Biraj2004/pyxillum?style=flat-square&color=blue&label=Latest%20Release)](https://github.com/Biraj2004/pyxillum/releases/latest)
+[![CI Pipeline](https://img.shields.io/github/actions/workflow/status/Biraj2004/pyxillum/ci.yml?branch=master&style=flat-square&label=CI&logo=github)](https://github.com/Biraj2004/pyxillum/actions/workflows/ci.yml)
+[![Release Pipeline](https://img.shields.io/github/actions/workflow/status/Biraj2004/pyxillum/release.yml?branch=master&style=flat-square&label=Release%20Pipeline&logo=github)](https://github.com/Biraj2004/pyxillum/actions/workflows/release.yml)
 [![License: AGPL-3.0-or-later](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](LICENSE)
 [![Rust MSRV](https://img.shields.io/badge/MSRV-1.80.0-informational?style=flat-square&logo=rust&logoColor=white)](https://github.com/rust-lang/rust)
-[![Platform Support](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)](#quickstart)
+[![Platforms](https://img.shields.io/badge/Platforms-Windows%20%7C%20macOS%20%7C%20Linux%20%28x86__64%20%2B%20ARM64%29-lightgrey?style=flat-square)](#downloads--installation)
 [![UI Engine](https://img.shields.io/badge/GUI-egui%20%2F%20glow%20%2860%20FPS%29-orange?style=flat-square)](#workspace-architecture)
 [![Telemetry](https://img.shields.io/badge/Telemetry-Zero%20%2F%20Offline--First-2ea44f?style=flat-square)](#key-features)
 [![Simulation](https://img.shields.io/badge/Simulator-Hardware--Free%20Testing-blueviolet?style=flat-square)](#testing-in-simulation-mode-zero-hardware)
 [![Interoperability](https://img.shields.io/badge/Interoperability-Directive%202009%2F24%2FEC-0052cc?style=flat-square)](#compatibility-and-legal-disclaimer)
 
 <p align="center">
-  <a href="win-exe/"><strong>Download Windows Binaries</strong></a> &bull;
+  <a href="https://github.com/Biraj2004/pyxillum/releases/latest"><strong>Download Latest Release</strong></a> &bull;
+  <a href="#downloads--installation"><strong>Package Formats</strong></a> &bull;
   <a href="#key-features"><strong>Key Features</strong></a> &bull;
   <a href="#hardware-compatibility-matrix"><strong>Compatibility Matrix</strong></a> &bull;
   <a href="#quickstart"><strong>Quickstart</strong></a> &bull;
@@ -39,25 +42,50 @@ Developed under clean-room engineering standards, Pyxillum provides a robust, de
 
 ## Key Features
 
-- **Native Desktop Performance**: 100% native Rust architecture with immediate-mode rendering (`egui`/`eframe`) over OpenGL (`glow`), achieving responsive 60 FPS strip animations with a tiny memory footprint (~15 MB RAM).
+- **Multi-Platform Native Performance**: 100% native Rust architecture with immediate-mode rendering (`egui`/`eframe`) over OpenGL (`glow`), achieving responsive 60 FPS strip animations with a tiny memory footprint (~15 MB RAM).
+- **Universal Hardware & Architecture Support**: First-class support across Windows (x86_64), macOS (Universal binary covering Apple Silicon and Intel), and Linux (both standard `x86_64` and native `aarch64` ARM64).
 - **Virtual Hardware Simulator**: Test every feature out of the box. Toggle "Demo Device" in the GUI or pass `--sim` in the CLI to simulate real controller behaviour, timing constraints, and notification streaming.
 - **Dynamic Lighting & Scene Presets**: Complete control over static solid colours, master brightness, animation speeds, built-in dynamic patterns (rainbow, meteor, dual snake, breath), and saved scene presets.
 - **Hardware Safety Safeguards**: Non-volatile EEPROM/flash modifications (chip driver types, pixel strip length, colour sequence order) are protected behind explicit confirmation flags (`--i-understand-this-changes-the-device`).
 - **Paced BLE Write Pipeline**: Enforces a 30 ms write pacing between consecutive unacknowledged packets to avoid controller FIFO buffer overflows.
 - **Hardware Verification Pack**: Includes an interactive 7-stage guided testing CLI (`pyxillum hwcheck`) and test plan (`tests/hardware/PLAN.md`) to systematically validate physical controller hardware.
+- **Automated Multi-Platform Release Pipeline**: Continuous delivery workflows automatically build, package, and publish signed installers and standalone binaries with cryptographic SHA-256 verification.
 
 ---
 
-## Ready-to-Run Windows Binaries
+## Downloads & Installation
 
-Pre-compiled standalone 64-bit Windows release executables are maintained directly in the repository under [`win-exe/`](win-exe/):
+Pre-compiled production binaries, native installers, and package bundles are available on the [**GitHub Releases Page**](https://github.com/Biraj2004/pyxillum/releases/latest).
 
-| Executable | Size | Description |
-| :--- | :---: | :--- |
-| **[`pyxillum-desktop.exe`](win-exe/pyxillum-desktop.exe)** | ~4.7 MB | Native desktop GUI application (windowed subsystem, High-DPI Per-Monitor v2 manifest, embedded icon). |
-| **[`pyxillum.exe`](win-exe/pyxillum.exe)** | ~1.5 MB | Native command-line interface and interactive hardware verification wizard. |
+### Package Availability by Operating System
 
-No external runtimes, MSVC redistributables, or installation steps are required. See [`win-exe/README.md`](win-exe/README.md) for usage details.
+| Platform | Architecture | Package Format | Description |
+| :--- | :--- | :--- | :--- |
+| **Windows** | `x86_64` | **`.exe` (Standalone GUI)** | Windowed standalone executable with embedded High-DPI manifest and icon. |
+| | `x86_64` | **`.exe` (CLI)** | Standalone terminal command-line tool and verification wizard. |
+| | `x86_64` | **`.msi` (Installer)** | WiX Toolset native MSI installer with Start Menu and Desktop shortcuts. |
+| | `x86_64` | **`.zip` (Portable)** | Complete portable bundle containing GUI, CLI, documentation, and licence. |
+| | `x86_64` | **[`win-exe/`](win-exe/)** | Pre-staged ready-to-run executables committed directly in the workspace root. |
+| **macOS** | `Universal` | **`.dmg` (Universal)** | Native Apple Disk Image containing a Universal binary for both Apple Silicon and Intel. |
+| | `aarch64` | **`.dmg` (Apple Silicon)** | Optimised disk image tailored specifically for Apple Silicon (M1/M2/M3/M4). |
+| | `x86_64` | **`.dmg` (Intel)** | Optimised disk image tailored for Intel-based Macs. |
+| | `Universal` | **`.tar.gz` (CLI Archive)** | Universal command-line interface binary bundle. |
+| **Linux** | `x86_64` (amd64) | **`.deb` (Debian/Ubuntu)** | Native Debian package with desktop entry, launcher icons, and system path integration. |
+| | `x86_64` (amd64) | **`.tar.gz` (Bundle)** | Portable desktop archive with `.desktop` file and 512x512 application icon. |
+| | `x86_64` (amd64) | **Standalone Executable** | Direct standalone desktop GUI binary (`Pyxillum-Desktop-Linux-x86_64`). |
+| | `aarch64` (arm64) | **`.deb` (Debian/Ubuntu)** | Native 64-bit ARM Debian package for single-board computers and ARM workstations. |
+| | `aarch64` (arm64) | **`.tar.gz` (Bundle)** | Portable ARM64 desktop archive with desktop integration files. |
+| | `aarch64` (arm64) | **Standalone Executable** | Direct standalone desktop GUI binary (`Pyxillum-Desktop-Linux-aarch64`). |
+| **Integrity** | All | **`SHA256SUMS.txt`** | Cryptographic SHA-256 checksums covering every released artifact. |
+
+### Ready-to-Run Windows Binaries (`win-exe/`)
+
+For instant execution on Windows without downloading release assets separately, ready-to-run executables are maintained in the [`win-exe/`](win-exe/) folder:
+
+- [`win-exe/pyxillum-desktop.exe`](win-exe/pyxillum-desktop.exe) — Native desktop GUI application (~5.4 MB)
+- [`win-exe/pyxillum.exe`](win-exe/pyxillum.exe) — Native command-line interface (~1.8 MB)
+
+See [`win-exe/README.md`](win-exe/README.md) for execution details.
 
 ---
 
@@ -84,14 +112,21 @@ In accordance with strict verification criteria, features and hardware targets c
 ## Quickstart
 
 ### Prerequisites
-- **Rust Toolchain**: Rust 1.80.0 or later (MSRV).
-- **Operating Systems**: Windows 10/11 (x86_64), macOS 12+, or Linux with BlueZ D-Bus development libraries.
-- Comprehensive Windows compilation instructions: [docs/building-windows.md](docs/building-windows.md).
+- **Rust Toolchain**: Rust 1.80.0 or later (MSRV). Recommended: current stable Rust toolchain.
+- **Supported Operating Systems**:
+  - Windows 10 or Windows 11 (x86_64)
+  - macOS 12 (Monterey) or later (Universal / Apple Silicon / Intel)
+  - Ubuntu / Debian Linux (`x86_64` or `aarch64`)
+- **Linux Build Dependencies**:
+  ```bash
+  sudo apt-get install -y libdbus-1-dev libudev-dev libxkbcommon-dev libgl1-mesa-dev pkg-config
+  ```
+- Detailed Windows compilation instructions: [docs/building-windows.md](docs/building-windows.md).
 
 ### 1. Launch the Native Desktop GUI
 ```bash
 # Clone the repository
-git clone https://github.com/example/pyxillum.git
+git clone https://github.com/Biraj2004/pyxillum.git
 cd pyxillum
 
 # Launch the desktop application (defaults to virtual simulator)
@@ -123,7 +158,7 @@ cargo run -p pyxillum-cli -- hwcheck --sim
 
 ## Testing in Simulation Mode (Zero Hardware)
 
-Pyxillum features a faithful in-memory virtual SP621E hardware simulator (`crates/sim`), permitting complete state machine testing, command rate-limit checking, and 60 FPS pixel buffer rendering without requiring physical hardware:
+Pyxillum features an in-memory virtual SP621E hardware simulator (`crates/sim`), permitting complete state machine testing, command rate-limit checking, and 60 FPS pixel buffer rendering without requiring physical hardware:
 
 ```bash
 # Test power toggling on the virtual device
@@ -136,6 +171,26 @@ cargo run -p pyxillum-cli -- configure --length 60 --sim
 # Authorise persistent parameter modification
 cargo run -p pyxillum-cli -- configure --length 60 --i-understand-this-changes-the-device --sim
 ```
+
+---
+
+## Continuous Integration & Release Workflows
+
+Pyxillum employs fully automated GitHub Actions workflows designed for reproducible multi-platform delivery:
+
+### 1. Multi-Architecture CI (`.github/workflows/ci.yml`)
+Runs formatting validation (`cargo fmt`), strict linting (`cargo clippy -D warnings`), and the workspace test suite across 4 parallel environments:
+- `windows-latest` (Windows x86_64)
+- `macos-latest` (macOS Apple Silicon arm64)
+- `ubuntu-latest` (Ubuntu Linux x86_64)
+- `ubuntu-24.04-arm` (Ubuntu Linux native aarch64 ARM64)
+
+### 2. Automated Multi-Platform Release (`.github/workflows/release.yml`)
+Triggered automatically on commits pushed to `master` and `release` branches or on explicit version tags (`v*`):
+- **Dynamic Semantic Versioning**: Resolves the latest git tag and automatically increments the patch version (e.g. `v1.0.0` -> `v1.0.1` -> `v1.0.2`...) if no explicit tag is passed.
+- **Parallel Compilation Matrix**: Concurrently compiles release binaries for Windows, macOS (Universal + individual slices), and Linux (AMD64 + ARM64).
+- **Package Generation**: Assembles native `.dmg` disk images with `hdiutil`, native `.deb` packages via `dpkg-deb`, WiX `.msi` installers, and portable `.zip` / `.tar.gz` archives.
+- **Release Automation**: Aggregates all build artifacts, computes `SHA256SUMS.txt`, generates automated changelogs via GitHub Releases API, and tags the repository.
 
 ---
 
@@ -156,6 +211,8 @@ graph TD
 
 ```text
 pyxillum/
+├── .github/
+│   └── workflows/     CI and multi-platform release workflows (Windows, macOS, Linux x86_64 & ARM64)
 ├── crates/
 │   ├── protocol/      Pure functional codec (#![forbid(unsafe_code)], zero I/O)
 │   ├── sim/           In-memory virtual SP621E hardware simulator & validator
@@ -165,11 +222,12 @@ pyxillum/
 │   └── app/           Native desktop GUI (component-based, screen-wise, 146+ lighting styles)
 ├── docs/              Architecture, protocol, modular GUI spec, ADRs, Windows build guide
 ├── assets/            Vector SVGs, high-resolution PNGs, Windows .ico, and WiX MSI bitmaps
+├── patches/           Local patches for upstream crates ensuring toolchain compatibility
 ├── win-exe/           Dedicated staging directory for latest Windows release executables
-├── tests/
-│   ├── vectors/       Static-derived JSON protocol test vectors
-│   └── hardware/      Hardware verification checklist and test plan (PLAN.md)
-└── docs/              Architecture, protocol specification, ADRs, legal notes
+├── xtask/             Repository automation runner (check, test, fmt, package, msi, sync-exe)
+└── tests/
+    ├── vectors/       Static-derived JSON protocol test vectors
+    └── hardware/      Hardware verification checklist and test plan (PLAN.md)
 ```
 
 For complete architectural details, see [docs/architecture.md](docs/architecture.md).
