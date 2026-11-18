@@ -116,12 +116,30 @@ fn main() -> eframe::Result<()> {
         });
     });
 
+    let initial_width = 1120.0_f32;
+    let initial_height = 780.0_f32;
+
+    #[allow(unused_mut)]
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size([initial_width, initial_height])
+        .with_min_inner_size([680.0, 520.0])
+        .with_title("Pyxillum - Pixel LED Studio")
+        .with_icon(generate_window_icon());
+
+    #[cfg(windows)]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
+        let screen_width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+        let screen_height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+        if screen_width > 0 && screen_height > 0 {
+            let pos_x = ((screen_width as f32 - initial_width) / 2.0).max(0.0);
+            let pos_y = ((screen_height as f32 - initial_height) / 2.0).max(0.0);
+            viewport = viewport.with_position([pos_x, pos_y]);
+        }
+    }
+
     let native_options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1120.0, 780.0])
-            .with_min_inner_size([680.0, 520.0])
-            .with_title("Pyxillum - Pixel LED Studio")
-            .with_icon(generate_window_icon()),
+        viewport,
         ..Default::default()
     };
 

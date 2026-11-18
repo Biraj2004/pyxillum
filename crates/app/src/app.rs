@@ -642,12 +642,14 @@ impl eframe::App for PyxillumApp {
             match evt {
                 GuiEvent::ScanStarted => {
                     self.state.is_scanning = true;
+                    self.state.last_ble_diagnostic = None;
                     self.state.status_message =
                         "Scanning for nearby Bluetooth Low Energy controllers (2.5s)..."
                             .to_string();
                 }
                 GuiEvent::ScanFinished(devices) => {
                     self.state.is_scanning = false;
+                    self.state.last_ble_diagnostic = None;
                     self.saved_devices.clear();
                     for dev in devices {
                         let model = if let Some(n) = &dev.name {
@@ -690,6 +692,7 @@ impl eframe::App for PyxillumApp {
                 }
                 GuiEvent::Connected { address, name } => {
                     self.state.is_connected = true;
+                    self.state.last_ble_diagnostic = None;
                     self.state.active_device_id = address.clone();
                     self.state.current_screen = AppScreen::Dashboard(address.clone());
                     self.state.status_message = format!("Connected to {} ({})", name, address);
@@ -738,7 +741,9 @@ impl eframe::App for PyxillumApp {
                 }
                 GuiEvent::Error(err) => {
                     self.state.is_scanning = false;
-                    self.state.status_message = format!("Bluetooth: {}", err);
+                    let diag = pyxillum_transport::BleDiagnostic::from_error_str(&err);
+                    self.state.status_message = diag.description();
+                    self.state.last_ble_diagnostic = Some(diag);
                 }
             }
         }
@@ -825,12 +830,12 @@ impl eframe::App for PyxillumApp {
                 ui.add_space(10.0);
 
                 // Centered LED Strip Monitor
-                let strip_max_w = 840.0_f32.min(ui.available_width());
+                let strip_max_w = 760.0_f32.min(ui.available_width());
                 let strip_pad = ((ui.available_width() - strip_max_w) / 2.0).max(0.0);
                 ui.horizontal(|ui| {
                     ui.add_space(strip_pad);
                     ui.vertical(|ui| {
-                        ui.set_max_width(strip_max_w);
+                        ui.set_width(strip_max_w);
                         render_neon_strip(ui, &self.state.strip_pixels, self.state.ui_power);
                     });
                 });
@@ -854,6 +859,18 @@ impl eframe::App for PyxillumApp {
                                     }
                                     DeviceHubAction::Disconnect => {
                                         self.send(GuiCommand::Disconnect);
+                                    }
+                                    DeviceHubAction::OpenSystemTarget(target) => {
+                                        #[cfg(windows)]
+                                        {
+                                            let _ = std::process::Command::new("cmd")
+                                                .args(["/C", "start", "", &target])
+                                                .spawn();
+                                        }
+                                        #[cfg(not(windows))]
+                                        {
+                                            let _ = target;
+                                        }
                                     }
                                 }
                             }

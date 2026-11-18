@@ -18,14 +18,13 @@ pub fn render_music_mode(
 ) -> bool {
     let mut state_changed = false;
 
-    // Constrain width to 680px centered for balanced desktop proportion
-    let max_w = 680.0_f32.min(ui.available_width());
+    let max_w = 760.0_f32.min(ui.available_width());
     let pad = ((ui.available_width() - max_w) / 2.0).max(0.0);
 
     ui.horizontal(|ui| {
         ui.add_space(pad);
         ui.vertical(|ui| {
-            ui.set_max_width(max_w);
+            ui.set_width(max_w);
 
             // 1. Music Dial Hero Card
             render_card(ui, 8.0, |ui| {

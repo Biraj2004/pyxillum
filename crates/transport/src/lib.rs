@@ -47,6 +47,121 @@ pub enum TransportError {
     Bluetooth(String),
 }
 
+/// High-level diagnostic classification for Bluetooth Low Energy failures.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BleDiagnostic {
+    /// Bluetooth radio is disabled or turned off in system settings.
+    RadioTurnedOff,
+    /// No physical Bluetooth Low Energy hardware adapter detected.
+    AdapterNotFound,
+    /// Operating system denied permission to access Bluetooth.
+    PermissionDenied,
+    /// Bluetooth hardware driver error or communication fault.
+    DriverError(String),
+    /// Device connection or handshake timed out.
+    ConnectionTimeout,
+    /// Target device is busy or unbonded.
+    DeviceBusy,
+    /// Generic or unclassified transport error.
+    Other(String),
+}
+
+impl BleDiagnostic {
+    /// Classifies an arbitrary raw error string or HRESULT into a structured diagnostic.
+    pub fn from_error_str(err: &str) -> Self {
+        let lower = err.to_lowercase();
+        if lower.contains("0x800710df")
+            || lower.contains("not ready for use")
+            || lower.contains("radio off")
+            || lower.contains("turned off")
+            || lower.contains("disabled")
+        {
+            BleDiagnostic::RadioTurnedOff
+        } else if lower.contains("0x80070490")
+            || lower.contains("not found")
+            || lower.contains("no bluetooth")
+            || lower.contains("element not found")
+            || lower.contains("adapter detected")
+        {
+            BleDiagnostic::AdapterNotFound
+        } else if lower.contains("0x80070005")
+            || lower.contains("access is denied")
+            || lower.contains("access denied")
+            || lower.contains("unauthorized")
+            || lower.contains("permission")
+        {
+            BleDiagnostic::PermissionDenied
+        } else if lower.contains("0x8007001f")
+            || lower.contains("driver")
+            || lower.contains("not functioning")
+            || lower.contains("0x80004005")
+        {
+            BleDiagnostic::DriverError(err.to_string())
+        } else if lower.contains("timeout") || lower.contains("timed out") {
+            BleDiagnostic::ConnectionTimeout
+        } else if lower.contains("busy") || lower.contains("already connected") {
+            BleDiagnostic::DeviceBusy
+        } else {
+            BleDiagnostic::Other(err.to_string())
+        }
+    }
+
+    /// User-friendly, concise error title.
+    pub fn title(&self) -> &'static str {
+        match self {
+            Self::RadioTurnedOff => "Bluetooth is Turned Off",
+            Self::AdapterNotFound => "No Bluetooth Adapter Found",
+            Self::PermissionDenied => "Bluetooth Permission Denied",
+            Self::DriverError(_) => "Bluetooth Driver Error",
+            Self::ConnectionTimeout => "Connection Timed Out",
+            Self::DeviceBusy => "Device Busy or Paired",
+            Self::Other(_) => "Bluetooth Communication Error",
+        }
+    }
+
+    /// Explanatory guidance and troubleshooting steps for the user.
+    pub fn description(&self) -> String {
+        match self {
+            Self::RadioTurnedOff => "Your PC's Bluetooth radio is switched off. Enable Bluetooth in Windows Settings or Action Center to discover and control LED controllers.".to_string(),
+            Self::AdapterNotFound => "Pyxillum could not detect a Bluetooth Low Energy adapter on this PC. Ensure a BLE 4.0+ adapter or USB dongle is connected and enabled.".to_string(),
+            Self::PermissionDenied => "Windows has restricted Bluetooth access for this application. Please verify Bluetooth app permissions in Windows Settings.".to_string(),
+            Self::DriverError(_) => "The Bluetooth controller driver encountered a hardware fault. Restarting Bluetooth or updating the driver in Device Manager may resolve this.".to_string(),
+            Self::ConnectionTimeout => "The controller did not respond within the connection window. Ensure the device is powered on, within range, and unbonded from mobile devices.".to_string(),
+            Self::DeviceBusy => "SP621E controllers support only one active BLE connection at a time. Ensure companion mobile apps are closed and disconnected.".to_string(),
+            Self::Other(raw) => format!("Bluetooth transport error: {}", raw),
+        }
+    }
+
+    /// Primary system action button (label, URI/command) if actionable on Windows.
+    pub fn action(&self) -> Option<(&'static str, &'static str)> {
+        match self {
+            Self::RadioTurnedOff => Some(("Open Bluetooth Settings", "ms-settings:bluetooth")),
+            Self::AdapterNotFound => Some(("Open Device Manager", "devmgmt.msc")),
+            Self::PermissionDenied => Some(("Open Privacy Settings", "ms-settings:privacy-radios")),
+            Self::DriverError(_) => Some(("Open Device Manager", "devmgmt.msc")),
+            _ => None,
+        }
+    }
+}
+
+impl TransportError {
+    /// Returns the high-level diagnostic classification for this error.
+    pub fn diagnostic(&self) -> BleDiagnostic {
+        match self {
+            TransportError::Bluetooth(msg) => BleDiagnostic::from_error_str(msg),
+            TransportError::ConnectionFailed(msg) => BleDiagnostic::from_error_str(msg),
+            TransportError::DeviceNotFound(_) => BleDiagnostic::ConnectionTimeout,
+            TransportError::NotConnected => {
+                BleDiagnostic::Other("Transport is not connected".to_string())
+            }
+            TransportError::WriteFailed(msg) => BleDiagnostic::from_error_str(msg),
+            TransportError::Simulation(e) => {
+                BleDiagnostic::Other(format!("Simulation error: {}", e))
+            }
+        }
+    }
+}
+
 /// Metadata describing a discovered BLE device.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DiscoveredDevice {
@@ -503,5 +618,41 @@ mod tests {
 
         transport.disconnect().await.unwrap();
         assert!(!transport.is_connected());
+    }
+
+    #[test]
+    fn test_ble_diagnostic_classification() {
+        // Windows radio off error
+        let win_radio_off =
+            "Error { code: HRESULT(0x800710DF), message: \"The device is not ready for use.\" }";
+        let diag = BleDiagnostic::from_error_str(win_radio_off);
+        assert_eq!(diag, BleDiagnostic::RadioTurnedOff);
+        assert_eq!(diag.title(), "Bluetooth is Turned Off");
+        assert!(diag.action().is_some());
+        assert_eq!(diag.action().unwrap().1, "ms-settings:bluetooth");
+
+        // Adapter not found
+        let no_adapter = "No Bluetooth Low Energy adapter detected on host system";
+        let diag = BleDiagnostic::from_error_str(no_adapter);
+        assert_eq!(diag, BleDiagnostic::AdapterNotFound);
+        assert_eq!(diag.title(), "No Bluetooth Adapter Found");
+        assert_eq!(diag.action().unwrap().1, "devmgmt.msc");
+
+        // Permission denied
+        let perm_err = "Error { code: HRESULT(0x80070005), message: \"Access is denied.\" }";
+        let diag = BleDiagnostic::from_error_str(perm_err);
+        assert_eq!(diag, BleDiagnostic::PermissionDenied);
+        assert_eq!(diag.title(), "Bluetooth Permission Denied");
+        assert_eq!(diag.action().unwrap().1, "ms-settings:privacy-radios");
+
+        // Driver error
+        let driver_err = "Error { code: HRESULT(0x8007001F), message: \"A device attached to the system is not functioning.\" }";
+        let diag = BleDiagnostic::from_error_str(driver_err);
+        assert!(matches!(diag, BleDiagnostic::DriverError(_)));
+        assert_eq!(diag.title(), "Bluetooth Driver Error");
+
+        // TransportError integration
+        let te = TransportError::Bluetooth(win_radio_off.to_string());
+        assert_eq!(te.diagnostic(), BleDiagnostic::RadioTurnedOff);
     }
 }

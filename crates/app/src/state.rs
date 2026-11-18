@@ -4,7 +4,7 @@
 //! command routing channels, and interactive control states.
 
 use pyxillum_protocol::{AudioInput, ChipOrder, Command, DeviceStatus, RgbColor};
-use pyxillum_transport::DiscoveredDevice;
+use pyxillum_transport::{BleDiagnostic, DiscoveredDevice};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -365,6 +365,7 @@ pub struct AppState {
     pub is_connected: bool,
     pub is_scanning: bool,
     pub status_message: String,
+    pub last_ble_diagnostic: Option<BleDiagnostic>,
 }
 
 impl Default for AppState {
@@ -441,6 +442,7 @@ impl Default for AppState {
             is_scanning: false,
             status_message: "Ready to scan for nearby Bluetooth Low Energy LED controllers."
                 .to_string(),
+            last_ble_diagnostic: None,
         }
     }
 }

@@ -9,7 +9,7 @@ use pyxillum_protocol::{
     AudioInput, ChipOrder, Command, DeviceStatus, LightMode, ProtocolError, RgbColor,
     StatusAssembler, EFFECT_SOLID,
 };
-use pyxillum_transport::{DiscoveredDevice, Transport, TransportError};
+pub use pyxillum_transport::{BleDiagnostic, DiscoveredDevice, Transport, TransportError};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -40,6 +40,16 @@ pub enum CoreError {
     /// Requested scene preset not found.
     #[error("preset '{0}' not found")]
     PresetNotFound(String),
+}
+
+impl CoreError {
+    /// Returns the diagnostic classification if this is a transport error.
+    pub fn ble_diagnostic(&self) -> Option<BleDiagnostic> {
+        match self {
+            CoreError::Transport(t) => Some(t.diagnostic()),
+            _ => None,
+        }
+    }
 }
 
 /// Snapshot of the controller's active runtime state.
