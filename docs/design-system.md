@@ -231,6 +231,43 @@ Configured directly on the native Win32 `HWND` via `crates/app/src/platform/wind
 - **`connection_status_chip`**: Connection status indicator with smoothly pulsing state dot (`Not connected`, `Scanning...`, `Connecting...`, `Connected`).
 - **`empty_state`**: Clean zero-data illustration with hero icon circle, single message, and exactly ONE primary action button.
 
+---
+
+## 10. Layout, Breakpoints & Responsive Geometry
+
+### 10.1 Responsive Breakpoints
+To accommodate different display form factors from laptops to ultrawide monitors, Pyxillum implements 3 responsive breakpoints:
+
+| Breakpoint Tier | Window Width Range | Sidebar Layout | Content Area Behavior |
+| :--- | :--- | :--- | :--- |
+| **Compact** | $< 1100\text{px}$ | $56\text{px}$ collapsed icon rail with hover tooltips | Multi-column screens stack into a clean single vertical stage |
+| **Regular** | $1100\text{px} - 1500\text{px}$ | $240\text{px}$ full sidebar with labels & status badges | Dual-column layout for studio modes (Controls + Split Preset Drawer) |
+| **Wide** | $> 1500\text{px}$ | $240\text{px}$ full sidebar | Content stage capped at $1280\text{px}$ max-width, left-aligned, preventing overstretched controls on 4K/ultrawide displays |
+
+### 10.2 Pinned Adaptive Virtual Pixel Hardware Monitor
+The virtual pixel LED strip is persistently pinned directly beneath the top header across every studio screen, maintaining uninterrupted visual feedback during parameter adjustments:
+- **Length Adaptability ($30 - 255$ Nodes)**: Directly synchronised with the controller's addressable pixel register (`state.ui_length`). Eliminates legacy hardcoded 60-node clamps.
+- **Dynamic Node Radius Scaling**: The diode radius scales automatically to guarantee $0\text{px}$ horizontal overflow:
+  $$\text{step} = \frac{\text{usable\_width}}{\text{node\_count}}, \quad \text{radius} = \text{clamp}\left(1.2\text{px}, \, \text{step} \times 0.38, \, 5.0\text{px}\right)$$
+  When $\text{node\_count} > 100$, diodes scale down smoothly to preserve strip visibility without horizontal scrolling.
+- **Multi-layer Concentric Glow Optics**: Replaces harsh specular dots and resource-heavy blur shaders with non-straining physical glow rings:
+  - Outer Glow: $\text{radius} \times 2.2$ at $\alpha \approx 8\%$
+  - Inner Bloom: $\text{radius} \times 1.5$ at $\alpha \approx 16\%$
+  - Core Diode: $\text{radius}$ with physical RGB diode colour
+- **Off-State Representation**: Unlit or disabled pixels render as subtle dark circles at $\approx 8\%$ alpha (`Color32::from_white_alpha(20)`), accurately simulating physical unlit LED lenses.
+- **Enclosure Alignment**: Enclosure width matches the exact available width of stage cards below it, resolving card length asymmetries.
+
+### 10.3 State Reconciliation & Honest Device Reporting
+Pyxillum strictly enforces state honesty:
+- **No Contradictory State**: The header never displays "SP621E Controller" when disconnected. Disconnected states explicitly state "No Controller Connected (Preview Mode)".
+- **Preview Mode InfoBar**: An inline `InfoBar` appears on studio screens when operating without active hardware, informing the user that adjustments affect the virtual strip only, with a one-click "Scan & Connect" action leading to the Device Hub.
+- **Model Badging**: Physical models remain tagged "implemented, untested on hardware" in accordance with the Honest Capability Rule.
+
+### 10.4 Unified Spacing Grid & Symmetry
+- **Outer Canvas Margins**: Identical across all views: $24\text{px}$ horizontal, $20\text{px}$ vertical.
+- **Card Spacing**: Strictly $16\text{px}$ vertical gap between cards.
+- **Internal Card Padding**: Strictly $20\text{px}$ internal padding on all content cards.
+
 
 
 

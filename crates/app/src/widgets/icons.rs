@@ -4,6 +4,8 @@
 //! action bars, and modal controls. Completely eliminates missing Unicode glyphs and
 //! Windows font tofu boxes (`☐`).
 
+#![allow(dead_code)]
+
 use crate::theme::Theme;
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 use std::f32::consts::PI;

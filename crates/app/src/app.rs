@@ -864,122 +864,151 @@ impl eframe::App for PyxillumApp {
             self.last_stream_instant = now;
         }
 
-        // 1. Persistent Left Navigation Rail (Desktop Sidebar)
+        // 1. Responsive Left Navigation Rail (Desktop Sidebar)
+        let total_window_w = ctx.screen_rect().width();
+        let is_compact = total_window_w < 1100.0;
+        let sidebar_w = if is_compact { 56.0 } else { 240.0 };
+
         egui::SidePanel::left("desktop_sidebar")
             .resizable(false)
-            .default_width(220.0)
+            .exact_width(sidebar_w)
             .frame(
                 egui::Frame::none()
-                    .fill(Theme::SIDEBAR_BG)
-                    .stroke(Stroke::new(1.0_f32, Theme::SIDEBAR_BORDER))
-                    .inner_margin(egui::Margin::symmetric(14.0, 16.0)),
+                    .fill(self.tokens.surfaces.sidebar)
+                    .stroke(Stroke::new(1.0_f32, self.tokens.borders.subtle))
+                    .inner_margin(if is_compact {
+                        egui::Margin::symmetric(4.0, 12.0)
+                    } else {
+                        egui::Margin::symmetric(14.0, 16.0)
+                    }),
             )
             .show(ctx, |ui| {
-                render_sidebar(ui, &mut self.state);
+                render_sidebar(ui, &mut self.state, is_compact);
             });
 
-        // 2. Central Workspace Canvas
+        // 2. Central Workspace Canvas with Wide (>1500px) Max-Width Container
         egui::CentralPanel::default()
             .frame(
                 egui::Frame::none()
-                    .fill(Theme::CANVAS_BG)
-                    .inner_margin(egui::Margin::symmetric(20.0, 14.0)),
+                    .fill(self.tokens.surfaces.canvas)
+                    .inner_margin(egui::Margin::symmetric(24.0, 20.0)),
             )
             .show(ctx, |ui| {
-                // Top Header Action Bar
-                self.render_top_header(ui);
+                let avail_w = ui.available_width();
+                let max_content_w = 1280.0_f32;
+                let target_w = avail_w.min(max_content_w);
 
-                ui.add_space(10.0);
+                ui.allocate_ui_with_layout(
+                    Vec2::new(target_w, ui.available_height()),
+                    egui::Layout::top_down(egui::Align::LEFT),
+                    |ui| {
+                        // Top Header Action Bar
+                        self.render_top_header(ui);
 
-                // Centered LED Strip Monitor
-                let strip_max_w = (ui.available_width() * 0.78)
-                    .clamp(760.0, 940.0)
-                    .min(ui.available_width());
-                let strip_pad = ((ui.available_width() - strip_max_w) / 2.0).max(0.0);
-                ui.horizontal(|ui| {
-                    ui.add_space(strip_pad);
-                    ui.vertical(|ui| {
-                        ui.set_width(strip_max_w);
+                        ui.add_space(12.0);
+
+                        // Disconnected / Preview Mode Warning InfoBar
+                        if !self.state.is_connected
+                            && !matches!(self.state.current_screen, AppScreen::DeviceHub)
+                        {
+                            let (action_clicked, _) =
+                                crate::ui::components::infobar::InfoBar::info(
+                                    "Preview Mode Active",
+                                    "Changes affect the virtual strip only. Connect a physical controller to stream live lighting commands.",
+                                )
+                                .action("Scan & Connect")
+                                .show(ui);
+
+                            if action_clicked {
+                                self.state.current_screen = AppScreen::DeviceHub;
+                            }
+                            ui.add_space(12.0);
+                        }
+
+                        // Pinned Adaptive Virtual Pixel Hardware Monitor (Always visible across all screens)
                         render_neon_strip(ui, &self.state.strip_pixels, self.state.ui_power);
-                    });
-                });
 
-                ui.add_space(12.0);
+                        ui.add_space(16.0);
 
-                // Main Stage inside ScrollArea
-                egui::ScrollArea::vertical()
-                    .auto_shrink([false, false])
-                    .show(ui, |ui| match &self.state.current_screen {
-                        AppScreen::DeviceHub => {
-                            if let Some(action) =
-                                render_device_hub(ui, &mut self.state, &self.saved_devices)
-                            {
-                                match action {
-                                    DeviceHubAction::Scan => {
-                                        self.send(GuiCommand::Scan);
-                                    }
-                                    DeviceHubAction::Connect(addr) => {
-                                        self.send(GuiCommand::Connect(addr));
-                                    }
-                                    DeviceHubAction::Disconnect => {
-                                        self.send(GuiCommand::Disconnect);
-                                    }
-                                    DeviceHubAction::OpenSystemTarget(target) => {
-                                        #[cfg(windows)]
-                                        {
-                                            let _ = std::process::Command::new("cmd")
-                                                .args(["/C", "start", "", &target])
-                                                .spawn();
-                                        }
-                                        #[cfg(not(windows))]
-                                        {
-                                            let _ = target;
+                        // Main Stage inside ScrollArea
+                        egui::ScrollArea::vertical()
+                            .auto_shrink([false, false])
+                            .show(ui, |ui| match &self.state.current_screen {
+                                AppScreen::DeviceHub => {
+                                    if let Some(action) =
+                                        render_device_hub(ui, &mut self.state, &self.saved_devices)
+                                    {
+                                        match action {
+                                            DeviceHubAction::Scan => {
+                                                self.send(GuiCommand::Scan);
+                                            }
+                                            DeviceHubAction::Connect(addr) => {
+                                                self.send(GuiCommand::Connect(addr));
+                                            }
+                                            DeviceHubAction::Disconnect => {
+                                                self.send(GuiCommand::Disconnect);
+                                            }
+                                            DeviceHubAction::OpenSystemTarget(target) => {
+                                                #[cfg(windows)]
+                                                {
+                                                    let _ = std::process::Command::new("cmd")
+                                                        .args(["/C", "start", "", &target])
+                                                        .spawn();
+                                                }
+                                                #[cfg(not(windows))]
+                                                {
+                                                    let _ = target;
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        }
-                        AppScreen::Dashboard(_) => {
-                            let avail_w = ui.available_width();
-                            let is_wide = avail_w >= 1100.0;
-                            let show_split_drawer = is_wide
-                                && self.state.dashboard_mode == DashboardMode::Dynamic
-                                && self.state.show_effect_drawer;
+                                AppScreen::Dashboard(_) => {
+                                    let content_w = ui.available_width();
+                                    let show_split_drawer = !is_compact
+                                        && content_w >= 850.0
+                                        && self.state.dashboard_mode == DashboardMode::Dynamic
+                                        && self.state.show_effect_drawer;
 
-                            if show_split_drawer {
-                                // Two-Column Desktop Layout: Center Controls + Right Preset Drawer
-                                ui.columns(2, |cols| {
-                                    cols[0].vertical(|ui| {
-                                        self.render_active_screen_content(ui);
-                                    });
+                                    if show_split_drawer {
+                                        // Two-Column Desktop Layout: Center Controls + Right Preset Drawer
+                                        ui.columns(2, |cols| {
+                                            cols[0].vertical(|ui| {
+                                                self.render_active_screen_content(ui);
+                                            });
 
-                                    cols[1].vertical(|ui| {
-                                        render_card(ui, 8.0, |ui| {
-                                            ui.label(
-                                                egui::RichText::new("Preset Styles Catalog (146)")
-                                                    .strong()
-                                                    .size(14.0)
-                                                    .color(Theme::TEXT_PRIMARY),
-                                            );
-                                            ui.add_space(6.0);
-                                            if let Some(code) =
-                                                render_effect_drawer(ui, &mut self.state)
-                                            {
-                                                self.state.ui_effect = code;
-                                                self.last_sent_effect = code;
-                                                self.send(GuiCommand::SendCommand(
-                                                    Command::SetEffect(code),
-                                                ));
-                                            }
+                                            cols[1].vertical(|ui| {
+                                                render_card(ui, 8.0, |ui| {
+                                                    ui.label(
+                                                        egui::RichText::new(
+                                                            "Preset Styles Catalog (146)",
+                                                        )
+                                                        .font(
+                                                            crate::ui::typography::TypeScale::body_strong(),
+                                                        )
+                                                        .color(self.tokens.text.primary),
+                                                    );
+                                                    ui.add_space(6.0);
+                                                    if let Some(code) =
+                                                        render_effect_drawer(ui, &mut self.state)
+                                                    {
+                                                        self.state.ui_effect = code;
+                                                        self.last_sent_effect = code;
+                                                        self.send(GuiCommand::SendCommand(
+                                                            Command::SetEffect(code),
+                                                        ));
+                                                    }
+                                                });
+                                            });
                                         });
-                                    });
-                                });
-                            } else {
-                                // Centered Single Stage
-                                self.render_active_screen_content(ui);
-                            }
-                        }
-                    });
+                                    } else {
+                                        // Centered Single Stage (Stacks vertically in compact mode)
+                                        self.render_active_screen_content(ui);
+                                    }
+                                }
+                            });
+                    },
+                );
             });
 
         // 3. Modals and Drawers
@@ -1045,18 +1074,28 @@ impl eframe::App for PyxillumApp {
 
 impl PyxillumApp {
     fn render_top_header(&mut self, ui: &mut egui::Ui) {
+        let tokens = crate::ui::theme::ThemeTokens::default_dark();
         let (rect, _) =
             ui.allocate_exact_size(Vec2::new(ui.available_width(), 46.0), egui::Sense::hover());
         let p = ui.painter_at(rect);
-        p.rect_filled(rect, Rounding::same(8.0), Theme::HEADER_BG);
+        p.rect_filled(rect, tokens.radius.control_rounding(), tokens.surfaces.card);
         p.rect_stroke(
             rect,
-            Rounding::same(8.0),
-            Stroke::new(1.0_f32, Theme::HEADER_BORDER),
+            tokens.radius.control_rounding(),
+            Stroke::new(1.0_f32, tokens.borders.subtle),
+        );
+
+        // Specular top highlight
+        p.line_segment(
+            [
+                Pos2::new(rect.min.x + 8.0, rect.min.y + 1.0),
+                Pos2::new(rect.max.x - 8.0, rect.min.y + 1.0),
+            ],
+            Stroke::new(1.0_f32, Color32::from_white_alpha(15)),
         );
 
         // Left Section: Breadcrumb & Title
-        let left_w = 320.0;
+        let left_w = 420.0;
         let left_rect = Rect::from_min_size(
             Pos2::new(rect.min.x + 10.0, rect.min.y),
             Vec2::new(left_w, rect.height()),
@@ -1067,75 +1106,80 @@ impl PyxillumApp {
                 |left_ui| {
                     if let AppScreen::Dashboard(_) = &self.state.current_screen {
                         let (bc_rect, bc_resp) = left_ui
-                            .allocate_exact_size(Vec2::new(82.0, 30.0), egui::Sense::click());
+                            .allocate_exact_size(Vec2::new(88.0, 30.0), egui::Sense::click());
                         let bc_resp = bc_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                         let bcp = left_ui.painter_at(bc_rect);
                         let bc_hovered = bc_resp.hovered();
                         let bc_bg = if bc_hovered {
-                            Theme::CARD_HOVER
+                            tokens.surfaces.raised_hover
                         } else {
-                            Theme::WELL_BG
+                            tokens.surfaces.well
                         };
-                        bcp.rect_filled(bc_rect, Rounding::same(6.0), bc_bg);
+                        bcp.rect_filled(bc_rect, tokens.radius.control_rounding(), bc_bg);
                         bcp.rect_stroke(
                             bc_rect,
-                            Rounding::same(6.0),
+                            tokens.radius.control_rounding(),
                             Stroke::new(
                                 1.0_f32,
                                 if bc_hovered {
-                                    Theme::BORDER_HOVER
+                                    tokens.borders.hover
                                 } else {
-                                    Theme::BORDER_LIGHT
+                                    tokens.borders.subtle
                                 },
                             ),
                         );
                         let bc_col = if bc_hovered {
-                            Theme::TEXT_PRIMARY
+                            tokens.text.primary
                         } else {
-                            Theme::TEXT_SECONDARY
+                            tokens.text.secondary
                         };
-                        crate::widgets::paint_chevron_left(
+                        crate::ui::icons::Icon::ChevronLeft.paint(
                             &bcp,
-                            Pos2::new(bc_rect.min.x + 14.0, bc_rect.center().y),
-                            11.0,
+                            Rect::from_center_size(
+                                Pos2::new(bc_rect.min.x + 14.0, bc_rect.center().y),
+                                Vec2::splat(14.0),
+                            ),
                             bc_col,
                         );
                         bcp.text(
-                            Pos2::new(bc_rect.min.x + 24.0, bc_rect.center().y),
+                            Pos2::new(bc_rect.min.x + 26.0, bc_rect.center().y),
                             egui::Align2::LEFT_CENTER,
                             "Devices",
-                            egui::FontId::proportional(12.0),
+                            crate::ui::typography::TypeScale::caption(),
                             bc_col,
                         );
                         if bc_resp.clicked() {
                             self.state.current_screen = AppScreen::DeviceHub;
                         }
 
-                        left_ui.add_space(8.0);
-                        let display_title = if !self.state.active_device_id.is_empty() {
-                            let short_id = if self.state.active_device_id.len() >= 8 {
-                                &self.state.active_device_id[..8]
+                        left_ui.add_space(10.0);
+
+                        // True state reconciliation (never falsely claim connected)
+                        let (display_title, dot_col) =
+                            if self.state.is_connected && !self.state.active_device_id.is_empty() {
+                                let short_id = if self.state.active_device_id.len() >= 8 {
+                                    &self.state.active_device_id[..8]
+                                } else {
+                                    &self.state.active_device_id
+                                };
+                                (
+                                    format!("SP621E ({}) • Connected", short_id),
+                                    tokens.semantic.success,
+                                )
                             } else {
-                                &self.state.active_device_id
+                                (
+                                    "No Controller Connected (Preview Mode)".to_string(),
+                                    tokens.semantic.warning,
+                                )
                             };
-                            format!("SP621E ({})", short_id)
-                        } else {
-                            "SP621E Controller".to_string()
-                        };
 
                         left_ui.label(
                             egui::RichText::new(display_title)
-                                .strong()
-                                .size(13.5)
-                                .color(Theme::TEXT_PRIMARY),
+                                .font(crate::ui::typography::TypeScale::body_strong())
+                                .color(tokens.text.primary),
                         );
 
-                        left_ui.add_space(6.0);
-                        let dot_col = if self.state.is_connected {
-                            Theme::ACCENT_EMERALD
-                        } else {
-                            Theme::TEXT_MUTED
-                        };
+                        left_ui.add_space(4.0);
                         let (d_rect, _) =
                             left_ui.allocate_exact_size(Vec2::splat(8.0), egui::Sense::hover());
                         left_ui
@@ -1144,15 +1188,14 @@ impl PyxillumApp {
                     } else {
                         left_ui.label(
                             egui::RichText::new("Pyxillum Device Studio")
-                                .strong()
-                                .size(14.0)
-                                .color(Theme::TEXT_PRIMARY),
+                                .font(crate::ui::typography::TypeScale::body_strong())
+                                .color(tokens.text.primary),
                         );
-                        left_ui.add_space(6.0);
+                        left_ui.add_space(8.0);
                         left_ui.label(
-                            egui::RichText::new("BLE Peripheral Hub")
-                                .size(11.0)
-                                .color(Theme::TEXT_MUTED),
+                            egui::RichText::new("Bluetooth Low Energy Peripheral Hub")
+                                .font(crate::ui::typography::TypeScale::caption())
+                                .color(tokens.text.tertiary),
                         );
                     }
                 },
@@ -1177,56 +1220,60 @@ impl PyxillumApp {
 
                     right_ui.add_space(8.0);
                     let power_lbl = if self.state.ui_power { "On" } else { "Off" };
-                    right_ui.label(egui::RichText::new(power_lbl).size(11.5).color(
-                        if self.state.ui_power {
-                            Theme::TEXT_PRIMARY
-                        } else {
-                            Theme::TEXT_MUTED
-                        },
-                    ));
+                    right_ui.label(
+                        egui::RichText::new(power_lbl)
+                            .font(crate::ui::typography::TypeScale::caption())
+                            .color(if self.state.ui_power {
+                                tokens.text.primary
+                            } else {
+                                tokens.text.disabled
+                            }),
+                    );
 
                     right_ui.add_space(14.0);
 
                     // Settings Icon Button with Vector Gear
                     let (st_rect, st_resp) =
-                        right_ui.allocate_exact_size(Vec2::new(92.0, 30.0), egui::Sense::click());
+                        right_ui.allocate_exact_size(Vec2::new(94.0, 30.0), egui::Sense::click());
                     let st_resp = st_resp.on_hover_cursor(egui::CursorIcon::PointingHand);
                     let stp = right_ui.painter_at(st_rect);
                     let st_hovered = st_resp.hovered();
                     let st_bg = if st_hovered {
-                        Theme::CARD_HOVER
+                        tokens.surfaces.raised_hover
                     } else {
-                        Theme::WELL_BG
+                        tokens.surfaces.well
                     };
-                    stp.rect_filled(st_rect, Rounding::same(6.0), st_bg);
+                    stp.rect_filled(st_rect, tokens.radius.control_rounding(), st_bg);
                     stp.rect_stroke(
                         st_rect,
-                        Rounding::same(6.0),
+                        tokens.radius.control_rounding(),
                         Stroke::new(
                             1.0_f32,
                             if st_hovered {
-                                Theme::BORDER_HOVER
+                                tokens.borders.hover
                             } else {
-                                Theme::BORDER_LIGHT
+                                tokens.borders.subtle
                             },
                         ),
                     );
                     let st_col = if st_hovered {
-                        Theme::TEXT_PRIMARY
+                        tokens.text.primary
                     } else {
-                        Theme::TEXT_SECONDARY
+                        tokens.text.secondary
                     };
-                    crate::widgets::paint_gear_icon(
+                    crate::ui::icons::Icon::Settings.paint(
                         &stp,
-                        Pos2::new(st_rect.min.x + 14.0, st_rect.center().y),
-                        13.0,
+                        Rect::from_center_size(
+                            Pos2::new(st_rect.min.x + 16.0, st_rect.center().y),
+                            Vec2::splat(15.0),
+                        ),
                         st_col,
                     );
                     stp.text(
-                        Pos2::new(st_rect.min.x + 26.0, st_rect.center().y),
+                        Pos2::new(st_rect.min.x + 28.0, st_rect.center().y),
                         egui::Align2::LEFT_CENTER,
                         "Settings",
-                        egui::FontId::proportional(11.5),
+                        crate::ui::typography::TypeScale::caption(),
                         st_col,
                     );
                     if st_resp.clicked() {
