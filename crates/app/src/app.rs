@@ -49,6 +49,12 @@ pub struct PyxillumApp {
     // Real-time BLE brightness streaming for dynamic custom colour effects
     last_stream_instant: Instant,
     last_streamed_level: u8,
+
+    // Window visibility and session persistence
+    has_shown_window: bool,
+    monitor_id: Option<String>,
+    last_valid_rect: Option<crate::window_geom::Rect>,
+    is_maximized: bool,
 }
 
 impl PyxillumApp {
@@ -58,6 +64,7 @@ impl PyxillumApp {
         event_rx: mpsc::Receiver<GuiEvent>,
         state_reader: Arc<tokio::sync::RwLock<DeviceState>>,
         simulator_ref: Option<Arc<Mutex<DeviceSimulator>>>,
+        monitor_id: Option<String>,
     ) -> Self {
         // Configure authentic Windows 11 Dark Mica visuals
         let mut visuals = egui::Visuals::dark();
@@ -118,6 +125,11 @@ impl PyxillumApp {
 
             last_stream_instant: Instant::now(),
             last_streamed_level: 255,
+
+            has_shown_window: false,
+            monitor_id,
+            last_valid_rect: None,
+            is_maximized: false,
         }
     }
 
@@ -623,6 +635,30 @@ impl PyxillumApp {
 
 impl eframe::App for PyxillumApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Show window on first frame to prevent startup flicker or reposition jump
+        if !self.has_shown_window {
+            self.has_shown_window = true;
+            ctx.send_viewport_cmd(egui::ViewportCommand::Visible(true));
+        }
+
+        // Track valid window size, position, and maximised state for persistent session restoration
+        ctx.input(|i| {
+            let is_max = i.viewport().maximized.unwrap_or(false);
+            self.is_maximized = is_max;
+            if !is_max {
+                if let Some(r) = i.viewport().inner_rect {
+                    if r.width() >= 200.0 && r.height() >= 200.0 {
+                        self.last_valid_rect = Some(crate::window_geom::Rect::new(
+                            r.min.x as f64,
+                            r.min.y as f64,
+                            r.width() as f64,
+                            r.height() as f64,
+                        ));
+                    }
+                }
+            }
+        });
+
         let now = Instant::now();
         let dt = now
             .duration_since(self.last_frame_instant)
@@ -954,6 +990,16 @@ impl eframe::App for PyxillumApp {
 
         // Request 60 FPS continuous animation redraws
         ctx.request_repaint();
+    }
+
+    fn save(&mut self, _storage: &mut dyn eframe::Storage) {
+        if let Some(rect) = self.last_valid_rect {
+            crate::window_geom::save_window_state(&crate::window_geom::SavedState {
+                rect,
+                is_maximized: self.is_maximized,
+                monitor_id: self.monitor_id.clone(),
+            });
+        }
     }
 }
 
@@ -1399,5 +1445,17 @@ impl PyxillumApp {
                     }
                 });
             });
+    }
+}
+
+impl Drop for PyxillumApp {
+    fn drop(&mut self) {
+        if let Some(rect) = self.last_valid_rect {
+            crate::window_geom::save_window_state(&crate::window_geom::SavedState {
+                rect,
+                is_maximized: self.is_maximized,
+                monitor_id: self.monitor_id.clone(),
+            });
+        }
     }
 }

@@ -21,6 +21,7 @@ mod screens;
 mod state;
 mod theme;
 mod widgets;
+mod window_geom;
 mod windows_media;
 
 use app::PyxillumApp;
@@ -116,36 +117,33 @@ fn main() -> eframe::Result<()> {
         });
     });
 
-    #[cfg(windows)]
-    let (initial_width, initial_height, initial_pos) = {
-        use windows::Win32::UI::WindowsAndMessaging::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
-        let screen_width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
-        let screen_height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
-        if screen_width > 0 && screen_height > 0 {
-            // autofit="85%x85%"
-            let w = (screen_width as f32 * 0.85).round();
-            let h = (screen_height as f32 * 0.85).round();
-            // geometry=50%:50% (centered)
-            let pos_x = ((screen_width as f32 - w) / 2.0).max(0.0);
-            let pos_y = ((screen_height as f32 - h) / 2.0).max(0.0);
-            (w, h, Some([pos_x, pos_y]))
-        } else {
-            (1180.0_f32, 800.0_f32, None)
-        }
-    };
+    // 1. Load window configuration (mpv-style autofit and geometry) and previous session state
+    let win_cfg = window_geom::load_or_create_config();
+    let saved_state = window_geom::load_saved_state();
 
-    #[cfg(not(windows))]
-    let (initial_width, initial_height, initial_pos) = (1180.0_f32, 800.0_f32, None);
+    // 2. Detect target display (screen index, or cursor monitor, or primary) and work area (excluding taskbar)
+    let (work_rect, scale, monitor_id) =
+        window_geom::get_target_monitor_work_and_scale(win_cfg.screen);
 
-    #[allow(unused_mut)]
+    // 3. Compute target rect using pure maths module
+    let target_rect = window_geom::compute_rect(work_rect, scale, &win_cfg, saved_state.clone());
+
+    let is_maximized = saved_state
+        .as_ref()
+        .map(|s| s.is_maximized)
+        .unwrap_or(false);
+
+    // 4. Create the window hidden, apply computed geometry, and clamp to OS minimum size (1000x650)
     let mut viewport = egui::ViewportBuilder::default()
-        .with_inner_size([initial_width, initial_height])
-        .with_min_inner_size([760.0, 540.0])
+        .with_visible(false)
+        .with_inner_size([target_rect.width as f32, target_rect.height as f32])
+        .with_position([target_rect.x as f32, target_rect.y as f32])
+        .with_min_inner_size([1000.0, 650.0])
         .with_title("Pyxillum - Pixel LED Studio")
         .with_icon(generate_window_icon());
 
-    if let Some(pos) = initial_pos {
-        viewport = viewport.with_position(pos);
+    if is_maximized {
+        viewport = viewport.with_maximized(true);
     }
 
     let native_options = eframe::NativeOptions {
@@ -156,13 +154,14 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Pyxillum",
         native_options,
-        Box::new(|cc| {
+        Box::new(move |cc| {
             Ok(Box::new(PyxillumApp::new(
                 cc,
                 cmd_tx,
                 event_rx,
                 state_reader,
                 sim_ref,
+                monitor_id,
             )))
         }),
     )
