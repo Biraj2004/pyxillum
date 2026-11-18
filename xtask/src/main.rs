@@ -91,11 +91,14 @@ fn main() -> Result<()> {
             match candle_check {
                 Ok(_) => {
                     println!("Found WiX Toolset (candle.exe). Compiling MSI package...");
+                    let pkg_version = env!("CARGO_PKG_VERSION");
+                    let version_arg = format!("-dVersion={}", pkg_version);
                     let obj = wix_dir.join("pyxillum.wixobj");
                     let status = Command::new("candle.exe")
                         .args([
                             "-arch",
                             "x64",
+                            &version_arg,
                             "pyxillum.wxs",
                             "-out",
                             obj.to_str().unwrap(),
@@ -106,9 +109,8 @@ fn main() -> Result<()> {
                         bail!("candle.exe compilation failed.");
                     }
 
-                    let out_msi = std::env::current_dir()?
-                        .join("dist")
-                        .join("pyxillum-setup-0.1.0.msi");
+                    let msi_name = format!("pyxillum-setup-{}.msi", pkg_version);
+                    let out_msi = std::env::current_dir()?.join("dist").join(&msi_name);
                     let light_status = Command::new("light.exe")
                         .args([
                             "-ext",
@@ -123,7 +125,7 @@ fn main() -> Result<()> {
                     if !light_status.success() {
                         bail!("light.exe linking failed.");
                     }
-                    println!("Successfully built MSI installer: dist/pyxillum-setup-0.1.0.msi");
+                    println!("Successfully built MSI installer: dist/{}", msi_name);
                 }
                 Err(_) => {
                     println!("WiX Toolset (candle.exe / light.exe) was not found on PATH.");

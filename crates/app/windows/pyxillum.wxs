@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?ifndef Version?>
+    <?define Version = "1.0.0" ?>
+  <?endif?>
   <Product
     Id="*"
     Name="Pyxillum"
     Language="1033"
-    Version="0.1.0"
+    Version="$(var.Version)"
     Manufacturer="Pyxillum Contributors"
     UpgradeCode="B58C92DF-472E-4F3D-94B6-9E492B1C6420">
 

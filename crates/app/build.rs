@@ -12,25 +12,38 @@ fn main() {
         return;
     }
 
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
     let out_dir = env::var("OUT_DIR").unwrap();
     let rc_path = Path::new("windows/pyxillum.rc");
     let out_obj = format!("{}/pyxillum_res.o", out_dir);
 
+    let target_format = match target_arch.as_str() {
+        "x86_64" => Some("pe-x86-64"),
+        "x86" => Some("pe-i386"),
+        "aarch64" => Some("pe-aarch64"),
+        _ => None,
+    };
+
     // Attempt compilation via GNU windres (MinGW toolchain)
-    if let Ok(status) = Command::new("windres")
-        .args([
+    let windres_candidates = ["x86_64-w64-mingw32-windres", "windres"];
+    for bin in windres_candidates {
+        let mut cmd = Command::new(bin);
+        cmd.args([
             "-i",
             rc_path.to_str().unwrap(),
             "-o",
             &out_obj,
             "-I",
             "windows",
-        ])
-        .status()
-    {
-        if status.success() {
-            println!("cargo:rustc-link-arg={}", out_obj);
-            return;
+        ]);
+        if let Some(fmt) = target_format {
+            cmd.args(["-F", fmt]);
+        }
+        if let Ok(status) = cmd.status() {
+            if status.success() {
+                println!("cargo:rustc-link-arg={}", out_obj);
+                return;
+            }
         }
     }
 

@@ -2993,7 +2993,7 @@ checksum = "d55d956fa96f5ec02be2e13af0e20391a5aa83d6a074e3ad368959d0fab299ea"
 
 [[package]]
 name = "pyxillum-app"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "directories",
  "eframe",
@@ -3013,7 +3013,7 @@ dependencies = [
 
 [[package]]
 name = "pyxillum-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -3029,7 +3029,7 @@ dependencies = [
 
 [[package]]
 name = "pyxillum-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "directories",
  "pyxillum-protocol",
@@ -3044,7 +3044,7 @@ dependencies = [
 
 [[package]]
 name = "pyxillum-protocol"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "proptest",
  "serde",
@@ -3054,7 +3054,7 @@ dependencies = [
 
 [[package]]
 name = "pyxillum-sim"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "pyxillum-protocol",
  "serde",
@@ -3064,7 +3064,7 @@ dependencies = [
 
 [[package]]
 name = "pyxillum-transport"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "async-trait",
  "btleplug",
@@ -5100,7 +5100,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "clap",

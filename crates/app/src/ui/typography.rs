@@ -7,9 +7,8 @@
 use eframe::egui::{
     self, Color32, FontFamily, FontId, Pos2, Response, Sense, Stroke, TextStyle, Ui, Vec2,
 };
-use std::env;
-use std::fs;
-use std::path::PathBuf;
+#[cfg(windows)]
+use std::{env, fs, path::PathBuf};
 
 /// Standard Fluent typography sizes in logical points.
 pub struct TypeScale;

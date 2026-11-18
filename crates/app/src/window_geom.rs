@@ -11,6 +11,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+#[cfg(windows)]
 use tracing::{info, warn};
 
 /// Pure 2D rectangle in logical pixel coordinates.

@@ -1,0 +1,215 @@
+name: Build macOS Desktop
+
+on:
+  push:
+    branches: [ "release" ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0, or leave blank to auto-increment from latest tag)'
+        required: false
+        default: ''
+      prerelease:
+        description: 'Publish as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-macos:
+    name: Build macOS (.dmg)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+
+      - name: Compute Build Version
+        id: version
+        shell: bash
+        run: |
+          git fetch --tags --force 2>/dev/null || true
+
+          input_version="${{ github.event.inputs.version }}"
+          input_version="$(echo "$input_version" | xargs)"
+          ref="${{ github.ref }}"
+
+          if [ -n "$input_version" ] && [ "$input_version" != "auto" ]; then
+              version="${input_version#v}"
+          elif [[ "$ref" =~ ^refs/tags/v?([0-9]+\.[0-9]+\.[0-9]+.*)$ ]]; then
+              version="${BASH_REMATCH[1]}"
+          else
+              latest_tag=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" | sort -V | tail -n 1)
+              if [ -z "$latest_tag" ]; then
+                  version="1.0.0"
+              else
+                  major=$(echo "$latest_tag" | sed -E 's/^v?([0-9]+)\.([0-9]+)\.([0-9]+).*/\1/')
+                  minor=$(echo "$latest_tag" | sed -E 's/^v?([0-9]+)\.([0-9]+)\.([0-9]+).*/\2/')
+                  patch=$(echo "$latest_tag" | sed -E 's/^v?([0-9]+)\.([0-9]+)\.([0-9]+).*/\3/')
+                  next_patch=$((patch + 1))
+                  version="${major}.${minor}.${next_patch}"
+              fi
+          fi
+
+          tag="v${version}"
+          echo "version=${version}" >> $GITHUB_OUTPUT
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
+          echo "Resolved release version: ${version} (Tag: ${tag})"
+
+      - name: Build macOS Binaries (Apple Silicon & Intel)
+        run: |
+          echo "=== Compiling Apple Silicon (aarch64-apple-darwin) ==="
+          cargo build --release --target aarch64-apple-darwin -p pyxillum-app -p pyxillum-cli
+
+          echo "=== Compiling Intel x64 (x86_64-apple-darwin) ==="
+          cargo build --release --target x86_64-apple-darwin -p pyxillum-app -p pyxillum-cli
+
+      - name: Create Universal Mach-O Binaries
+        run: |
+          mkdir -p target/universal
+          lipo -create -output target/universal/pyxillum-desktop \
+            target/aarch64-apple-darwin/release/pyxillum-desktop \
+            target/x86_64-apple-darwin/release/pyxillum-desktop
+
+          lipo -create -output target/universal/pyxillum \
+            target/aarch64-apple-darwin/release/pyxillum \
+            target/x86_64-apple-darwin/release/pyxillum
+
+          echo "Universal binaries verified:"
+          file target/universal/pyxillum-desktop
+          file target/universal/pyxillum
+
+      - name: Generate Apple ICNS Icon
+        run: |
+          mkdir -p pyxillum.iconset
+          cp assets/icons/icon-16.png pyxillum.iconset/icon_16x16.png
+          cp assets/icons/icon-32.png pyxillum.iconset/icon_16x16@2x.png
+          cp assets/icons/icon-32.png pyxillum.iconset/icon_32x32.png
+          cp assets/icons/icon-64.png pyxillum.iconset/icon_32x32@2x.png
+          cp assets/icons/icon-128.png pyxillum.iconset/icon_128x128.png
+          cp assets/icons/icon-256.png pyxillum.iconset/icon_128x128@2x.png
+          cp assets/icons/icon-256.png pyxillum.iconset/icon_256x256.png
+          cp assets/icons/icon-512.png pyxillum.iconset/icon_256x256@2x.png
+          cp assets/icons/icon-512.png pyxillum.iconset/icon_512x512.png
+
+          iconutil -c icns pyxillum.iconset -o pyxillum.icns
+
+      - name: Package macOS App Bundles and Disk Images (.dmg)
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          mkdir -p staging
+
+          create_app_and_dmg() {
+              local arch_label="$1"
+              local bin_source="$2"
+              local dmg_name="$3"
+
+              local app_dir="build_${arch_label}/Pyxillum.app"
+              mkdir -p "${app_dir}/Contents/MacOS"
+              mkdir -p "${app_dir}/Contents/Resources"
+
+              cp "${bin_source}" "${app_dir}/Contents/MacOS/pyxillum-desktop"
+              chmod +x "${app_dir}/Contents/MacOS/pyxillum-desktop"
+              cp pyxillum.icns "${app_dir}/Contents/Resources/pyxillum.icns"
+
+              cat <<EOF > "${app_dir}/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>pyxillum-desktop</string>
+              <key>CFBundleIdentifier</key>
+              <string>io.github.pyxillum</string>
+              <key>CFBundleName</key>
+              <string>Pyxillum</string>
+              <key>CFBundleDisplayName</key>
+              <string>Pyxillum</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>${version}</string>
+              <key>CFBundleVersion</key>
+              <string>${version}</string>
+              <key>CFBundleIconFile</key>
+              <string>pyxillum.icns</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>10.15</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+              <key>NSBluetoothAlwaysUsageDescription</key>
+              <string>Pyxillum requires Bluetooth Low Energy access to discover and control SP621E/SP6xxE pixel LED controllers.</string>
+          </dict>
+          </plist>
+          EOF
+
+              # Assemble DMG volume directory with Applications symlink
+              local dmg_root="dmg_root_${arch_label}"
+              mkdir -p "${dmg_root}"
+              cp -R "${app_dir}" "${dmg_root}/"
+              ln -s /Applications "${dmg_root}/Applications"
+
+              hdiutil create -volname "Pyxillum" -srcfolder "${dmg_root}" -ov -format UDZO "staging/${dmg_name}"
+          }
+
+          # 1. Universal DMG (Both Apple Silicon & Intel)
+          create_app_and_dmg "universal" "target/universal/pyxillum-desktop" "Pyxillum-macOS-Universal-v${version}.dmg"
+
+          # 2. Apple Silicon DMG (Native aarch64)
+          create_app_and_dmg "aarch64" "target/aarch64-apple-darwin/release/pyxillum-desktop" "Pyxillum-macOS-aarch64-v${version}.dmg"
+
+          # 3. Intel DMG (Native x86_64)
+          create_app_and_dmg "x86_64" "target/x86_64-apple-darwin/release/pyxillum-desktop" "Pyxillum-macOS-x64-v${version}.dmg"
+
+          # 4. Universal CLI Tarball
+          cli_stage="cli_staging"
+          mkdir -p "${cli_stage}"
+          cp target/universal/pyxillum "${cli_stage}/pyxillum"
+          chmod +x "${cli_stage}/pyxillum"
+          cp README.md "${cli_stage}/"
+          cp LICENSE "${cli_stage}/"
+          tar -czvf "staging/pyxillum-cli-macOS-Universal-v${version}.tar.gz" -C "${cli_stage}" .
+
+          # 5. Compute SHA-256 Checksums
+          cd staging
+          shasum -a 256 * > macos-checksums-sha256.txt
+          cd ..
+
+          ls -lh staging/
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Pyxillum v${{ steps.version.outputs.version }}"
+          draft: false
+          prerelease: ${{ fromJson(github.event.inputs.prerelease || 'false') }}
+          generate_release_notes: true
+          files: staging/*

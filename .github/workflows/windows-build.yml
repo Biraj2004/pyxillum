@@ -1,0 +1,162 @@
+name: Build Windows Desktop
+
+on:
+  push:
+    branches: [ "release" ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0, or leave blank to auto-increment from latest tag)'
+        required: false
+        default: ''
+      prerelease:
+        description: 'Publish as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    name: Build Windows (.exe, .msi)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-release-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-release-
+
+      - name: Compute Build Version
+        id: version
+        shell: pwsh
+        run: |
+          git fetch --tags --force 2>$null
+
+          $inputVersion = "${{ github.event.inputs.version }}".Trim()
+          if ($inputVersion -and $inputVersion -ne "auto") {
+              $version = $inputVersion.TrimStart('v')
+          } elseif ("${{ github.ref }}" -match '^refs/tags/v?(\d+\.\d+\.\d+.*)$') {
+              $version = $matches[1]
+          } else {
+              $tags = git tag -l "v[0-9]*.[0-9]*.[0-9]*"
+              if (-not $tags) {
+                  $version = "1.0.0"
+              } else {
+                  $sorted = $tags | ForEach-Object {
+                      if ($_ -match '^v?(\d+)\.(\d+)\.(\d+)$') {
+                          [PSCustomObject]@{
+                              Major = [int]$matches[1]
+                              Minor = [int]$matches[2]
+                              Patch = [int]$matches[3]
+                              Original = $_
+                          }
+                      }
+                  } | Sort-Object Major, Minor, Patch
+                  if ($sorted) {
+                      $latest = $sorted[-1]
+                      $nextPatch = $latest.Patch + 1
+                      $version = "$($latest.Major).$($latest.Minor).$nextPatch"
+                  } else {
+                      $version = "1.0.0"
+                  }
+              }
+          }
+
+          $tag = "v$version"
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Host "Resolved release version: $version (Tag: $tag)"
+
+      - name: Configure WiX Toolset Path
+        shell: pwsh
+        run: |
+          $wixCandidate = "C:\Program Files (x86)\WiX Toolset v3.11\bin"
+          if (Test-Path $wixCandidate) {
+              Write-Host "Found WiX Toolset at $wixCandidate; adding to GITHUB_PATH"
+              "$wixCandidate" >> $env:GITHUB_PATH
+          } else {
+              Write-Host "WiX directory not found at standard path, attempting winget install"
+              winget install --id WiX.Toolset --accept-source-agreements --accept-package-agreements --silent 2>$null
+          }
+
+      - name: Build Release Binaries
+        run: cargo build --release -p pyxillum-app -p pyxillum-cli
+
+      - name: Build WiX MSI Installer
+        run: cargo xtask msi
+
+      - name: Stage Release Artifacts
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $staging = "staging"
+          New-Item -ItemType Directory -Force -Path $staging | Out-Null
+
+          # 1. Standalone Desktop GUI executable
+          Copy-Item "target/release/pyxillum-desktop.exe" -Destination "$staging/Pyxillum-Desktop-Windows-x64-v$version.exe" -Force
+
+          # 2. Standalone CLI utility
+          Copy-Item "target/release/pyxillum.exe" -Destination "$staging/pyxillum-cli-Windows-x64-v$version.exe" -Force
+
+          # 3. MSI installer
+          $msiSource = "dist/pyxillum-setup-$version.msi"
+          if (-not (Test-Path $msiSource)) {
+              $msiSource = Get-ChildItem "dist/*.msi" | Select-Object -First 1 -ExpandProperty FullName
+          }
+          if ($msiSource -and (Test-Path $msiSource)) {
+              Copy-Item $msiSource -Destination "$staging/Pyxillum-Windows-x64-v$version.msi" -Force
+          }
+
+          # 4. Portable zip bundle
+          $zipDir = "dist/portable_bundle"
+          New-Item -ItemType Directory -Force -Path $zipDir | Out-Null
+          Copy-Item "target/release/pyxillum-desktop.exe" -Destination "$zipDir/" -Force
+          Copy-Item "target/release/pyxillum.exe" -Destination "$zipDir/" -Force
+          Copy-Item "README.md" -Destination "$zipDir/" -Force
+          Copy-Item "LICENSE" -Destination "$zipDir/" -Force
+          Compress-Archive -Path "$zipDir/*" -DestinationPath "$staging/Pyxillum-Windows-x64-v$version.zip" -Force
+
+          # 5. Compute SHA-256 Checksums
+          Get-FileHash -Algorithm SHA256 (Get-ChildItem -Path "$staging/*" -File) |
+              ForEach-Object { "$($_.Hash.ToLower())  $($_.Path | Split-Path -Leaf)" } |
+              Set-Content -Path "$staging/windows-checksums-sha256.txt"
+
+          # 6. Synchronise to win-exe staging per AGENTS.md rule
+          cargo xtask sync-exe
+
+          Get-ChildItem -Path $staging
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Pyxillum v${{ steps.version.outputs.version }}"
+          draft: false
+          prerelease: ${{ fromJson(github.event.inputs.prerelease || 'false') }}
+          generate_release_notes: true
+          files: staging/*
