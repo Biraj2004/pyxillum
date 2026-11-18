@@ -2,13 +2,20 @@
 //!
 //! Synchronizes strip lighting to music via Windows Media Session integration
 //! (GSMTC) and WASAPI audio loopback FFT analysis.
+//! Features large ArcDial, segmented audio input selector, peak-hold equalizer visualizer,
+//! full-width sliders, and clean selection list of all 18 music modes.
 
-use crate::catalog::get_music_mode_name;
+use crate::catalog::{get_music_mode_name, MUSIC_MODES};
 use crate::state::AppState;
-use crate::theme::{render_card, render_source_pill, Theme};
-use crate::widgets::ArcDial;
+use crate::ui::components::card::Card;
+use crate::ui::components::dial::ArcDial;
+use crate::ui::components::segmented::{segmented_control, SegmentItem};
+use crate::ui::components::slider::fluent_slider;
+use crate::ui::icons::Icon;
+use crate::ui::theme::ThemeTokens;
+use crate::ui::typography::TypeScale;
 use crate::windows_media::NowPlayingInfo;
-use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
+use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Sense, Stroke, Vec2};
 use pyxillum_protocol::AudioInput;
 
 pub fn render_music_mode(
@@ -16,170 +23,273 @@ pub fn render_music_mode(
     state: &mut AppState,
     now_playing: &NowPlayingInfo,
 ) -> bool {
+    let tokens = ThemeTokens::default_dark();
     let mut state_changed = false;
 
-    let max_w = (ui.available_width() * 0.78)
-        .clamp(760.0, 940.0)
-        .min(ui.available_width());
-    let pad = ((ui.available_width() - max_w) / 2.0).max(0.0);
+    ui.vertical(|ui| {
+        // 1. Music Reactive Dial Hero Card
+        Card::base().show(ui, |ui| {
+            ui.vertical_centered(|ui| {
+                let mode_name = get_music_mode_name(state.music_mode_index);
+                let mode_desc = MUSIC_MODES
+                    .iter()
+                    .find(|m| m.index == state.music_mode_index)
+                    .map(|m| m.description)
+                    .unwrap_or("Acoustic rhythm tracking algorithm");
 
-    ui.horizontal(|ui| {
-        ui.add_space(pad);
-        ui.vertical(|ui| {
-            ui.set_width(max_w);
+                let mut mode_val = state.music_mode_index;
+                let dial = ArcDial::new(&mut mode_val, 1, 18, mode_name, mode_desc);
+                if dial.show(ui).changed() {
+                    state.music_mode_index = mode_val;
+                    state_changed = true;
+                }
 
-            // 1. Music Dial Hero Card
-            render_card(ui, 8.0, |ui| {
-                ui.vertical_centered(|ui| {
-                    let mode_name = get_music_mode_name(state.music_mode_index);
-                    let mut dial = ArcDial::new(state.music_mode_index as u32, 18, mode_name);
-                    if let Some(delta) = dial.show(ui) {
-                        let next_val = (state.music_mode_index as i32 + delta).clamp(1, 18) as u8;
-                        if next_val != state.music_mode_index {
-                            state.music_mode_index = next_val;
-                            state_changed = true;
-                        }
-                    }
+                ui.add_space(14.0);
 
-                    ui.add_space(10.0);
+                // Audio Input Selector via Segmented Control (PC Media / Device Mic / Host Mic)
+                let audio_items = [
+                    SegmentItem::with_icon("PC Media (WASAPI)", Icon::Speaker),
+                    SegmentItem::with_icon("Device Internal Mic", Icon::Mic),
+                    SegmentItem::with_icon("Host Microphone", Icon::Mic),
+                ];
 
-                    // Audio Source Selector Pills
-                    ui.horizontal(|ui| {
-                        let bar_w = ui.available_width();
-                        ui.add_space(((bar_w - 300.0) / 2.0).max(0.0));
+                let curr_audio_idx = match state.ui_audio_input {
+                    AudioInput::Player => 0,
+                    AudioInput::InternalMic => 1,
+                    AudioInput::ExternalMic => 2,
+                };
 
-                        let is_stream = state.ui_audio_input == AudioInput::Player;
-                        if render_source_pill(ui, "PC Media", is_stream).clicked() {
-                            state.ui_audio_input = AudioInput::Player;
-                            state_changed = true;
-                        }
-                        ui.add_space(8.0);
+                let (new_audio_idx, resp) = segmented_control(
+                    ui,
+                    "music_audio_input_segmented",
+                    &audio_items,
+                    curr_audio_idx,
+                );
 
-                        let is_int_mic = state.ui_audio_input == AudioInput::InternalMic;
-                        if render_source_pill(ui, "Device Mic", is_int_mic).clicked() {
-                            state.ui_audio_input = AudioInput::InternalMic;
-                            state_changed = true;
-                        }
-                        ui.add_space(8.0);
-
-                        let is_ext_mic = state.ui_audio_input == AudioInput::ExternalMic;
-                        if render_source_pill(ui, "Host Mic", is_ext_mic).clicked() {
-                            state.ui_audio_input = AudioInput::ExternalMic;
-                            state_changed = true;
-                        }
-                    });
-                });
+                if resp.clicked() && new_audio_idx != curr_audio_idx {
+                    state.ui_audio_input = match new_audio_idx {
+                        0 => AudioInput::Player,
+                        1 => AudioInput::InternalMic,
+                        _ => AudioInput::ExternalMic,
+                    };
+                    state_changed = true;
+                }
             });
+        });
 
-            ui.add_space(12.0);
+        ui.add_space(16.0);
 
-            // 2. Windows Media Transport Banner (GSMTC)
-            let (banner_rect, _) =
-                ui.allocate_exact_size(Vec2::new(max_w, 44.0), egui::Sense::hover());
-            let bp = ui.painter_at(banner_rect);
+        // 2. Windows Media Transport Banner (GSMTC)
+        Card::base().show(ui, |ui| {
+            ui.horizontal(|ui| {
+                let (icon_rect, _) =
+                    ui.allocate_exact_size(Vec2::splat(28.0), egui::Sense::hover());
+                Icon::Speaker.paint(ui.painter(), icon_rect, tokens.accent.text_light);
 
-            bp.rect_filled(banner_rect, Rounding::same(8.0), Theme::CARD_BG);
-            bp.rect_stroke(
-                banner_rect,
-                Rounding::same(8.0),
-                Stroke::new(1.0_f32, Theme::BORDER_LIGHT),
-            );
-
-            let icon_rect = Rect::from_min_size(
-                Pos2::new(banner_rect.min.x + 12.0, banner_rect.center().y - 10.0),
-                Vec2::splat(20.0),
-            );
-            bp.rect_filled(icon_rect, Rounding::same(4.0), Theme::ACCENT_BLUE);
-            crate::widgets::paint_equalizer_icon(&bp, icon_rect.center(), 14.0, Color32::WHITE);
-
-            let track_text = if !now_playing.title.is_empty() {
-                format!(
-                    "Now Playing: {} - {}",
-                    now_playing.title, now_playing.artist
-                )
-            } else {
-                "Windows Audio: Monitoring active system audio playback".to_string()
-            };
-
-            bp.text(
-                Pos2::new(banner_rect.min.x + 40.0, banner_rect.center().y),
-                egui::Align2::LEFT_CENTER,
-                track_text,
-                egui::FontId::proportional(12.0),
-                Theme::TEXT_PRIMARY,
-            );
-
-            ui.add_space(12.0);
-
-            // 3. Graphic Equalizer Visualizer Card
-            render_card(ui, 8.0, |ui| {
+                ui.add_space(8.0);
                 ui.vertical(|ui| {
+                    let track_title = if !now_playing.title.is_empty() {
+                        format!("{} • {}", now_playing.title, now_playing.artist)
+                    } else {
+                        "Windows Audio Playback".to_string()
+                    };
+
+                    let track_sub = if !now_playing.app_name.is_empty() {
+                        format!("Playing from {}", now_playing.app_name)
+                    } else {
+                        "Monitoring active system audio playback session".to_string()
+                    };
+
                     ui.label(
-                        egui::RichText::new("Acoustic Spectrum")
-                            .size(12.0)
-                            .color(Theme::TEXT_SECONDARY),
+                        egui::RichText::new(track_title)
+                            .font(TypeScale::body_strong())
+                            .color(tokens.text.primary),
                     );
-                    ui.add_space(6.0);
-                    render_equalizer_bars(ui, state);
+                    ui.label(
+                        egui::RichText::new(track_sub)
+                            .font(TypeScale::caption())
+                            .color(tokens.text.tertiary),
+                    );
                 });
             });
+        });
 
-            ui.add_space(12.0);
+        ui.add_space(16.0);
 
-            // 4. Sensitivity & Brightness Sliders
-            ui.columns(2, |cols| {
-                // Sensitivity Card
-                render_card(&mut cols[0], 8.0, |ui| {
-                    ui.horizontal(|ui| {
+        // 3. Graphic Equalizer Visualizer with Peak Hold
+        Card::base().show(ui, |ui| {
+            ui.vertical(|ui| {
+                ui.label(
+                    egui::RichText::new("Acoustic Spectrum & Peak Visualizer")
+                        .font(TypeScale::body_strong())
+                        .color(tokens.text.primary),
+                );
+                ui.add_space(8.0);
+                render_peak_equalizer_bars(ui, state, &tokens);
+            });
+        });
+
+        ui.add_space(16.0);
+
+        // 4. Sensitivity & Brightness Dual Metric Sliders
+        ui.columns(2, |cols| {
+            // Sensitivity Card
+            Card::base().show(&mut cols[0], |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new("Acoustic Sensitivity")
+                            .font(TypeScale::body())
+                            .color(tokens.text.secondary),
+                    );
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.label(
-                            egui::RichText::new("Acoustic Sensitivity")
-                                .size(12.0)
-                                .color(Theme::TEXT_SECONDARY),
+                            egui::RichText::new(format!("Level {} / 16", state.ui_sensitivity))
+                                .font(TypeScale::body_strong())
+                                .color(tokens.accent.text_light),
                         );
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            ui.label(
-                                egui::RichText::new(format!("Level {} / 16", state.ui_sensitivity))
-                                    .strong()
-                                    .size(15.0)
-                                    .color(Theme::ACCENT_BLUE),
-                            );
-                        });
                     });
-                    ui.add_space(8.0);
-                    if ui
-                        .add(egui::Slider::new(&mut state.ui_sensitivity, 1..=16).show_value(false))
-                        .changed()
-                    {
+                });
+                ui.add_space(8.0);
+                if fluent_slider(ui, "", &mut state.ui_sensitivity, 1, 16, "Level").changed() {
+                    state_changed = true;
+                }
+            });
+
+            // Brightness Card
+            Card::base().show(&mut cols[1], |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new("Master Brightness")
+                            .font(TypeScale::body())
+                            .color(tokens.text.secondary),
+                    );
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
+                        ui.label(
+                            egui::RichText::new(format!("{}%", pct))
+                                .font(TypeScale::body_strong())
+                                .color(tokens.text.primary),
+                        );
+                    });
+                });
+                ui.add_space(8.0);
+                if fluent_slider(ui, "", &mut state.ui_brightness, 0, 255, "%").changed() {
+                    state_changed = true;
+                }
+            });
+        });
+
+        ui.add_space(16.0);
+
+        // 5. All 18 Music Modes Quick Selection Matrix (Zero Truncation)
+        Card::base().show(ui, |ui| {
+            ui.label(
+                egui::RichText::new("All 18 Rhythm Modes")
+                    .font(TypeScale::body_strong())
+                    .color(tokens.text.primary),
+            );
+            ui.add_space(8.0);
+
+            let avail_w = ui.available_width();
+            let cols = if avail_w >= 800.0 {
+                3
+            } else if avail_w >= 540.0 {
+                2
+            } else {
+                1
+            };
+            let col_w = (avail_w - (cols as f32 - 1.0) * 10.0) / cols as f32;
+
+            ui.horizontal_wrapped(|ui| {
+                for m in MUSIC_MODES {
+                    let is_active = state.music_mode_index == m.index;
+                    let (card_rect, resp) =
+                        ui.allocate_exact_size(Vec2::new(col_w, 48.0), Sense::click());
+                    let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+                    let p = ui.painter_at(card_rect);
+
+                    let is_hovered = resp.hovered();
+                    let bg = if is_active {
+                        tokens.accent.base.linear_multiply(0.20)
+                    } else if is_hovered {
+                        tokens.surfaces.raised_hover
+                    } else {
+                        tokens.surfaces.well
+                    };
+                    p.rect_filled(card_rect, tokens.radius.control_rounding(), bg);
+
+                    let border = if is_active {
+                        tokens.accent.text_light
+                    } else if is_hovered {
+                        tokens.borders.hover
+                    } else {
+                        tokens.borders.subtle
+                    };
+                    p.rect_stroke(
+                        card_rect,
+                        tokens.radius.control_rounding(),
+                        Stroke::new(1.0_f32, border),
+                    );
+
+                    // Left indicator
+                    if is_active {
+                        let ind = Rect::from_min_size(
+                            Pos2::new(card_rect.min.x + 2.0, card_rect.min.y + 10.0),
+                            Vec2::new(3.0, 28.0),
+                        );
+                        p.rect_filled(ind, tokens.radius.chip_rounding(), tokens.accent.base);
+                    }
+
+                    // Mode index badge
+                    let badge_rect = Rect::from_min_size(
+                        Pos2::new(card_rect.min.x + 10.0, card_rect.center().y - 11.0),
+                        Vec2::new(28.0, 22.0),
+                    );
+                    p.rect_filled(
+                        badge_rect,
+                        tokens.radius.chip_rounding(),
+                        tokens.surfaces.dialog,
+                    );
+                    p.text(
+                        badge_rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        format!("{}", m.index),
+                        TypeScale::caption(),
+                        if is_active {
+                            tokens.accent.text_light
+                        } else {
+                            tokens.text.tertiary
+                        },
+                    );
+
+                    // Name
+                    let text_x = badge_rect.max.x + 8.0;
+                    p.text(
+                        Pos2::new(text_x, card_rect.min.y + 14.0),
+                        egui::Align2::LEFT_CENTER,
+                        m.name,
+                        TypeScale::body_strong(),
+                        if is_active {
+                            tokens.text.primary
+                        } else {
+                            tokens.text.secondary
+                        },
+                    );
+
+                    // Subtitle
+                    p.text(
+                        Pos2::new(text_x, card_rect.min.y + 32.0),
+                        egui::Align2::LEFT_CENTER,
+                        m.description,
+                        TypeScale::caption(),
+                        tokens.text.tertiary,
+                    );
+
+                    if resp.clicked() {
+                        state.music_mode_index = m.index;
                         state_changed = true;
                     }
-                });
-
-                // Brightness Card
-                render_card(&mut cols[1], 8.0, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            egui::RichText::new("Master Brightness")
-                                .size(12.0)
-                                .color(Theme::TEXT_SECONDARY),
-                        );
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            let pct = (state.ui_brightness as f32 / 255.0 * 100.0) as u32;
-                            ui.label(
-                                egui::RichText::new(format!("{}%", pct))
-                                    .strong()
-                                    .size(15.0)
-                                    .color(Theme::TEXT_PRIMARY),
-                            );
-                        });
-                    });
-                    ui.add_space(8.0);
-                    if ui
-                        .add(egui::Slider::new(&mut state.ui_brightness, 0..=255).show_value(false))
-                        .changed()
-                    {
-                        state_changed = true;
-                    }
-                });
+                }
             });
         });
     });
@@ -187,35 +297,48 @@ pub fn render_music_mode(
     state_changed
 }
 
-/// Helper that renders 16 animated spectrum bars tracking live audio peak.
-fn render_equalizer_bars(ui: &mut egui::Ui, state: &AppState) {
+/// Renders multi-band spectrum bars with animated peak hold.
+fn render_peak_equalizer_bars(ui: &mut egui::Ui, state: &AppState, tokens: &ThemeTokens) {
     let avail_w = ui.available_width().max(200.0);
-    let h = 48.0;
+    let h = 54.0;
     let (rect, _) = ui.allocate_exact_size(Vec2::new(avail_w, h), egui::Sense::hover());
     let p = ui.painter_at(rect);
 
-    p.rect_filled(rect, Rounding::same(6.0), Theme::WELL_BG);
+    p.rect_filled(rect, tokens.radius.control_rounding(), tokens.surfaces.well);
+    p.rect_stroke(
+        rect,
+        tokens.radius.control_rounding(),
+        Stroke::new(1.0_f32, tokens.borders.subtle),
+    );
 
-    let num_bars = 16;
-    let bar_w = ((rect.width() - 20.0) / num_bars as f32) - 4.0;
-    let max_bar_h = rect.height() - 12.0;
+    let num_bars = 24;
+    let bar_w = ((rect.width() - 24.0) / num_bars as f32) - 3.0;
+    let max_bar_h = rect.height() - 14.0;
 
     for i in 0..num_bars {
-        let harmonic = ((i as f32 * 0.45 + state.audio_visualizer_timer * 6.0).sin() * 0.5 + 0.5)
+        let harmonic = ((i as f32 * 0.38 + state.audio_visualizer_timer * 6.0).sin() * 0.5 + 0.5)
             * state.live_audio_peak;
-        let bar_h = (max_bar_h * harmonic.clamp(0.08, 1.0)).max(3.0);
-        let x = rect.min.x + 10.0 + (i as f32) * (bar_w + 4.0);
+        let bar_h = (max_bar_h * harmonic.clamp(0.06, 1.0)).max(3.0);
+        let x = rect.min.x + 12.0 + (i as f32) * (bar_w + 3.0);
         let y = rect.max.y - 6.0 - bar_h;
         let b_rect = Rect::from_min_size(Pos2::new(x, y), Vec2::new(bar_w, bar_h));
 
-        let col = if i < 10 {
-            Theme::ACCENT_BLUE
-        } else if i < 13 {
-            Theme::ACCENT_CYAN
+        // Frequency-tiered colours: Bass (Accent Blue) -> Mid (Cyan) -> High (Amber/Red)
+        let col = if i < 8 {
+            tokens.accent.base
+        } else if i < 16 {
+            tokens.accent.text_light
         } else {
-            Theme::ACCENT_AMBER
+            tokens.semantic.warning
         };
 
-        p.rect_filled(b_rect, Rounding::same(2.0), col);
+        p.rect_filled(b_rect, Rounding::same(1.5), col);
+
+        // Peak-hold floating cap line
+        let peak_y = (y - 3.0).max(rect.min.y + 4.0);
+        p.line_segment(
+            [Pos2::new(x, peak_y), Pos2::new(x + bar_w, peak_y)],
+            Stroke::new(1.5_f32, Color32::WHITE),
+        );
     }
 }

@@ -75,6 +75,7 @@ impl EffectCategory {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct LightingStyle {
     pub code: u8,
     pub name: &'static str,

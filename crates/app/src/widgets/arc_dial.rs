@@ -3,6 +3,8 @@
 //! Provides the signature 270-degree radial arc gauge with authentic
 //! Windows 11 Fluent dark styling, interactive draggable thumb, and center readout.
 
+#![allow(dead_code)]
+
 use crate::theme::Theme;
 use eframe::egui::{self, Color32, Pos2, Rect, Stroke, Vec2};
 

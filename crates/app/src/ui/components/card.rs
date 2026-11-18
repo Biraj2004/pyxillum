@@ -36,6 +36,10 @@ impl Card {
         }
     }
 
+    pub fn base() -> Self {
+        Self::new()
+    }
+
     pub fn raised() -> Self {
         Self {
             tier: CardTier::Raised,

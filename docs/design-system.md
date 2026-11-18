@@ -268,6 +268,52 @@ Pyxillum strictly enforces state honesty:
 - **Card Spacing**: Strictly $16\text{px}$ vertical gap between cards.
 - **Internal Card Padding**: Strictly $20\text{px}$ internal padding on all content cards.
 
+---
+
+## 11. Page-by-Page Screen Redesigns & Interactive Workflows (Phase 7)
+
+Every screen in Pyxillum has been completely reconstructed using the Fluent component library, eliminating inconsistent controls, truncated labels, and conflicting states.
+
+### 11.1 Devices & Pairing Hub (`device_hub.rs`)
+- **Unified Action Card**: Features primary "Scan for Controllers" button with animated vector spinner when active, alongside an instant "Connect Virtual Simulator" card for zero-hardware evaluation.
+- **Single Diagnostic InfoBar**: Replaces repeated and multi-box error notices. Displays categorized diagnostic titles, clear failure causes (e.g. Windows BLE stack `HRESULT(0x800710DF)`), and a direct action button linking to `ms-settings:bluetooth` or Device Manager (`devmgmt.msc`).
+- **Discovered Devices Cards**: Dual-column responsive grid displaying device model, MAC address, connection latency, live 4-bar RSSI signal meter, and connection action button.
+- **Honest Capability Badging**: Physical devices explicitly carry `StatusChip::warning("implemented, untested on hardware")` tags in compliance with project governance.
+- **Clean Empty State**: Hero `Icon::BluetoothOff` vector illustration, concise guidance, and a single centered action button when no devices are discovered.
+
+### 11.2 Dynamic FX Studio (`dynamic_mode.rs` & `effect_drawer.rs`)
+- **Central Arc Dial**: Large 270-degree radial gauge visualizing preset code $(1 - 146)$ with interactive angular scrubbing and tabular readout.
+- **Full-Width Dynamics Sliders**: Standardized $4\text{px}$ tracks for Master Brightness $(0 - 255)$ and Animation Speed $(\text{Level } 1 - 10)$ with percentage and level readouts.
+- **Action Control Bar**: Unified icon buttons for playback toggle, single-cycle mode, favorite bookmarking, and opening the preset drawer.
+- **Integrated Split Preset Drawer**: Sticky search input with clear button, single-row horizontally scrollable category chips, virtualized list rows (`ScrollArea::show_rows`), and keyboard arrow navigation.
+
+### 11.3 Solid Colour Studio (`solid_mode.rs`)
+- **Colour Wheel Disc**: High-precision HSV color disc with smooth angular hue picking and radial saturation adjustment.
+- **Exact Hex & RGB Controls**: Monospace Hex readout with one-click clipboard copy button, complemented by dedicated Red, Green, and Blue channel sliders with live color gradient tracks.
+- **Correlated Colour Temperature (CCT)**: Calibrated $2700\text{K} - 6500\text{K}$ warm-to-cool white spectrum slider with physical Kelvin mapping.
+- **Curated Palette Swatches**: 10 hand-tuned designer color swatches for immediate mood recall.
+- **Dynamic Color Styles**: Segmented control switching between Static Solid, Breathing Pulse, Strobe Flash, and Color Wave with on-chip hardware effect matching.
+
+### 11.4 Music Rhythm Studio (`music_mode.rs`)
+- **Input Source Selector**: Segmented control switching between Device Microphone, Audio Player Stream, and Windows WASAPI System Loopback.
+- **Windows Media Session Integration**: Live GSMTC banner showing current track title, artist, and media player source with active playback indicator.
+- **24-Band Peak-Hold Visualizer**: Real-time FFT audio spectrum bar display with frequency-tiered coloring (Bass accent blue, Mid cyan, High warning amber) and floating white peak caps.
+- **Complete 18-Mode Matrix**: Responsive grid presenting all 18 music reactive modes with full titles, zero text truncation, and active mode highlighting.
+
+### 11.5 DIY Custom Lighting Sequencer (`diy_mode.rs`)
+- **Variable Node Architecture ($2 - 32$ Nodes)**: Supports custom sequence lengths with pre-built palette libraries (Cyberpunk Neon, Sunset Glow, Aurora Borealis, Oceanic Deep, Synthwave, Forest Canopy, Fire & Ice, Pastel Dream).
+- **Non-Breaking Node Operations**: Add, Duplicate, Reverse, and Remove operations are strictly bounds-checked. Removal preserves a minimum of 2 nodes, eliminating application crashes.
+- **Node Inspector**: Focused editor for the selected node with live RGB/Hex readout, curated swatches, and full-width node intensity slider.
+- **2D Animation Style Matrix**: Responsive 8-style toggle tile grid (Chase, Gradient Flow, Breathe, Colour Wave, Meteor/Comet, Strobe Flash, Twinkle Stars, Static Map) with descriptive subtitles.
+- **Dynamics & Real-Time Output Preview**: Master brightness and sequence speed sliders paired with an interactive 60 FPS output preview bar with hover color inspector.
+
+### 11.6 Controller Hardware Settings Dialog (`settings_modal.rs`)
+- **Modal Surface & Scrim**: Centered dialog elevation surface with subtle border, soft drop shadow, and non-flickering background dimming.
+- **Pixel Count Slider & Presets**: Full-width slider $(30 - 255\text{ pixels})$ complemented by quick preset segments $(30, 60, 90, 120, 144, 240, 255)$.
+- **Chip Order Configuration**: Segmented selector for IC color sequences (RGB, BGR, RBG, GBR, BRG).
+- **Non-Volatile Hardware Safety Gate**: Danger-tinted InfoBar warning user of EEPROM register mutation, paired with an explicit confirmation checkbox that enables the primary "Apply Configuration" button.
+
+
 
 
 

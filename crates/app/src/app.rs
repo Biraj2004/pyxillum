@@ -942,6 +942,9 @@ impl eframe::App for PyxillumApp {
                                             DeviceHubAction::Scan => {
                                                 self.send(GuiCommand::Scan);
                                             }
+                                            DeviceHubAction::CancelScan => {
+                                                self.state.is_scanning = false;
+                                            }
                                             DeviceHubAction::Connect(addr) => {
                                                 self.send(GuiCommand::Connect(addr));
                                             }

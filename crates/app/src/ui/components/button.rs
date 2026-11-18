@@ -36,6 +36,10 @@ impl<'a> FluentButton<'a> {
         }
     }
 
+    pub fn secondary(text: &'a str) -> Self {
+        Self::new(text)
+    }
+
     pub fn primary(text: &'a str) -> Self {
         Self {
             text,

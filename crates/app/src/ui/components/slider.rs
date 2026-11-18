@@ -19,21 +19,22 @@ pub fn fluent_slider(
     let tokens = ThemeTokens::default_dark();
     let font = TypeScale::body();
 
-    // Top Row: Label on the left, tabular readout with unit on the right
-    ui.horizontal(|ui| {
-        ui.label(
-            egui::RichText::new(label)
-                .font(font.clone())
-                .color(tokens.text.primary),
-        );
-        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let val_str = format!("{}{}", value, unit);
-            let max_template = format!("{}{}", max, unit);
-            render_tabular_slot(ui, &val_str, &max_template, &font, tokens.accent.text_light);
+    // Top Row: Label on the left, tabular readout with unit on the right (if label provided)
+    if !label.is_empty() {
+        ui.horizontal(|ui| {
+            ui.label(
+                egui::RichText::new(label)
+                    .font(font.clone())
+                    .color(tokens.text.primary),
+            );
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let val_str = format!("{}{}", value, unit);
+                let max_template = format!("{}{}", max, unit);
+                render_tabular_slot(ui, &val_str, &max_template, &font, tokens.accent.text_light);
+            });
         });
-    });
-
-    ui.add_space(4.0);
+        ui.add_space(4.0);
+    }
 
     // Track & Thumb Row (full available width)
     let full_w = ui.available_width();

@@ -1,17 +1,24 @@
 //! # Controller Settings Modal Sheet
 //!
-//! Provides hardware-level EEPROM configuration for pixel count, IC chip type,
-//! and colour channel sequence, guarded behind explicit safety verification.
+//! Provides hardware-level EEPROM configuration for pixel count and colour channel sequence,
+//! guarded behind an explicit safety verification gate.
 
 use crate::state::AppState;
-use crate::theme::{render_primary_button, render_secondary_button, Theme};
-use eframe::egui::{self, Color32, Rounding, Stroke, Vec2};
+use crate::ui::components::button::FluentButton;
+use crate::ui::components::card::Card;
+use crate::ui::components::segmented::{segmented_control, SegmentItem};
+use crate::ui::components::slider::fluent_slider;
+use crate::ui::icons::{header_tile_icon, icon_button_32, Icon};
+use crate::ui::theme::ThemeTokens;
+use crate::ui::typography::TypeScale;
+use eframe::egui::{self, Color32, Rounding, Vec2};
 use pyxillum_protocol::ChipOrder;
 
 pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool {
+    let tokens = ThemeTokens::default_dark();
     let mut commit_changes = false;
 
-    // 1. Semi-transparent backdrop scrim
+    // 1. Fullscreen dark backdrop scrim
     let screen_rect = ctx.screen_rect();
     let scrim_painter = ctx.layer_painter(egui::LayerId::new(
         egui::Order::Middle,
@@ -19,19 +26,19 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
     ));
     scrim_painter.rect_filled(screen_rect, Rounding::ZERO, Color32::from_black_alpha(150));
 
-    // 2. Centered WinUI 3 Content Dialog
+    // 2. Centered Windows 11 Fluent Content Dialog
     egui::Window::new("Controller Hardware Settings Window")
         .title_bar(false)
         .collapsible(false)
         .resizable(false)
         .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
-        .fixed_size(Vec2::new(490.0, 440.0))
+        .fixed_size(Vec2::new(520.0, 480.0))
         .frame(
             egui::Frame::none()
-                .fill(Theme::CARD_BG)
-                .rounding(Rounding::same(12.0))
-                .stroke(Stroke::new(1.0_f32, Theme::BORDER_LIGHT))
-                .inner_margin(egui::Margin::symmetric(22.0, 18.0)),
+                .fill(tokens.surfaces.dialog)
+                .rounding(tokens.radius.card_rounding())
+                .stroke(tokens.card_stroke())
+                .inner_margin(egui::Margin::symmetric(24.0, 20.0)),
         )
         .show(ctx, |ui| {
             ui.set_width(ui.available_width());
@@ -41,39 +48,28 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                 state.show_settings_modal = false;
             }
 
-            // Header Row: Hardware Icon + Title & Subtitle + Close Button
+            // Header Row: Hardware Icon Tile + Title & Subtitle + 32px Close Button
             ui.horizontal(|ui| {
-                crate::ui::icons::header_tile_icon(
-                    ui,
-                    crate::ui::icons::Icon::HardwareChip,
-                    Color32::WHITE,
-                    Theme::ACCENT_BLUE,
-                );
+                header_tile_icon(ui, Icon::HardwareChip, Color32::WHITE, tokens.accent.base);
 
-                ui.add_space(8.0);
+                ui.add_space(10.0);
                 ui.vertical(|ui| {
                     ui.label(
                         egui::RichText::new("Controller Hardware Settings")
-                            .strong()
-                            .size(15.5)
-                            .color(Theme::TEXT_PRIMARY),
+                            .font(TypeScale::title())
+                            .color(tokens.text.primary),
                     );
                     ui.label(
-                        egui::RichText::new("Configure physical LED strip length and chip sequence in EEPROM")
-                            .size(11.0)
-                            .color(Theme::TEXT_MUTED),
+                        egui::RichText::new(
+                            "Configure physical LED strip length and chip sequence in EEPROM",
+                        )
+                        .font(TypeScale::caption())
+                        .color(tokens.text.tertiary),
                     );
                 });
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if crate::ui::icons::icon_button_32(
-                        ui,
-                        crate::ui::icons::Icon::Close,
-                        "Close (Esc)",
-                        false,
-                    )
-                    .clicked()
-                    {
+                    if icon_button_32(ui, Icon::Close, "Close (Esc)", false).clicked() {
                         state.show_settings_modal = false;
                     }
                 });
@@ -83,90 +79,63 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
             ui.separator();
             ui.add_space(12.0);
 
+            // =================================================================
             // Section 1: Pixel Strip Length
+            // =================================================================
             ui.horizontal(|ui| {
                 ui.label(
                     egui::RichText::new("Pixel Strip Length")
-                        .strong()
-                        .size(12.5)
-                        .color(Theme::TEXT_PRIMARY),
+                        .font(TypeScale::body_strong())
+                        .color(tokens.text.primary),
                 );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.label(
                         egui::RichText::new(format!("{} Addressable Pixels", state.ui_length))
-                            .strong()
-                            .size(12.0)
-                            .color(Theme::ACCENT_CYAN),
+                            .font(TypeScale::body_strong())
+                            .color(tokens.accent.text_light),
                     );
                 });
             });
-            ui.add_space(6.0);
+            ui.add_space(8.0);
 
-            // Full-width slider
-            ui.add_sized(
-                Vec2::new(ui.available_width(), 20.0),
-                egui::Slider::new(&mut state.ui_length, 1..=255).show_value(false),
+            // Full-width slider (30-255 pixels)
+            fluent_slider(ui, "", &mut state.ui_length, 30, 255, "Nodes");
+            ui.add_space(8.0);
+
+            // Quick preset pills via Segmented Control
+            let presets = [30, 60, 90, 120, 144, 240, 255];
+            let preset_items: Vec<SegmentItem> = presets
+                .iter()
+                .map(|p| SegmentItem::new(Box::leak(p.to_string().into_boxed_str())))
+                .collect();
+
+            let curr_preset_idx = presets
+                .iter()
+                .position(|&p| p == state.ui_length)
+                .unwrap_or(usize::MAX);
+
+            let (new_p_idx, p_resp) = segmented_control(
+                ui,
+                "settings_strip_length_presets_segmented",
+                &preset_items,
+                if curr_preset_idx == usize::MAX { 0 } else { curr_preset_idx },
             );
-            ui.add_space(6.0);
-
-            // Quick preset pills
-            ui.horizontal(|ui| {
-                ui.label(
-                    egui::RichText::new("Presets:")
-                        .size(10.5)
-                        .color(Theme::TEXT_MUTED),
-                );
-                for &preset in &[30, 60, 90, 100, 144, 200, 255] {
-                    let is_selected = state.ui_length == preset;
-                    let (p_rect, p_resp) =
-                        ui.allocate_exact_size(Vec2::new(36.0, 22.0), egui::Sense::click());
-                    let pp = ui.painter_at(p_rect);
-                    let p_bg = if is_selected {
-                        Theme::ACCENT_BLUE
-                    } else if p_resp.hovered() {
-                        Theme::CARD_HOVER
-                    } else {
-                        Theme::WELL_BG
-                    };
-                    pp.rect_filled(p_rect, Rounding::same(4.0), p_bg);
-                    pp.rect_stroke(
-                        p_rect,
-                        Rounding::same(4.0),
-                        Stroke::new(
-                            1.0_f32,
-                            if is_selected {
-                                Theme::ACCENT_CYAN
-                            } else {
-                                Theme::BORDER_LIGHT
-                            },
-                        ),
-                    );
-                    pp.text(
-                        p_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        preset.to_string(),
-                        egui::FontId::proportional(10.5),
-                        if is_selected {
-                            Color32::WHITE
-                        } else {
-                            Theme::TEXT_SECONDARY
-                        },
-                    );
-                    if p_resp.clicked() {
-                        state.ui_length = preset;
-                    }
+            if p_resp.clicked() {
+                if let Some(&p_val) = presets.get(new_p_idx) {
+                    state.ui_length = p_val;
                 }
-            });
+            }
 
-            ui.add_space(14.0);
+            ui.add_space(16.0);
 
+            // =================================================================
             // Section 2: Colour Sequence (Chip Order)
+            // =================================================================
             ui.horizontal(|ui| {
                 ui.label(
                     egui::RichText::new("Colour Sequence (Chip Order)")
-                        .strong()
-                        .size(12.5)
-                        .color(Theme::TEXT_PRIMARY),
+                        .font(TypeScale::body_strong())
+                        .color(tokens.text.primary),
                 );
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let hint = match state.ui_chip_order {
@@ -179,15 +148,14 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                     };
                     ui.label(
                         egui::RichText::new(hint)
-                            .size(10.5)
-                            .color(Theme::TEXT_MUTED),
+                            .font(TypeScale::caption())
+                            .color(tokens.text.tertiary),
                     );
                 });
             });
-            ui.add_space(6.0);
+            ui.add_space(8.0);
 
-            // Interactive Segmented 6-Pill Selector
-            let orders = [
+            let chip_orders = [
                 (ChipOrder::Grb, "GRB"),
                 (ChipOrder::Rgb, "RGB"),
                 (ChipOrder::Bgr, "BGR"),
@@ -195,134 +163,115 @@ pub fn render_settings_modal(ctx: &egui::Context, state: &mut AppState) -> bool 
                 (ChipOrder::Gbr, "GBR"),
                 (ChipOrder::Brg, "BRG"),
             ];
-            let pill_w = (ui.available_width() - 5.0 * 6.0) / 6.0;
-            ui.horizontal(|ui| {
-                for (ord, label) in orders {
-                    let is_active = state.ui_chip_order == ord;
-                    let (p_rect, p_resp) =
-                        ui.allocate_exact_size(Vec2::new(pill_w, 30.0), egui::Sense::click());
-                    let pp = ui.painter_at(p_rect);
-                    let bg = if is_active {
-                        Theme::ACCENT_BLUE
-                    } else if p_resp.hovered() {
-                        Theme::CARD_HOVER
-                    } else {
-                        Theme::WELL_BG
-                    };
-                    let border = if is_active {
-                        Theme::ACCENT_CYAN
-                    } else if p_resp.hovered() {
-                        Theme::BORDER_HOVER
-                    } else {
-                        Theme::BORDER_LIGHT
-                    };
-                    pp.rect_filled(p_rect, Rounding::same(6.0), bg);
-                    pp.rect_stroke(p_rect, Rounding::same(6.0), Stroke::new(1.0_f32, border));
-                    pp.text(
-                        p_rect.center(),
-                        egui::Align2::CENTER_CENTER,
-                        label,
-                        egui::FontId::proportional(12.0),
-                        if is_active {
-                            Color32::WHITE
-                        } else {
-                            Theme::TEXT_SECONDARY
-                        },
-                    );
-                    if p_resp.clicked() {
-                        state.ui_chip_order = ord;
-                    }
+            let order_items: Vec<SegmentItem> =
+                chip_orders.iter().map(|(_, label)| SegmentItem::new(label)).collect();
+
+            let curr_order_idx = chip_orders
+                .iter()
+                .position(|(ord, _)| *ord == state.ui_chip_order)
+                .unwrap_or(0);
+
+            let (new_order_idx, ord_resp) = segmented_control(
+                ui,
+                "settings_chip_order_segmented",
+                &order_items,
+                curr_order_idx,
+            );
+            if ord_resp.clicked() {
+                if let Some(&(ord, _)) = chip_orders.get(new_order_idx) {
+                    state.ui_chip_order = ord;
                 }
-            });
+            }
 
-            ui.add_space(14.0);
+            ui.add_space(16.0);
 
+            // =================================================================
             // Section 3: Hardware Safety Gate Card
-            egui::Frame::none()
-                .fill(Color32::from_rgb(38, 22, 24))
-                .stroke(Stroke::new(1.0_f32, Color32::from_rgb(140, 42, 48)))
-                .rounding(Rounding::same(8.0))
-                .inner_margin(egui::Margin::symmetric(14.0, 10.0))
+            // =================================================================
+            Card::base()
+                .rounding(tokens.radius.control_rounding())
                 .show(ui, |ui| {
-                    ui.set_width(ui.available_width());
                     ui.horizontal(|ui| {
                         let (icon_rect, _) =
                             ui.allocate_exact_size(Vec2::splat(22.0), egui::Sense::hover());
-                        let ip = ui.painter_at(icon_rect);
-                        ip.circle_filled(icon_rect.center(), 10.0, Color32::from_rgb(216, 59, 1));
-                        ip.text(
-                            icon_rect.center(),
-                            egui::Align2::CENTER_CENTER,
-                            "!",
-                            egui::FontId::proportional(13.0),
-                            Color32::WHITE,
-                        );
-                        ui.add_space(6.0);
+                        Icon::Warning.paint(ui.painter(), icon_rect, tokens.semantic.danger);
+
+                        ui.add_space(8.0);
                         ui.vertical(|ui| {
                             ui.label(
                                 egui::RichText::new("Hardware Safety Gate (EEPROM Mutating)")
-                                    .strong()
-                                    .size(11.5)
-                                    .color(Color32::from_rgb(255, 175, 175)),
+                                    .font(TypeScale::body_strong())
+                                    .color(tokens.semantic.danger),
                             );
                             ui.label(
                                 egui::RichText::new(
                                     "Applying writes directly to non-volatile registers. Confirm settings match physical LED strip.",
                                 )
-                                .size(10.5)
-                                .color(Color32::from_rgb(220, 150, 150)),
+                                .font(TypeScale::caption())
+                                .color(tokens.text.tertiary),
                             );
                         });
                     });
 
+                    ui.add_space(10.0);
                     let is_confirmed = state.ui_confirm_safety;
-                    ui.add_space(8.0);
-                    ui.horizontal(|ui| {
-                        ui.add_space(4.0);
-                        ui.checkbox(
-                            &mut state.ui_confirm_safety,
-                            egui::RichText::new("I understand this mutates hardware registers")
-                                .size(11.5)
-                                .color(if is_confirmed {
-                                    Color32::WHITE
-                                } else {
-                                    Color32::from_rgb(220, 180, 180)
-                                }),
-                        )
-                        .on_hover_cursor(egui::CursorIcon::PointingHand);
-                    });
+                    ui.checkbox(
+                        &mut state.ui_confirm_safety,
+                        egui::RichText::new("I understand this mutates hardware registers")
+                            .font(TypeScale::body())
+                            .color(if is_confirmed {
+                                tokens.text.primary
+                            } else {
+                                tokens.text.secondary
+                            }),
+                    )
+                    .on_hover_cursor(egui::CursorIcon::PointingHand);
                 });
 
-            ui.add_space(14.0);
+            ui.add_space(16.0);
             ui.separator();
-            ui.add_space(10.0);
+            ui.add_space(14.0);
 
+            // =================================================================
             // Section 4: Modal Footer Action Row
+            // =================================================================
             ui.horizontal(|ui| {
                 if state.ui_confirm_safety {
                     ui.label(
                         egui::RichText::new("Ready to commit EEPROM")
-                            .size(11.0)
-                            .color(Theme::ACCENT_EMERALD),
+                            .font(TypeScale::caption())
+                            .color(tokens.semantic.success),
                     );
                 } else {
                     ui.label(
                         egui::RichText::new("Safety confirmation required")
-                            .size(11.0)
-                            .color(Theme::TEXT_MUTED),
+                            .font(TypeScale::caption())
+                            .color(tokens.text.disabled),
                     );
                 }
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let can_apply = state.ui_confirm_safety;
-                    if render_primary_button(ui, "Apply Configuration", can_apply, 150.0).clicked() {
+
+                    if FluentButton::primary("Apply Configuration")
+                        .icon(Icon::HardwareChip)
+                        .enabled(can_apply)
+                        .min_width(150.0)
+                        .show(ui)
+                        .clicked()
+                        && can_apply
+                    {
                         commit_changes = true;
                         state.show_settings_modal = false;
                     }
 
-                    ui.add_space(8.0);
+                    ui.add_space(10.0);
 
-                    if render_secondary_button(ui, "Cancel", 80.0).clicked() {
+                    if FluentButton::secondary("Cancel")
+                        .min_width(80.0)
+                        .show(ui)
+                        .clicked()
+                    {
                         state.show_settings_modal = false;
                     }
                 });

@@ -142,6 +142,21 @@ pub struct ToggleTileItem<'a> {
     pub icon: Icon,
 }
 
+impl<'a> ToggleTileItem<'a> {
+    pub fn new(label: &'a str, description: &'a str) -> Self {
+        Self {
+            label,
+            description,
+            icon: Icon::Effects,
+        }
+    }
+
+    pub fn icon(mut self, icon: Icon) -> Self {
+        self.icon = icon;
+        self
+    }
+}
+
 /// Renders a responsive 2D grid of toggle tiles (e.g. for DIY Animation Styles).
 pub fn toggle_tile_grid(
     ui: &mut Ui,

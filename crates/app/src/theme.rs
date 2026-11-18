@@ -3,6 +3,8 @@
 //! Provides authentic Windows 11 Fluent Design / Dark Mica desktop tokens,
 //! surface colours, typography hierarchy, and reusable control components.
 
+#![allow(dead_code)]
+
 use eframe::egui::{self, Color32, Pos2, Rect, Rounding, Stroke, Vec2};
 
 #[allow(dead_code)]

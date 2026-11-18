@@ -10,6 +10,7 @@ pub mod icons;
 pub mod neon_strip;
 pub mod sidebar;
 
+#[allow(unused_imports)]
 pub use arc_dial::ArcDial;
 pub use color_disc::render_color_disc;
 pub use effect_drawer::render_effect_drawer;
