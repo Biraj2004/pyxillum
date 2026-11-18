@@ -118,8 +118,8 @@ impl<'a> FluentButton<'a> {
             let (bg, fg, border) = if !self.enabled {
                 (
                     tokens.surfaces.well,
-                    tokens.text.disabled,
-                    Stroke::new(1.0_f32, tokens.borders.subtle),
+                    tokens.text.tertiary,
+                    Stroke::new(1.0_f32, Color32::from_rgba_unmultiplied(255, 255, 255, 85)),
                 )
             } else {
                 match self.variant {

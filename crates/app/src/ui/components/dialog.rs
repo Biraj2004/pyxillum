@@ -17,6 +17,26 @@ pub fn trigger_dialog_shake(ctx: &egui::Context) {
     ctx.request_repaint();
 }
 
+/// Computes the horizontal error shake offset (+/-6px decaying sinusoidal over 300ms).
+pub fn get_dialog_shake_offset(ctx: &egui::Context) -> f32 {
+    let shake_id = egui::Id::new("content_dialog_shake_timestamp");
+    let now = ctx.input(|i| i.time);
+    let shake_start: Option<f64> = ctx.data(|d| d.get_temp(shake_id));
+    if let Some(start) = shake_start {
+        let elapsed = (now - start) as f32;
+        if elapsed < 0.30 && crate::platform::windows::is_client_animation_enabled() {
+            ctx.request_repaint();
+            let progress = elapsed / 0.30;
+            let decay = 1.0 - progress;
+            (progress * std::f32::consts::PI * 8.0).sin() * 6.0 * decay
+        } else {
+            0.0
+        }
+    } else {
+        0.0
+    }
+}
+
 pub struct ContentDialog<'a> {
     title: &'a str,
     subtitle: Option<&'a str>,
@@ -92,22 +112,7 @@ impl<'a> ContentDialog<'a> {
             });
 
         // Compute shake offset if recently triggered
-        let shake_id = egui::Id::new("content_dialog_shake_timestamp");
-        let now = ctx.input(|i| i.time);
-        let shake_start: Option<f64> = ctx.data(|d| d.get_temp(shake_id));
-        let shake_offset_x = if let Some(start) = shake_start {
-            let elapsed = (now - start) as f32;
-            if elapsed < 0.30 && crate::platform::windows::is_client_animation_enabled() {
-                ctx.request_repaint();
-                let progress = elapsed / 0.30;
-                let decay = 1.0 - progress;
-                (progress * std::f32::consts::PI * 8.0).sin() * 6.0 * decay
-            } else {
-                0.0
-            }
-        } else {
-            0.0
-        };
+        let shake_offset_x = get_dialog_shake_offset(ctx);
 
         // Centered Content Dialog Window (with optional error shake offset)
         egui::Area::new(egui::Id::new("dialog_window"))

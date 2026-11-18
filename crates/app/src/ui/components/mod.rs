@@ -16,6 +16,7 @@
 
 pub mod button;
 pub mod card;
+pub mod checkbox;
 pub mod chip_group;
 pub mod dial;
 pub mod dialog;
@@ -29,6 +30,7 @@ pub mod toggle;
 
 pub use button::{ButtonVariant, FluentButton};
 pub use card::{section_header, Card, CardTier};
+pub use checkbox::fluent_checkbox;
 pub use chip_group::chip_group;
 pub use dial::ArcDial;
 pub use dialog::ContentDialog;

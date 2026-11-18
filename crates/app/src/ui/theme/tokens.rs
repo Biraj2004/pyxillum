@@ -411,4 +411,42 @@ mod tests {
         let control_inner = RadiusTokens::concentric_inner(tokens.radius.control, 4.0);
         assert_eq!(control_inner, 4.0);
     }
+
+    #[test]
+    fn test_disabled_button_and_dialog_contrast() {
+        let tokens = ThemeTokens::default_dark();
+
+        // 1. Disabled Apply button text (text.tertiary) on button background (surfaces.well)
+        let cr_text = color32_contrast_ratio(tokens.text.tertiary, tokens.surfaces.well);
+        assert!(
+            cr_text >= 4.5,
+            "WCAG AA failure: Disabled button text must have >= 4.5:1 contrast, got {:.2}:1",
+            cr_text
+        );
+
+        // 2. Disabled button 3:1 outline against surfaces.well
+        let outline = Color32::from_rgba_unmultiplied(255, 255, 255, 85);
+        let cr_outline = color32_contrast_ratio(outline, tokens.surfaces.well);
+        assert!(
+            cr_outline >= 3.0,
+            "WCAG non-text failure: Disabled button outline must have >= 3.0:1 contrast, got {:.2}:1",
+            cr_outline
+        );
+
+        // 3. Footnote text (text.secondary) on surfaces.dialog
+        let cr_footnote = color32_contrast_ratio(tokens.text.secondary, tokens.surfaces.dialog);
+        assert!(
+            cr_footnote >= 4.5,
+            "WCAG AA failure: Footnote text.secondary on surfaces.dialog must have >= 4.5:1 contrast, got {:.2}:1",
+            cr_footnote
+        );
+
+        // 4. Safety Gate title (semantic.danger) on semantic.danger_bg
+        let cr_danger = color32_contrast_ratio(tokens.semantic.danger, tokens.semantic.danger_bg);
+        assert!(
+            cr_danger >= 4.5,
+            "WCAG AA failure: Safety Gate title on danger_bg must have >= 4.5:1 contrast, got {:.2}:1",
+            cr_danger
+        );
+    }
 }

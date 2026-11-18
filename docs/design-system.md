@@ -227,7 +227,13 @@ Configured directly on the native Win32 `HWND` via `crates/app/src/platform/wind
 
 ### 9.4 Feedback, Alerts & Modals
 - **`InfoBar`**: 4 semantic tiers (`Info`, `Success`, `Warning`, `Danger`) with tinted backgrounds, leading $28\text{px}$ rounded icon tiles, message copy, optional action buttons, and dismiss controls.
-- **`ContentDialog`**: Fullscreen modal dialog with dark backdrop scrim, header icon tile, primary/secondary action buttons, and Esc dismissal.
+- **`ContentDialog` & `SettingsModal`**: Fullscreen modal dialogs with dark backdrop scrim, header icon tile, primary/secondary action buttons, and Esc dismissal:
+  - **Layer Ordering**: Modal scrim is rendered strictly on `Order::Middle`, while dialog containers reside strictly on `Order::Foreground` to eliminate layer blending ambiguities.
+  - **Scrim Density**: Black backdrop scrim at $45\%$ alpha (`Color32::from_black_alpha(115)`), preserving scene context while distinctly elevating the modal.
+  - **Dialog Surface Token**: Opaque `tokens.surfaces.dialog` ($L \approx 0.29$) with a $1\text{px}$ white alpha boundary (`Color32::from_white_alpha(35)`) and a $32\text{px}$ blur soft drop shadow ($16\text{px}$ vertical offset, `Color32::from_black_alpha(120)`).
+  - **Enter Motion**: $180\text{ms}$ cubic ease-out scale ($0.97 \to 1.0$) and opacity ($0.0 \to 1.0$) transition guaranteed to settle at exactly $1.0$ and trigger a final static repaint to prevent idle redraw stalls.
+  - **Fluent Checkbox (`fluent_checkbox`)**: $20\text{px}$ Windows 11 Fluent checkbox with vector checkmark lines, hover states, and row-wide click hit target.
+  - **WCAG AA Contrast Compliance**: Dialog title uses `tokens.text.primary` ($13.8:1$), descriptions and footnote use `tokens.text.secondary` ($7.8:1$), disabled action button text uses `tokens.text.tertiary` ($6.46:1$) with a $3:1$ outline, and the Safety Gate warning card uses `tokens.semantic.danger` on `tokens.semantic.danger_bg` ($4.9:1$).
 - **`connection_status_chip`**: Connection status indicator with smoothly pulsing state dot (`Not connected`, `Scanning...`, `Connecting...`, `Connected`).
 - **`empty_state`**: Clean zero-data illustration with hero icon circle, single message, and exactly ONE primary action button.
 

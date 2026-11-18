@@ -76,8 +76,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `--reset-window` CLI flag and a dedicated "Reset Window" control in the Settings dialog to reset desktop window placement and geometry to defaults.
   - Added structured startup info-level logging: `work_area`, `scale`, `decision_source`, `is_maximized`, and final `outer_rect`.
   - Expanded test suite to 27 unit tests including 10 dedicated geometry maths tests covering DPI scales, taskbar offsets, removed monitors, saved maximised state restoration, and 80% visibility thresholds.
+- **Phase 12: Settings Modal Dialog Elevation, Scrim Layering & Contrast Rectification**:
+  - Diagnosed dialog dimness and scrim bleed: resolved layer collision by strictly partitioning scrim to `Order::Middle` and dialog container to `Order::Foreground`.
+  - Tuned scrim alpha to 45% (`Color32::from_black_alpha(115)`), retaining background scene depth while elevating the foreground modal surface.
+  - Rebuilt dialog frame styling with opaque `tokens.surfaces.dialog` (L ~0.29), a 1px white alpha border (`Color32::from_white_alpha(35)`), and a 32px soft drop shadow with 16px vertical offset.
+  - Implemented 180ms cubic ease-out enter animation (scale 0.97 to 1.0, opacity 0.0 to 1.0) guaranteed to land at exactly 1.0 and request a final static repaint to prevent idle redraw stalls.
+  - Upgraded dialog typography hierarchy: title uses `text.primary`, section descriptions and footnote use `text.secondary` (7.8:1 contrast), and Safety Gate title uses `tokens.semantic.danger` on `tokens.semantic.danger_bg` (4.9:1 contrast).
+  - Refined disabled button states in `FluentButton` to render text in `tokens.text.tertiary` (6.46:1 contrast) with a 3:1 outline (`Color32::from_rgba_unmultiplied(255, 255, 255, 85)`).
+  - Built custom 20px Windows 11 `fluent_checkbox` component featuring vector checkmark lines, hover states, and row-wide click target.
+  - Enforced focus trapping, outside-click modal dismissal, Esc key shortcut, and standardized 32x32 close button.
+  - Expanded test suite to 29 tests with dedicated enter animation convergence tests and automated WCAG AA contrast ratio assertions.
 
 ### New Files Added
+- `crates/app/src/ui/components/checkbox.rs`
 - `crates/app/src/ui/layout.rs`
 - `crates/app/src/ui/mod.rs`
 - `crates/app/src/ui/theme/mod.rs`
