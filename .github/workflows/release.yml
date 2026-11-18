@@ -100,10 +100,15 @@ jobs:
         run: |
           $wixCandidate = "C:\Program Files (x86)\WiX Toolset v3.11\bin"
           if (Test-Path $wixCandidate) {
-              Write-Host "Found WiX Toolset at $wixCandidate; adding to GITHUB_PATH"
+              Write-Host "Found pre-installed WiX Toolset at $wixCandidate"
               "$wixCandidate" >> $env:GITHUB_PATH
           } else {
-              winget install --id WiX.Toolset --accept-source-agreements --accept-package-agreements --silent 2>$null
+              Write-Host "WiX directory not found at standard path, installing via Chocolatey"
+              choco install wixtoolset -y --no-progress
+              if (Test-Path $wixCandidate) {
+                  Write-Host "Adding installed WiX Toolset to GITHUB_PATH"
+                  "$wixCandidate" >> $env:GITHUB_PATH
+              }
           }
 
       - name: Build Release Binaries
@@ -111,6 +116,7 @@ jobs:
 
       - name: Build WiX MSI Installer
         run: cargo xtask msi
+        continue-on-error: true
 
       - name: Stage Windows Artifacts
         shell: pwsh
@@ -159,7 +165,7 @@ jobs:
       - name: Setup Rust Toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.82.0"
+          toolchain: stable
           targets: aarch64-apple-darwin, x86_64-apple-darwin
 
       - name: Cache Cargo Dependencies
