@@ -8,3 +8,4 @@
 //! - `animation`: Springs, transitions, and micro-interactions
 
 pub mod theme;
+pub mod typography;

@@ -70,9 +70,10 @@ impl PyxillumApp {
         simulator_ref: Option<Arc<Mutex<DeviceSimulator>>>,
         monitor_id: Option<String>,
     ) -> Self {
-        // Configure authentic Windows 11 Fluent dark tokens
+        // Configure authentic Windows 11 Fluent dark tokens and typography
         let tokens = crate::ui::theme::ThemeTokens::default_dark();
         crate::ui::theme::configure_egui_theme(&cc.egui_ctx, &tokens);
+        crate::ui::typography::configure_fonts(&cc.egui_ctx);
 
         let audio_service = WindowsAudioService::new();
 

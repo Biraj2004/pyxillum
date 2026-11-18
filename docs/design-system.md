@@ -117,3 +117,30 @@ $$\text{radius}_{\text{inner}} = \max(\text{radius}_{\text{outer}} - \text{paddi
 - Slow transitions (page sliding, expand/collapse): $220\text{ ms}$.
 - Dynamic spring physics: stiffness $280$, damping $24$.
 - Respects Windows system animation setting (`SPI_GETCLIENTAREAANIMATION`).
+
+---
+
+## 6. Typography System
+
+### 6.1 Font Discovery & Families
+- Primary: **Segoe UI Variable** dynamically loaded at startup from `%WINDIR%\Fonts\SegUIVar.ttf` (or fallback `segoeui.ttf`). Segoe UI Variable Bold (`SegUIVarB.ttf` / `segoeuib.ttf`) is registered into the `SegoeBold` family slot.
+- Fallback: System proportional fonts via `FontFamily::Proportional` on non-Windows platforms.
+- Licensing: Does not distribute or bundle proprietary Microsoft fonts; reads legally from host OS.
+
+### 6.2 Type Scale (Logical Points)
+| Scale Token | Size | Weight / Family | Usage |
+| :--- | :--- | :--- | :--- |
+| **Caption** | 12 pt | Regular | Microcopy, slider endpoints, unit suffixes |
+| **Body** | 14 pt | Regular | Standard descriptions, options, list rows |
+| **Body Strong** | 14 pt | Semibold / Bold | Active items, button labels, key values |
+| **Subtitle** | 16 pt | Regular | Section subheadings, card titles |
+| **Title** | 20 pt | Bold | Page headers, modal dialog titles |
+| **Display** | 28 pt | Bold | Hero state titles, prominent metrics |
+| **Dial Value** | 40 pt | Monospace / Tabular | Dynamic FX dial code, live frequency readouts |
+
+### 6.3 Anti-Jitter Layout Guards
+- **Reserved Bold Width**: Navigation rows and segmented options calculate maximum width across regular and bold variations via `reserve_bold_width()`, preventing horizontal layout reflow on selection.
+- **Tabular Numeric Slots**: Draggable values (0-255, 0-100%) render within right-aligned fixed-width bounding boxes sized for maximum digit widths.
+- **Fluid Type Scaling**: Automatically scales within $\text{clamp}(0.88, 1.0 + \Delta \times 0.12, 1.12)$ relative to the 1280px reference window width.
+- **Safe Truncation**: Overflowing labels truncate with an ellipsis and automatically display an interactive hover tooltip with the complete string.
+
