@@ -1,0 +1,34 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35013.160
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pyxillum.Core", "Pyxillum.Core\Pyxillum.Core.csproj", "{A8712C2D-C174-429C-918B-721482E26BD8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pyxillum", "Pyxillum\Pyxillum.csproj", "{4742E862-BC18-426B-9750-AC4B06161421}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|ARM64 = Debug|ARM64
+		Release|x64 = Release|x64
+		Release|ARM64 = Release|ARM64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A8712C2D-C174-429C-918B-721482E26BD8}.Debug|x64.ActiveCfg = Debug|x64
+		{A8712C2D-C174-429C-918B-721482E26BD8}.Debug|x64.Build.0 = Debug|x64
+		{A8712C2D-C174-429C-918B-721482E26BD8}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{A8712C2D-C174-429C-918B-721482E26BD8}.Debug|ARM64.Build.0 = Debug|ARM64
+		{A8712C2D-C174-429C-918B-721482E26BD8}.Release|x64.ActiveCfg = Release|x64
+		{A8712C2D-C174-429C-918B-721482E26BD8}.Release|x64.Build.0 = Release|x64
+		{A8712C2D-C174-429C-918B-721482E26BD8}.Release|ARM64.ActiveCfg = Release|ARM64
+		{A8712C2D-C174-429C-918B-721482E26BD8}.Release|ARM64.Build.0 = Release|ARM64
+		{4742E862-BC18-426B-9750-AC4B06161421}.Debug|x64.ActiveCfg = Debug|x64
+		{4742E862-BC18-426B-9750-AC4B06161421}.Debug|x64.Build.0 = Debug|x64
+		{4742E862-BC18-426B-9750-AC4B06161421}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{4742E862-BC18-426B-9750-AC4B06161421}.Debug|ARM64.Build.0 = Debug|ARM64
+		{4742E862-BC18-426B-9750-AC4B06161421}.Release|x64.ActiveCfg = Release|x64
+		{4742E862-BC18-426B-9750-AC4B06161421}.Release|x64.Build.0 = Release|x64
+		{4742E862-BC18-426B-9750-AC4B06161421}.Release|ARM64.ActiveCfg = Release|ARM64
+		{4742E862-BC18-426B-9750-AC4B06161421}.Release|ARM64.Build.0 = Release|ARM64
+	EndGlobalSection
+EndGlobal

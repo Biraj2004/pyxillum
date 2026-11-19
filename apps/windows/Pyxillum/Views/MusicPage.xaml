@@ -1,0 +1,65 @@
+<Page
+    x:Class="Pyxillum.Views.MusicPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
+            <!-- Header Section -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Music Rhythm" Style="{ThemeResource TitleTextBlockStyle}" />
+                <TextBlock Text="Acoustic tracking and real-time spectrum visualizer" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+            </StackPanel>
+
+            <!-- Audio Input Controls -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Spacing="8" Margin="0,0,16,0">
+                        <TextBlock Text="Audio Capture Pipeline" FontWeight="Medium" FontSize="13" />
+                        <ComboBox x:Name="AudioSourceCombo" SelectedIndex="0" HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="PC System Audio (WASAPI Loopback)" />
+                            <ComboBoxItem Content="Controller Hardware Internal Mic" />
+                            <ComboBoxItem Content="Host Auxiliary Microphone" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="8" Margin="16,0,0,0">
+                        <TextBlock Text="Acoustic Sensor Sensitivity" FontWeight="Medium" FontSize="13" />
+                        <Slider x:Name="SensitivitySlider" Minimum="1" Maximum="100" Value="60" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Real-time 24-band Spectrum Visualizer Canvas -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="24-Band ISO Third-Octave Spectrum" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <Canvas x:Name="SpectrumCanvas" Height="100" HorizontalAlignment="Stretch" Background="#111827" />
+                </StackPanel>
+            </Border>
+
+            <!-- 18 Sound Tracking Algorithms Selector -->
+            <TextBlock Text="Sound Reactive Modes (18 Patterns)" Style="{ThemeResource SubtitleTextBlockStyle}" />
+            <GridView x:Name="MusicModesGrid" SelectionMode="Single">
+                <GridView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Width="200" Height="70">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" />
+                                <TextBlock Text="{Binding CodeText}" Opacity="0.6" FontSize="11" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

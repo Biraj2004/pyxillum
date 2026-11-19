@@ -1,0 +1,89 @@
+<Page
+    x:Class="Pyxillum.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
+            <!-- Header Section -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Hardware Settings" Style="{ThemeResource TitleTextBlockStyle}" />
+                <TextBlock Text="Configure non-volatile EEPROM registers on physical SP621E controllers" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+            </StackPanel>
+
+            <!-- Safety Caution Warning Banner -->
+            <Border Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" BorderBrush="{StaticResource BrushWarning}" BorderThickness="1" CornerRadius="12" Padding="20">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE7BA;" Foreground="{StaticResource BrushWarning}" FontSize="18" />
+                        <TextBlock Text="Non-Volatile Memory Modification Warning" FontWeight="SemiBold" FontSize="14" />
+                    </StackPanel>
+                    <TextBlock Text="Changing these parameters writes directly to controller EEPROM. Incorrect settings may cause desynchronised LED timing, flickering, or invalid colour reproduction."
+                               TextWrapping="Wrap" Opacity="0.8" FontSize="13" />
+                    <CheckBox x:Name="SafetyConfirmCheckBox" Content="I understand this modifies non-volatile controller registers (--i-understand-this-changes-the-device)" FontWeight="Medium" />
+                </StackPanel>
+            </Border>
+
+            <!-- Hardware Strip Parameters -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                <StackPanel Spacing="20">
+                    <TextBlock Text="Pixel Strip Topology" Style="{ThemeResource SubtitleTextBlockStyle}" />
+
+                    <!-- Pixel Count -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Addressable Pixel Count (Strip Length)" FontWeight="Medium" FontSize="13" />
+                        <TextBlock Text="Number of physical RGB pixels wired along the strip (1 to 2048)" FontSize="12" Opacity="0.6" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Slider x:Name="PixelCountSlider" Grid.Column="0" Minimum="1" Maximum="300" Value="60" Margin="0,0,16,0" />
+                            <NumberBox x:Name="PixelCountNumberBox" Grid.Column="1" Value="60" Minimum="1" Maximum="2048" Width="100" SpinButtonPlacementMode="Inline" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Chip Order -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Colour Sequence (Channel Calibration)" FontWeight="Medium" FontSize="13" />
+                        <TextBlock Text="Aligns controller channel output sequence to physical LED strip diode layout" FontSize="12" Opacity="0.6" />
+                        <ComboBox x:Name="ChipOrderCombo" SelectedIndex="2" Width="260">
+                            <ComboBoxItem Content="RGB" />
+                            <ComboBoxItem Content="RBG" />
+                            <ComboBoxItem Content="GRB (WS2812B Default)" />
+                            <ComboBoxItem Content="GBR" />
+                            <ComboBoxItem Content="BRG" />
+                            <ComboBoxItem Content="BGR" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- IC Driver Model -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Driver IC Chipset Model" FontWeight="Medium" FontSize="13" />
+                        <ComboBox x:Name="IcDriverCombo" SelectedIndex="0" Width="260">
+                            <ComboBoxItem Content="WS2812B / WS2811 (800 kHz)" />
+                            <ComboBoxItem Content="UCS1903 (800 kHz)" />
+                            <ComboBoxItem Content="SM16703 (800 kHz)" />
+                            <ComboBoxItem Content="SK6812 (800 kHz)" />
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Action Apply Button -->
+                    <Button x:Name="ApplyHardwareButton" Content="Apply Hardware Changes" Style="{ThemeResource AccentButtonStyle}" IsEnabled="False" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+
+            <!-- Application Preferences -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Application Preferences" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <CheckBox Content="Remember normal window geometry on exit" IsChecked="True" />
+                    <Button Content="Reset Window Geometry to 80% Default" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

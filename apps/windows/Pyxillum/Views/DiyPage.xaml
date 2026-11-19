@@ -1,0 +1,86 @@
+<Page
+    x:Class="Pyxillum.Views.DiyPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
+            <!-- Header Section -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="DIY Custom Sequencer" Style="{ThemeResource TitleTextBlockStyle}" />
+                    <TextBlock Text="Design custom multi-node gradient and chase animation sequences" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="PlayPauseButton" Content="Play Preview" Style="{ThemeResource AccentButtonStyle}" />
+                    <Button x:Name="SavePresetButton" Content="Save Preset" />
+                </StackPanel>
+            </Grid>
+
+            <!-- 14-Step Timeline Container -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Timeline Keyframe Sequence (Up to 14 Steps)" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <StackPanel x:Name="TimelineNodesPanel" Orientation="Horizontal" Spacing="8" Margin="0,8" />
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+            <!-- Node Editor & Transition Dynamics -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column: Active Step Colour -->
+                <Border Grid.Column="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,12,0">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Selected Step Colour" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <Grid HorizontalAlignment="Center" Margin="0,8">
+                            <Ellipse x:Name="DiyColorPreview" Width="64" Height="64" Fill="#FF3B30" Stroke="{ThemeResource CardStrokeColorDefaultBrush}" StrokeThickness="2" />
+                        </Grid>
+                        <WrapGrid Orientation="Horizontal" HorizontalChildrenAlignment="Center">
+                            <Button x:Name="DiySwatchRed" Content="Red" Margin="4" />
+                            <Button x:Name="DiySwatchGreen" Content="Green" Margin="4" />
+                            <Button x:Name="DiySwatchBlue" Content="Blue" Margin="4" />
+                            <Button x:Name="DiySwatchAmber" Content="Amber" Margin="4" />
+                            <Button x:Name="DiySwatchCyan" Content="Cyan" Margin="4" />
+                            <Button x:Name="DiySwatchMagenta" Content="Magenta" Margin="4" />
+                        </WrapGrid>
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,8,0,0">
+                            <Button x:Name="AddStepButton" Content="Add Node" />
+                            <Button x:Name="RemoveStepButton" Content="Remove Node" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Column: Sequence Dynamics -->
+                <Border Grid.Column="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="12,0,0,0">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Sequence Dynamics" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Animation Speed" FontSize="12" Opacity="0.7" />
+                            <Slider x:Name="DiySpeedSlider" Minimum="1" Maximum="32" Value="16" />
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Direction" FontSize="12" Opacity="0.7" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Name="ForwardButton" Content="Forward ->" Style="{ThemeResource AccentButtonStyle}" />
+                                <Button x:Name="ReverseButton" Content="<- Reverse" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

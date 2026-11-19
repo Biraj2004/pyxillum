@@ -1,0 +1,75 @@
+<Page
+    x:Class="Pyxillum.Views.SolidPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
+            <!-- Header Section -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Solid Colour" Style="{ThemeResource TitleTextBlockStyle}" />
+                <TextBlock Text="Static hues, colour temperature calibration, and curated swatches" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+            </StackPanel>
+
+            <!-- Color Palette & Kelvin Layout -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column: Custom Colour & Sliders -->
+                <Border Grid.Column="0" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,12,0">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Custom Colour Channels" Style="{ThemeResource SubtitleTextBlockStyle}" />
+
+                        <!-- Active Colour Preview Disc -->
+                        <Grid HorizontalAlignment="Center" Margin="0,8">
+                            <Ellipse x:Name="ActiveColorDisc" Width="80" Height="80" Fill="#FF3B30" Stroke="{ThemeResource CardStrokeColorDefaultBrush}" StrokeThickness="2" />
+                        </Grid>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Red (0-255)" FontSize="12" Opacity="0.7" />
+                            <Slider x:Name="RedSlider" Minimum="0" Maximum="255" Value="255" />
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Green (0-255)" FontSize="12" Opacity="0.7" />
+                            <Slider x:Name="GreenSlider" Minimum="0" Maximum="255" Value="59" />
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Blue (0-255)" FontSize="12" Opacity="0.7" />
+                            <Slider x:Name="BlueSlider" Minimum="0" Maximum="255" Value="48" />
+                        </StackPanel>
+
+                        <TextBox x:Name="HexCodeBox" Header="Hex Code" Text="#FF3B30" Width="140" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Right Column: Kelvin Temperature & Swatches -->
+                <Border Grid.Column="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="12,0,0,0">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Colour Temperature (Kelvin)" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="Adjust between warm candlelight (2,700 K) and daylight (6,500 K)" FontSize="12" Opacity="0.6" />
+
+                        <Slider x:Name="KelvinSlider" Minimum="2700" Maximum="6500" Value="4000" StepFrequency="50" Margin="0,8" />
+                        <TextBlock x:Name="KelvinReadout" Text="4,000 K (Neutral White)" FontWeight="SemiBold" FontSize="13" />
+
+                        <TextBlock Text="Architectural Swatches" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,16,0,0" />
+                        <WrapGrid Orientation="Horizontal" HorizontalChildrenAlignment="Center">
+                            <Button x:Name="SwatchAmber" Content="Amber" Tag="#FFA500" Margin="4" />
+                            <Button x:Name="SwatchWarm" Content="Warm White" Tag="#FFE4B5" Margin="4" />
+                            <Button x:Name="SwatchRed" Content="Crimson" Tag="#FF0000" Margin="4" />
+                            <Button x:Name="SwatchGreen" Content="Emerald" Tag="#00FF00" Margin="4" />
+                            <Button x:Name="SwatchBlue" Content="Cobalt" Tag="#0000FF" Margin="4" />
+                            <Button x:Name="SwatchCyan" Content="Cyan" Tag="#00FFFF" Margin="4" />
+                            <Button x:Name="SwatchMagenta" Content="Magenta" Tag="#FF00FF" Margin="4" />
+                        </WrapGrid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

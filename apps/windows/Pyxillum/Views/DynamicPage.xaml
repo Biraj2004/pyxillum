@@ -1,0 +1,68 @@
+<Page
+    x:Class="Pyxillum.Views.DynamicPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
+            <!-- Header Section -->
+            <StackPanel Spacing="4">
+                <TextBlock Text="Dynamic Effects" Style="{ThemeResource TitleTextBlockStyle}" />
+                <TextBlock Text="Select from 146 on-chip addressable SPI animation patterns" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+            </StackPanel>
+
+            <!-- Dynamics Controls Bar -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Spacing="8" Margin="0,0,16,0">
+                        <TextBlock Text="Animation Velocity (Speed)" FontWeight="Medium" FontSize="13" />
+                        <Slider x:Name="DynamicSpeedSlider" Minimum="1" Maximum="32" Value="16" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="8" Margin="16,0">
+                        <TextBlock Text="Pattern Luminescence (Brightness)" FontWeight="Medium" FontSize="13" />
+                        <Slider x:Name="DynamicBrightnessSlider" Minimum="0" Maximum="255" Value="200" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Center" Margin="16,0,0,0">
+                        <TextBlock Text="Auto Cycle Loop" FontWeight="Medium" FontSize="13" />
+                        <ToggleSwitch x:Name="AutoCycleToggle" OffContent="Off" OnContent="Active" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Search and Filter Bar -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="EffectSearchBox" PlaceholderText="Search 146 effects by name or code..." Width="320" HorizontalAlignment="Left">
+                    <TextBox.Header>
+                        <TextBlock Text="Filter Catalogue" FontWeight="Medium" FontSize="13" Margin="0,0,0,4" />
+                    </TextBox.Header>
+                </TextBox>
+            </Grid>
+
+            <!-- Effects Preset Tile Grid (146 Effects Sample Grid) -->
+            <TextBlock Text="Effect Catalogue" Style="{ThemeResource SubtitleTextBlockStyle}" />
+            <GridView x:Name="EffectsGridView" SelectionMode="Single">
+                <GridView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Width="200" Height="80">
+                            <StackPanel VerticalAlignment="Center" Spacing="4">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Category}" Opacity="0.6" FontSize="11" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

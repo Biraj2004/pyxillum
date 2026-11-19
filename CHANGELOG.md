@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Native Architecture - Phase 4: Windows Native Front End (`apps/windows/`)**:
+  - `apps/windows/Pyxillum.sln`: Visual Studio solution with WinUI 3 project and core FFI interop class library.
+  - `MainWindow.xaml`: Native Windows 11 Fluent interface with Mica backdrop, custom title bar, NavigationView auto-collapsing to rail below 1100px, and single connection-status location.
+  - `AppViewModel.cs`: MVVM ViewModel marshaling immutable core state updates via `DispatcherQueue` and dispatching user actions to `Engine`.
+  - `LedStripMonitor.cs`: 60 FPS virtual strip monitor canvas subscribing to `CompositionTarget.Rendering` only when visible (zero idle CPU).
+  - Dedicated screen implementations: `DevicesPage`, `DynamicPage`, `SolidPage`, `MusicPage`, `DiyPage`, and `SettingsPage` with safety-gate confirmation checkbox.
 - **Pyxillum V2 Native Architecture - Phase 3: Design Source of Truth (`design/`, `tools/`)**:
   - `design/tokens.json`: Canonical 4px spacing grid, radii scale, typography scale, motion durations, and semantic colours in OKLCH with hex fallbacks.
   - `design/strings.toml`: Full British/Indian English localisation strings mapping all core `ErrorKey` message keys and user-facing copy.
