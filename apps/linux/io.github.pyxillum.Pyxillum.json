@@ -1,0 +1,43 @@
+{
+  "app-id": "io.github.pyxillum.Pyxillum",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "46",
+  "sdk": "org.gnome.Sdk",
+  "sdk-extensions": [
+    "org.freedesktop.Sdk.Extension.rust-stable"
+  ],
+  "command": "pyxillum-linux",
+  "finish-args": [
+    "--socket=wayland",
+    "--socket=fallback-x11",
+    "--device=dri",
+    "--share=ipc",
+    "--socket=pulseaudio",
+    "--filesystem=xdg-run/pipewire-0",
+    "--system-talk-name=org.bluez"
+  ],
+  "build-options": {
+    "append-path": "/usr/lib/sdk/rust-stable/bin",
+    "env": {
+      "CARGO_HOME": "/run/build/pyxillum/cargo"
+    }
+  },
+  "modules": [
+    {
+      "name": "pyxillum",
+      "buildsystem": "simple",
+      "build-commands": [
+        "cargo build --release -p pyxillum-linux",
+        "install -Dm755 target/release/pyxillum-linux /app/bin/pyxillum-linux",
+        "install -Dm644 assets/icons/icon-512.png /app/share/icons/hicolor/512x512/apps/io.github.pyxillum.Pyxillum.png",
+        "install -Dm644 apps/linux/data/tokens.css /app/share/pyxillum/tokens.css"
+      ],
+      "sources": [
+        {
+          "type": "dir",
+          "path": "."
+        }
+      ]
+    }
+  ]
+}

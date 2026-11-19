@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Native Architecture - Phase 5: Linux Native Front End (`apps/linux/`)**:
+  - `pyxillum-linux`: Native GTK4 and libadwaita front end crate with direct dependency on `pyxillum-core`.
+  - GNOME HIG layout with `AdwNavigationSplitView`, `AdwToastOverlay`, and `AdwBanner`.
+  - LED monitor canvas using `DrawingArea` with `add_tick_callback` pulling 60 FPS frames from `Engine`.
+  - Linux packaging assets: Flatpak manifest (`io.github.pyxillum.Pyxillum.json`), AppImage build script (`build-appimage.sh`), and Debian package script (`build-deb.sh`).
 - **Pyxillum V2 Native Architecture - Phase 4: Windows Native Front End (`apps/windows/`)**:
   - `apps/windows/Pyxillum.sln`: Visual Studio solution with WinUI 3 project and core FFI interop class library.
   - `MainWindow.xaml`: Native Windows 11 Fluent interface with Mica backdrop, custom title bar, NavigationView auto-collapsing to rail below 1100px, and single connection-status location.

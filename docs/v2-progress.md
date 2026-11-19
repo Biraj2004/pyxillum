@@ -45,7 +45,7 @@ Toolchain: `rustc 1.85.0-nightly` / `stable`
 | **2** | **Audio & FFI Surface** | `crates/audio`, `crates/ffi` | **COMPLETED** | UniFFI proc-macros, C#/Swift bindings, 77 workspace tests passing |
 | **3** | **Design Source of Truth** | `design/`, `tools/` | **COMPLETED** | Tokens, strings.toml, icon map, generator scripts, 79 workspace tests passing |
 | **4** | **Windows Native Front End** | `apps/windows` (WinUI 3) | **COMPLETED** | C# .NET 8, WinUI 3, Mica, NavigationView, 6 views, 79 tests passing |
-| **5** | **Linux Native Front End** | `apps/linux` (GTK4 + libadwaita)| Pending | GNOME HIG, AdwNavigationSplitView, Flatpak |
+| **5** | **Linux Native Front End** | `apps/linux` (GTK4 + libadwaita)| **COMPLETED** | GNOME HIG, AdwNavigationSplitView, Flatpak, AppImage, deb, 79 tests passing |
 | **6** | **macOS Native Front End** | `apps/macos` (SwiftUI) | Pending | macOS 13+, NavigationSplitView, SF Symbols |
 | **7** | **Parity, Accessibility & CI** | `docs/parity.md`, `.github/` | Pending | Full feature checklist, Narrator/VoiceOver/Orca |
 | **8** | **Retire Egui Legacy App** | `crates/app` | Pending | Formal removal of crates/app; open PR summary |
@@ -153,5 +153,26 @@ Toolchain: `rustc 1.85.0-nightly` / `stable`
   - `SettingsPage`: Non-volatile EEPROM hardware configuration with explicit cautionary warning banner, confirmation checkbox (`--i-understand-this-changes-the-device`), pixel count slider/stepper, and RGB calibration sequence selector.
 - **Verification & Quality Gate**:
   - `cargo xtask check` PASSED (formatting clean, zero clippy warnings, 79 workspace tests passing).
+
+---
+
+## Phase 5 Execution Summary
+- **Linux Application Architecture (`apps/linux/`)**:
+  - `pyxillum-linux`: Native GTK4 and libadwaita front end crate with direct dependency on `pyxillum-core`.
+  - Configured conditional dependencies (`cfg(target_os = "linux")`) targeting GTK4 (v4.12+) and libadwaita (v1.5+).
+  - Cross-platform compile safety: Implemented fallback stub on non-Linux hosts to allow full workspace linting, formatting, and unit testing on Windows/macOS.
+- **GNOME Human Interface Guidelines (HIG) Integration**:
+  - `AdwApplicationWindow` housing `AdwToastOverlay` and `AdwNavigationSplitView`.
+  - Sidebar with dedicated navigation items (`Device Hub`, `Dynamic FX`, `Solid Colour`, `Music Rhythm`, `DIY Sequencer`, `Hardware Settings`).
+  - Top header bar featuring master power toggle and connection status.
+  - `AdwBanner` for Bluetooth Low Energy status alerts.
+  - Responsive LED strip monitor using `DrawingArea` with `add_tick_callback` pulling `engine.frame()`.
+- **Linux Packaging & Distribution Artifacts**:
+  - Flatpak manifest (`io.github.pyxillum.Pyxillum.json`) with BlueZ D-Bus permissions, PipeWire/PulseAudio socket access, Wayland, and DRI hardware acceleration.
+  - Portable AppImage creation script (`build-appimage.sh`).
+  - Debian/Ubuntu `.deb` packaging script (`build-deb.sh`) with dependency declarations for `libgtk-4-1`, `libadwaita-1-0`, and `libdbus-1-3`.
+- **Verification & Quality Gate**:
+  - `cargo xtask check` PASSED (79 workspace tests passing, zero clippy warnings, zero formatting issues).
+
 
 

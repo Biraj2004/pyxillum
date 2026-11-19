@@ -1,0 +1,18 @@
+[package]
+name = "pyxillum-linux"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Native Linux GTK4 + libadwaita front end for Pyxillum"
+
+[dependencies]
+pyxillum-core = { path = "../../crates/core" }
+tokio = { workspace = true, features = ["sync", "rt", "rt-multi-thread"] }
+tracing.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk4 = { version = "0.9", features = ["v4_12"] }
+libadwaita = { version = "0.7", features = ["v1_5"] }
+glib = "0.20"
+gio = "0.20"
