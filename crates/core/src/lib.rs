@@ -5,6 +5,29 @@
 //! High-level state management, device coordination, lighting effects generation,
 //! and scene preset persistence for Pyxillum.
 
+pub mod action;
+pub mod catalog;
+pub mod engine;
+pub mod frame;
+pub mod listener;
+pub mod services;
+pub mod state;
+
+pub use action::Action;
+pub use catalog::{
+    find_closest_hardware_effect, get_lighting_title, get_music_mode_name, EffectCategory,
+    LightingStyle, MusicModeInfo, LIGHTING_STYLES, MUSIC_MODES,
+};
+pub use engine::Engine;
+pub use frame::StripFrame;
+pub use listener::{CallbackListener, StateListener};
+pub use services::{DefaultPlatformServices, PlatformServices};
+pub use state::{
+    AppState, ConnectionStatus, CustomColorEffect, DiyEffectType, DiyPageState, DiyPatternStyle,
+    DynamicPageState, ErrorKey, MusicPageState, ScreenId, SolidPageState, StripConfig, UserError,
+    WindowStateData,
+};
+
 use pyxillum_protocol::{
     AudioInput, ChipOrder, Command, DeviceStatus, LightMode, ProtocolError, RgbColor,
     StatusAssembler, EFFECT_SOLID,
@@ -15,7 +38,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use thiserror::Error;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::{broadcast, Mutex, RwLock};
 use tracing::warn;
 
 /// Core domain errors.
@@ -153,17 +176,25 @@ pub struct DeviceManager {
     state: Arc<RwLock<DeviceState>>,
     running: Arc<AtomicBool>,
     last_write: Arc<Mutex<Option<std::time::Instant>>>,
+    status_sender: broadcast::Sender<DeviceStatus>,
 }
 
 impl DeviceManager {
     /// Constructs a new device manager wrapping a given transport backend.
     pub fn new(transport: Box<dyn Transport>) -> Self {
+        let (status_sender, _) = broadcast::channel(16);
         Self {
             transport: Arc::new(Mutex::new(transport)),
             state: Arc::new(RwLock::new(DeviceState::default())),
             running: Arc::new(AtomicBool::new(true)),
             last_write: Arc::new(Mutex::new(None)),
+            status_sender,
         }
+    }
+
+    /// Subscribes to device status notifications received from hardware.
+    pub fn subscribe_status(&self) -> broadcast::Receiver<DeviceStatus> {
+        self.status_sender.subscribe()
     }
 
     /// Paces outbound writes to prevent Bluetooth buffer drops and rate violations.
@@ -207,6 +238,7 @@ impl DeviceManager {
         if let Ok(mut rx) = t.subscribe().await {
             let state_clone = self.state.clone();
             let running_clone = self.running.clone();
+            let status_tx = self.status_sender.clone();
 
             tokio::spawn(async move {
                 let mut assembler = StatusAssembler::new();
@@ -214,8 +246,11 @@ impl DeviceManager {
                     match rx.recv().await {
                         Some(chunk) => {
                             if let Ok(Some(status)) = assembler.feed(&chunk) {
-                                let mut s = state_clone.write().await;
-                                s.update_from_status(&status);
+                                {
+                                    let mut s = state_clone.write().await;
+                                    s.update_from_status(&status);
+                                }
+                                let _ = status_tx.send(status);
                             }
                         }
                         None => break,
@@ -307,6 +342,11 @@ impl PresetStore {
             PathBuf::from(".pyxillum")
         };
 
+        Self::with_dir(base_dir)
+    }
+
+    /// Initializes preset storage in the specified directory.
+    pub fn with_dir(base_dir: PathBuf) -> Self {
         let _ = std::fs::create_dir_all(&base_dir);
         Self { base_dir }
     }
@@ -328,6 +368,38 @@ impl PresetStore {
         let data = std::fs::read_to_string(path)?;
         let preset = serde_json::from_str(&data)?;
         Ok(preset)
+    }
+
+    /// Deletes a preset from disk.
+    pub fn delete_preset(&self, name: &str) -> Result<(), CoreError> {
+        let path = self.base_dir.join(format!("{}.json", name));
+        if path.exists() {
+            std::fs::remove_file(path)?;
+        }
+        Ok(())
+    }
+
+    /// Loads all presets found in the preset directory, returning default starter presets if empty.
+    pub fn load_presets(&self) -> Result<Vec<ScenePreset>, CoreError> {
+        let mut presets = Vec::new();
+        if let Ok(entries) = std::fs::read_dir(&self.base_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|e| e.to_str()) == Some("json") {
+                    if let Ok(data) = std::fs::read_to_string(&path) {
+                        if let Ok(preset) = serde_json::from_str::<ScenePreset>(&data) {
+                            presets.push(preset);
+                        }
+                    }
+                }
+            }
+        }
+
+        if presets.is_empty() {
+            presets = Self::default_presets();
+        }
+
+        Ok(presets)
     }
 
     /// Returns default starter presets.

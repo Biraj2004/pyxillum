@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Complete Windows 11 Fluent UI Redesign (Phases 1-11)
+## [Unreleased]
+
+### Added
+- **Pyxillum V2 Native Architecture - Phase 1: UI-Agnostic Core (`crates/core`)**:
+  - `Action` enum: Exhaustive definition of every user operation across navigation, power, solid colour, dynamic effects, DIY sequences, music modes, strip configuration, and error dismissal.
+  - `AppState`: Immutable state snapshot modeling connection status, device metadata, current screen, individual page state, non-volatile strip configuration, preview mode, and strongly-typed user errors with localisable message keys.
+  - `Engine`: Runtime coordinator with asynchronous action processing, background command dispatching, ~60 Hz coalesced state change notifications, and 60 FPS `StripFrame` virtual rendering.
+  - `StateListener` and `CallbackListener`: Observer trait and convenience wrapper for decoupled UI state rendering.
+  - `PlatformServices`: System abstraction interface for OS-level Bluetooth settings navigation, app data directory resolution, and audio capture permissions.
+  - Shared lighting preset catalogue and colour temperature mappings migrated from `crates/app` to `crates/core`.
+  - Comprehensive integration test suites (`tests/actions.rs`, `tests/golden_frame.rs`, `tests/headless_driver.rs`, `tests/safety_gate.rs`) covering all actions against virtual hardware simulation.
+
+## [1.0.0] - Complete Windows 11 Fluent UI Redesign (Phases 1-11)
 
 ### Added
 - **Phase 1: Design Tokens Engine (`crates/app/src/ui/theme/`)**:
