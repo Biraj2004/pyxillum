@@ -207,15 +207,25 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
 5. **Phase 5 (`apps/linux`)**: Native GTK4 and libadwaita application following GNOME HIG with `AdwNavigationSplitView`, Flatpak manifest, AppImage build script, and Debian package generator.
 6. **Phase 6 (`apps/macos`)**: Native SwiftUI application targeting macOS 13+ with `NavigationSplitView`, SF Symbols, `Cmd+,` Settings scene, Universal Mach-O packaging script, and DMG creator.
 7. **Phase 7 (`docs/parity.md`)**: Complete 21-domain feature parity matrix, screen reader accessibility audit (Narrator, VoiceOver, Orca), and automated parity test.
-8. **Phase 8 Staged Executables (`win-exe/`)**: Release binaries compiled at version `v1.0.5` and staged into `win-exe/` (`pyxillum-desktop.exe`: 5.44 MB, `pyxillum.exe`: 1.76 MB).
+8. **Phase 8 Staged Executables (`win-exe/`)**: Staged newer native WinUI 3 Windows release binaries compiled at version `v1.0.5` alongside the Rust CLI:
+   - `win-exe/pyxillum-desktop.exe`: 326,144 bytes (native Windows 11 WinUI 3 launcher host)
+   - `win-exe/pyxillum-desktop.dll`: 479,232 bytes (WinUI 3 managed presentation layer)
+   - `win-exe/Pyxillum.Core.dll`: 192,512 bytes (C# ViewModel & UniFFI bridge)
+   - `win-exe/pyxillum_ffi.dll`: 2,503,168 bytes (Native Rust core dynamic library)
+   - `win-exe/resources.pri`: 55,296 bytes (Indexed XAML binary components and control styles)
+   - `win-exe/pyxillum.exe`: 1,846,784 bytes (Native Rust CLI tool, ThinLTO stripped)
 
 #### Verification & Test Metrics
 - **Workspace Test Count**: 81 tests passing (100% pass rate).
 - **Static Analysis**: `cargo clippy --workspace --all-targets -- -D warnings` passed with zero warnings.
 - **Formatting**: `cargo fmt --all -- --check` passed with zero discrepancies.
+- **WinUI 3 Execution Verification**:
+  - Live process startup verified from `win-exe/pyxillum-desktop.exe`: Successfully activated window with Mica backdrop, active working set ~124 MB, zero exceptions.
+  - CLI execution verified from `win-exe/pyxillum.exe`: `pyxillum 1.0.5` and `pyxillum status --sim` confirmed operational.
 - **Binary Footprint**:
-  - `win-exe/pyxillum-desktop.exe`: 5,704,192 bytes (~5.44 MB)
-  - `win-exe/pyxillum.exe`: 1,846,784 bytes (~1.76 MB)
+  - `win-exe/pyxillum-desktop.exe`: 326,144 bytes
+  - `win-exe/pyxillum_ffi.dll`: 2,503,168 bytes
+  - `win-exe/pyxillum.exe`: 1,846,784 bytes
 
 
 
@@ -274,15 +284,25 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
 5. **Phase 5 (`apps/linux`)**: Native GTK4 and libadwaita application following GNOME HIG with `AdwNavigationSplitView`, Flatpak manifest, AppImage build script, and Debian package generator.
 6. **Phase 6 (`apps/macos`)**: Native SwiftUI application targeting macOS 13+ with `NavigationSplitView`, SF Symbols, `Cmd+,` Settings scene, Universal Mach-O packaging script, and DMG creator.
 7. **Phase 7 (`docs/parity.md`)**: Complete 21-domain feature parity matrix, screen reader accessibility audit (Narrator, VoiceOver, Orca), and automated parity test.
-8. **Phase 8 Staged Executables (`win-exe/`)**: Release binaries compiled at version `v1.0.5` and staged into `win-exe/` (`pyxillum-desktop.exe`: 5.44 MB, `pyxillum.exe`: 1.76 MB).
+8. **Phase 8 Staged Executables (`win-exe/`)**: Staged newer native WinUI 3 Windows release binaries compiled at version `v1.0.5` alongside the Rust CLI:
+   - `win-exe/pyxillum-desktop.exe`: 326,144 bytes (native Windows 11 WinUI 3 launcher host)
+   - `win-exe/pyxillum-desktop.dll`: 479,232 bytes (WinUI 3 managed presentation layer)
+   - `win-exe/Pyxillum.Core.dll`: 192,512 bytes (C# ViewModel & UniFFI bridge)
+   - `win-exe/pyxillum_ffi.dll`: 2,503,168 bytes (Native Rust core dynamic library)
+   - `win-exe/resources.pri`: 55,296 bytes (Indexed XAML binary components and control styles)
+   - `win-exe/pyxillum.exe`: 1,846,784 bytes (Native Rust CLI tool, ThinLTO stripped)
 
 #### Verification & Test Metrics
 - **Workspace Test Count**: 81 tests passing (100% pass rate).
 - **Static Analysis**: `cargo clippy --workspace --all-targets -- -D warnings` passed with zero warnings.
 - **Formatting**: `cargo fmt --all -- --check` passed with zero discrepancies.
+- **WinUI 3 Execution Verification**:
+  - Live process startup verified from `win-exe/pyxillum-desktop.exe`: Successfully activated window with Mica backdrop, active working set ~124 MB, zero exceptions.
+  - CLI execution verified from `win-exe/pyxillum.exe`: `pyxillum 1.0.5` and `pyxillum status --sim` confirmed operational.
 - **Binary Footprint**:
-  - `win-exe/pyxillum-desktop.exe`: 5,704,192 bytes (~5.44 MB)
-  - `win-exe/pyxillum.exe`: 1,846,784 bytes (~1.76 MB)
+  - `win-exe/pyxillum-desktop.exe`: 326,144 bytes
+  - `win-exe/pyxillum_ffi.dll`: 2,503,168 bytes
+  - `win-exe/pyxillum.exe`: 1,846,784 bytes
 
 
 

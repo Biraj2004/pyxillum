@@ -7,6 +7,10 @@ re-workspace/
 Thumbs.db
 hardware-verification-report.md
 dist/
-win-exe/*.exe
+win-exe/*
+!win-exe/README.md
 scripts/
 rea-apk/
+apps/**/bin/
+apps/**/obj/
+*.log

@@ -31,19 +31,19 @@ namespace Pyxillum.ViewModels
         private bool _hasError = false;
 
         [ObservableProperty]
-        private SolidPageState _solidState = new SolidPageState();
+        private SolidPageState _solidState = new SolidPageState(255, 0, 0, CustomColorEffect.Solid, 4000, new byte[0]);
 
         [ObservableProperty]
-        private DynamicPageState _dynamicState = new DynamicPageState();
+        private DynamicPageState _dynamicState = new DynamicPageState(1, "", true);
 
         [ObservableProperty]
-        private MusicPageState _musicState = new MusicPageState();
+        private MusicPageState _musicState = new MusicPageState(1, AudioInput.Player, 50, false, new float[24]);
 
         [ObservableProperty]
-        private DiyPageState _diyState = new DiyPageState();
+        private DiyPageState _diyState = new DiyPageState(0, DiyPatternStyle.Chase, DiyEffectType.Solid, false, new byte[21]);
 
         [ObservableProperty]
-        private StripConfig _stripConfig = new StripConfig();
+        private StripConfig _stripConfig = new StripConfig(60, ChipOrder.Rgb, 60);
 
         [ObservableProperty]
         private float[] _audioSpectrum = new float[24];
@@ -65,7 +65,7 @@ namespace Pyxillum.ViewModels
             ApplyState(_engine.State);
         }
 
-        public void Dispatch(PyxillumAction action)
+        public void Dispatch(Pyxillum.Core.Action action)
         {
             Task.Run(() => _engine.Dispatch(action));
         }
@@ -83,19 +83,19 @@ namespace Pyxillum.ViewModels
 
         private void ApplyState(AppState state)
         {
-            CurrentScreen = state.CurrentScreen;
-            Connection = state.Connection;
-            IsBluetoothAvailable = state.IsBluetoothAvailable;
-            IsPreviewMode = state.IsPreviewMode;
+            CurrentScreen = state.ActiveScreen;
+            Connection = state.ConnectionStatus;
+            IsBluetoothAvailable = state.BluetoothAvailable;
+            IsPreviewMode = state.PreviewMode;
             SolidState = state.SolidPage;
             DynamicState = state.DynamicPage;
             MusicState = state.MusicPage;
             DiyState = state.DiyPage;
             StripConfig = state.StripConfig;
 
-            if (state.ActiveError != null)
+            if (state.UserError != null)
             {
-                ErrorMessage = state.ActiveError.Message;
+                ErrorMessage = state.UserError.Message;
                 HasError = true;
             }
             else
@@ -114,7 +114,7 @@ namespace Pyxillum.ViewModels
 
         public void OpenBluetoothSettings()
         {
-            _engine.Services.OpenBluetoothSettings();
+            Dispatch(new Pyxillum.Core.Action.OpenBluetoothSettings());
         }
 
         public void DismissError()

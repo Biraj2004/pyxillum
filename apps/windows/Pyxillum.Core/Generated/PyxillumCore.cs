@@ -210,6 +210,36 @@ namespace Pyxillum.Core
         void OnStateChanged(AppState state);
     }
 
+    public interface IStateListener : IStateListenerCallback
+    {
+    }
+
+    public abstract record PyxillumAction : Action
+    {
+        public new record DismissError() : Action.DismissError;
+        public new record TogglePower() : Action.TogglePower;
+        public new record SetBrightness(byte Value) : Action.SetBrightness(Value);
+        public new record SetSpeed(byte Speed) : Action.SetSpeed(Speed);
+        public record Navigate(ScreenId Screen) : Action.SelectScreen(Screen);
+        public record ScanDevices() : Action.StartScan;
+        public record ToggleDiyPreview() : Action.ToggleDiyPlayback(true);
+        public record UpdateDiyStep(uint Index, byte R, byte G, byte B) : Action.SetDiyStepColor(Index, R, G, B);
+        public record ToggleAutoCycle() : Action.ToggleLoopAll(true);
+        public record SelectDynamicEffect(byte EffectCode) : Action.SetEffect(EffectCode);
+        public record SelectAudioInput(AudioInput Input) : Action.SetAudioInput(Input);
+        public new record SetSensitivity(byte Sensitivity) : Action.SetSensitivity(Sensitivity);
+        public record SelectMusicMode(byte ModeIndex) : Action.SetMusicMode(ModeIndex);
+        public record ConfigureStrip : Action.ConfigureHardware
+        {
+            public ConfigureStrip(ushort pixelCount, ChipOrder chipOrder, bool safetyConfirmed = true)
+                : base(chipOrder, (byte)pixelCount, safetyConfirmed)
+            {
+            }
+        }
+        public new record SetColorTemperature(uint Kelvin) : Action.SetColorTemperature(Kelvin);
+        public new record SetSolidColor(byte R, byte G, byte B) : Action.SetSolidColor(R, G, B);
+    }
+
     public class EngineConfig
     {
         public bool IsSimulator { get; set; } = false;
@@ -219,10 +249,46 @@ namespace Pyxillum.Core
     {
         private IntPtr _handle;
         private bool _disposed;
+        private readonly System.Collections.Generic.List<IStateListenerCallback> _listeners = new();
 
-        private Engine(IntPtr handle)
+        private static readonly SolidPageState _defaultSolid = new SolidPageState(255, 0, 0, CustomColorEffect.Solid, 4000, new byte[0]);
+        private static readonly DynamicPageState _defaultDynamic = new DynamicPageState(1, "", true);
+        private static readonly MusicPageState _defaultMusic = new MusicPageState(1, AudioInput.Player, 50, false, new float[24]);
+        private static readonly DiyPageState _defaultDiy = new DiyPageState(0, DiyPatternStyle.Chase, DiyEffectType.Solid, false, new byte[21]);
+        private static readonly StripConfig _defaultStrip = new StripConfig(60, ChipOrder.Rgb, 60);
+
+        private AppState _state = new AppState(
+            new ConnectionStatus(ConnectionStatusKind.Disconnected),
+            true,
+            new DiscoveredDevice[0],
+            true,
+            200,
+            16,
+            false,
+            ScreenId.DeviceHub,
+            _defaultDynamic,
+            _defaultSolid,
+            _defaultMusic,
+            _defaultDiy,
+            _defaultStrip,
+            new ScenePreset[0],
+            new WindowStateData(100, 100, 1200, 800, false),
+            null
+        );
+
+        public AppState State => _state;
+
+        public Engine(bool useSimulated = false)
         {
-            _handle = handle;
+            _handle = IntPtr.Zero;
+        }
+
+        public void Subscribe(IStateListenerCallback listener)
+        {
+            lock (_listeners)
+            {
+                _listeners.Add(listener);
+            }
         }
 
         public static string FfiVersion()

@@ -117,7 +117,7 @@ namespace Pyxillum.Controls
             var frame = FrameSource();
             if (frame == null || frame.Length == 0) return;
 
-            int pixelCount = Math.Min(frame.Length, _diodes.Length);
+            int pixelCount = Math.Min((int)frame.Length, _diodes.Length);
             for (int i = 0; i < pixelCount; i++)
             {
                 int rIdx = i * 3;
