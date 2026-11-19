@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W0: Audit and Diagnostics (`apps/windows/`, `xtask/`, `docs/v2-audit.md`)**:
+  - Structured rolling file logger writing to `%LOCALAPPDATA%\Pyxillum\logs\pyxillum-{date}.log`.
+  - Global unhandled exception handlers (`UnhandledException`, `UnobservedTaskException`, `AppDomain.UnhandledException`) and `DebugSettings.BindingFailed` listener.
+  - Interactive non-modal `InfoBar` in `MainWindow.xaml` with "Copy details" and "Open logs" options.
+  - Automated visual layout audit harness (`pyxillum-desktop.exe --selftest <outdir>` and `cargo xtask windows-selftest`) covering 30 scenarios across 6 screens and 5 resolutions.
+  - Comprehensive defect diagnosis and visual layout audit report published in `docs/v2-audit.md`.
 - **Pyxillum V2 Native Architecture - Phase 7: Parity, Accessibility & Verification (`docs/parity.md`, `tests/`)**:
   - `docs/parity.md`: Comprehensive cross-platform parity matrix across all 21 lighting and hardware operations.
   - Accessibility audit checklist verifying Narrator (UI Automation), VoiceOver (AX traits), and Orca (AT-SPI).

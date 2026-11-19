@@ -13,8 +13,10 @@ namespace Pyxillum
     public partial class MainWindow : Window
     {
         public AppViewModel ViewModel { get; }
+        public Frame MainContentFrame => ContentFrame;
 
         private AppWindow? _appWindow;
+        private string? _lastErrorDetails;
 
         public MainWindow()
         {
@@ -41,12 +43,66 @@ namespace Pyxillum
             OpenBluetoothSettingsButton.Click += (s, e) => ViewModel.OpenBluetoothSettings();
             ErrorNotificationBar.Closed += (s, e) => ViewModel.DismissError();
 
+            CopyErrorDetailsButton.Click += (s, e) =>
+            {
+                if (!string.IsNullOrEmpty(_lastErrorDetails))
+                {
+                    var dataPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
+                    dataPackage.SetText(_lastErrorDetails);
+                    Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dataPackage);
+                }
+            };
+
+            OpenLogsButton.Click += (s, e) =>
+            {
+                Diagnostics.Logger.OpenLogDirectory();
+            };
+
             NavView.ItemInvoked += NavView_ItemInvoked;
             NavView.SelectedItem = NavView.MenuItems[0];
 
             // Observe ViewModel changes for Shell Badges
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             UpdateShellState();
+        }
+
+        public void DisplayGlobalError(string message, string details)
+        {
+            _lastErrorDetails = details;
+            ErrorNotificationBar.Message = message;
+            ErrorNotificationBar.IsOpen = true;
+            OpenLogsButton.Visibility = Visibility.Visible;
+        }
+
+        public void NavigateTo(string tag)
+        {
+            switch (tag)
+            {
+                case "Devices":
+                    ViewModel.Navigate(ScreenId.DeviceHub);
+                    ContentFrame.Navigate(typeof(Views.DevicesPage), ViewModel);
+                    break;
+                case "Dynamic":
+                    ViewModel.Navigate(ScreenId.Dynamic);
+                    ContentFrame.Navigate(typeof(Views.DynamicPage), ViewModel);
+                    break;
+                case "Solid":
+                    ViewModel.Navigate(ScreenId.Solid);
+                    ContentFrame.Navigate(typeof(Views.SolidPage), ViewModel);
+                    break;
+                case "Music":
+                    ViewModel.Navigate(ScreenId.Music);
+                    ContentFrame.Navigate(typeof(Views.MusicPage), ViewModel);
+                    break;
+                case "Diy":
+                    ViewModel.Navigate(ScreenId.Diy);
+                    ContentFrame.Navigate(typeof(Views.DiyPage), ViewModel);
+                    break;
+                case "Settings":
+                    ViewModel.Navigate(ScreenId.HardwareSettings);
+                    ContentFrame.Navigate(typeof(Views.SettingsPage), ViewModel);
+                    break;
+            }
         }
 
         private void ConfigureWindowGeometry()
@@ -75,33 +131,7 @@ namespace Pyxillum
         {
             if (args.InvokedItemContainer is NavigationViewItem item && item.Tag is string tag)
             {
-                switch (tag)
-                {
-                    case "Devices":
-                        ViewModel.Navigate(ScreenId.DeviceHub);
-                        ContentFrame.Navigate(typeof(Views.DevicesPage), ViewModel);
-                        break;
-                    case "Dynamic":
-                        ViewModel.Navigate(ScreenId.Dynamic);
-                        ContentFrame.Navigate(typeof(Views.DynamicPage), ViewModel);
-                        break;
-                    case "Solid":
-                        ViewModel.Navigate(ScreenId.Solid);
-                        ContentFrame.Navigate(typeof(Views.SolidPage), ViewModel);
-                        break;
-                    case "Music":
-                        ViewModel.Navigate(ScreenId.Music);
-                        ContentFrame.Navigate(typeof(Views.MusicPage), ViewModel);
-                        break;
-                    case "Diy":
-                        ViewModel.Navigate(ScreenId.Diy);
-                        ContentFrame.Navigate(typeof(Views.DiyPage), ViewModel);
-                        break;
-                    case "Settings":
-                        ViewModel.Navigate(ScreenId.HardwareSettings);
-                        ContentFrame.Navigate(typeof(Views.SettingsPage), ViewModel);
-                        break;
-                }
+                NavigateTo(tag);
             }
         }
 

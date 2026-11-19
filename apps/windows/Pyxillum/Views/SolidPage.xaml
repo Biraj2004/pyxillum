@@ -58,15 +58,17 @@
                         <TextBlock x:Name="KelvinReadout" Text="4,000 K (Neutral White)" FontWeight="SemiBold" FontSize="13" />
 
                         <TextBlock Text="Architectural Swatches" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,16,0,0" />
-                        <WrapGrid Orientation="Horizontal" HorizontalChildrenAlignment="Center">
-                            <Button x:Name="SwatchAmber" Content="Amber" Tag="#FFA500" Margin="4" />
-                            <Button x:Name="SwatchWarm" Content="Warm White" Tag="#FFE4B5" Margin="4" />
-                            <Button x:Name="SwatchRed" Content="Crimson" Tag="#FF0000" Margin="4" />
-                            <Button x:Name="SwatchGreen" Content="Emerald" Tag="#00FF00" Margin="4" />
-                            <Button x:Name="SwatchBlue" Content="Cobalt" Tag="#0000FF" Margin="4" />
-                            <Button x:Name="SwatchCyan" Content="Cyan" Tag="#00FFFF" Margin="4" />
-                            <Button x:Name="SwatchMagenta" Content="Magenta" Tag="#FF00FF" Margin="4" />
-                        </WrapGrid>
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Name="SwatchAmber" Content="Amber" Tag="#FFA500" />
+                                <Button x:Name="SwatchWarm" Content="Warm White" Tag="#FFE4B5" />
+                                <Button x:Name="SwatchRed" Content="Crimson" Tag="#FF0000" />
+                                <Button x:Name="SwatchGreen" Content="Emerald" Tag="#00FF00" />
+                                <Button x:Name="SwatchBlue" Content="Cobalt" Tag="#0000FF" />
+                                <Button x:Name="SwatchCyan" Content="Cyan" Tag="#00FFFF" />
+                                <Button x:Name="SwatchMagenta" Content="Magenta" Tag="#FF00FF" />
+                            </StackPanel>
+                        </ScrollViewer>
                     </StackPanel>
                 </Border>
             </Grid>

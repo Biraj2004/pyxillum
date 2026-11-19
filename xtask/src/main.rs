@@ -45,6 +45,13 @@ enum Commands {
 
     /// Build and stage UniFFI native dynamic library for Linux.
     FfiLinux,
+
+    /// Run Windows WinUI 3 self-test suite and layout audit harness.
+    WindowsSelftest {
+        /// Output directory for rendered PNG screenshots.
+        #[arg(long, default_value = "dist/selftest_screenshots")]
+        out_dir: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -153,6 +160,44 @@ fn main() -> Result<()> {
             println!("=== [xtask] Building FFI cdylib for Linux ===");
             run_cargo(&["build", "--release", "-p", "pyxillum-ffi"])?;
             println!("=== [xtask] Linux FFI artifact compiled! ===");
+        }
+        Commands::WindowsSelftest { out_dir } => {
+            println!("=== [xtask] Running Windows WinUI 3 Selftest Harness ===");
+            let dotnet_cmd = if cfg!(windows) {
+                let user_profile = std::env::var("USERPROFILE").unwrap_or_default();
+                let local_dotnet = format!("{}\\.dotnet\\dotnet.exe", user_profile);
+                if std::path::Path::new(&local_dotnet).exists() {
+                    local_dotnet
+                } else {
+                    "dotnet".to_string()
+                }
+            } else {
+                "dotnet".to_string()
+            };
+
+            let status = Command::new(&dotnet_cmd)
+                .args([
+                    "run",
+                    "--project",
+                    "apps/windows/Pyxillum/Pyxillum.csproj",
+                    "-c",
+                    "Release",
+                    "-p:Platform=x64",
+                    "--",
+                    "--selftest",
+                    &out_dir,
+                ])
+                .status()
+                .context("Failed to spawn dotnet run for Windows selftest")?;
+
+            if !status.success() {
+                bail!(
+                    "Windows selftest reported failures (exit code: {:?})",
+                    status.code()
+                );
+            }
+
+            println!("=== [xtask] Windows WinUI 3 Selftest completed successfully! ===");
         }
         Commands::Msi => {
             println!("=== [xtask] Packaging Windows MSI Installer ===");

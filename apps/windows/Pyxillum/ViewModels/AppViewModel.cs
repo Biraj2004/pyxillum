@@ -53,12 +53,12 @@ namespace Pyxillum.ViewModels
 
         public ObservableCollection<DiscoveredDevice> DiscoveredDevices { get; } = new();
 
-        public AppViewModel()
+        public AppViewModel(bool useSimulated = false)
         {
             _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             // Initialise shared core engine (starts in simulated mode if hardware BLE unavailable)
-            _engine = new Engine(useSimulated: false);
+            _engine = new Engine(useSimulated: useSimulated || Diagnostics.AppConfig.IsSelftest || Diagnostics.AppConfig.UseSimulated);
             _engine.Subscribe(this);
 
             // Fetch initial immutable state snapshot

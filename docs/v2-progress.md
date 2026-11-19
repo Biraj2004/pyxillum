@@ -227,6 +227,27 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
   - `win-exe/pyxillum_ffi.dll`: 2,503,168 bytes
   - `win-exe/pyxillum.exe`: 1,846,784 bytes
 
+---
+
+## Phase W0 Execution Summary (Audit and Diagnostics)
+- **Structured Rolling File Logger (`apps/windows/Pyxillum/Diagnostics/Logger.cs`)**:
+  - Thread-safe zero-allocation file logger outputting structured records to `%LOCALAPPDATA%\Pyxillum\logs\pyxillum-{date}.log`.
+  - Captures timestamps, thread IDs, log levels (`DEBUG`, `INFO`, `WARN`, `ERROR`), component contexts, and exception traces.
+  - Added `Logger.OpenLogDirectory()` helper to surface explorer logs folder directly to the user.
+- **CLI Configuration Flag Parser (`apps/windows/Pyxillum/Diagnostics/AppConfig.cs`)**:
+  - Parses `--selftest <outdir>`, `--sim`, `--reset-window`, and `--icon-sheet` flags from command line arguments.
+- **Global Unhandled Exception & Binding Interceptors (`App.xaml.cs`)**:
+  - Registered handlers for `Application.UnhandledException`, `TaskScheduler.UnobservedTaskException`, and `AppDomain.UnhandledException`.
+  - Attached `DebugSettings.BindingFailed` to capture XAML data-binding faults directly to the structured log.
+  - Wired non-modal `InfoBar` in `MainWindow.xaml` (`CopyErrorDetailsButton` and `OpenLogsButton`) enabling non-crashing graceful degradation.
+- **Automated WinUI 3 Layout Audit Harness (`SelftestRunner.cs` & `xtask`)**:
+  - Added `cargo xtask windows-selftest --out-dir <dir>` command in `xtask/src/main.rs`.
+  - Automated 30 test scenarios across 6 pages (Device Hub, Dynamic FX, Solid Colour, Music Rhythm, DIY Sequencer, Hardware Settings) and 5 window sizes (1000x650, 1280x720, 1536x832, 1920x1030, 2560x1440).
+  - Captures off-screen layout passes and writes 30 PNG screenshots via `RenderTargetBitmap` into `dist/selftest_screenshots/`.
+  - Audited 6 programmatic layout criteria: (a) non-empty content (>10 elements), (b) element bounds containment, (c) untrimmed text tooltips, (d) horizontal scrollbar activity, (e) binding failures, and (f) hover state stability.
+  - Published comprehensive visual defect and root cause analysis in `docs/v2-audit.md`.
+
+
 
 
 ---
@@ -303,6 +324,27 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
   - `win-exe/pyxillum-desktop.exe`: 326,144 bytes
   - `win-exe/pyxillum_ffi.dll`: 2,503,168 bytes
   - `win-exe/pyxillum.exe`: 1,846,784 bytes
+
+---
+
+## Phase W0 Execution Summary (Audit and Diagnostics)
+- **Structured Rolling File Logger (`apps/windows/Pyxillum/Diagnostics/Logger.cs`)**:
+  - Thread-safe zero-allocation file logger outputting structured records to `%LOCALAPPDATA%\Pyxillum\logs\pyxillum-{date}.log`.
+  - Captures timestamps, thread IDs, log levels (`DEBUG`, `INFO`, `WARN`, `ERROR`), component contexts, and exception traces.
+  - Added `Logger.OpenLogDirectory()` helper to surface explorer logs folder directly to the user.
+- **CLI Configuration Flag Parser (`apps/windows/Pyxillum/Diagnostics/AppConfig.cs`)**:
+  - Parses `--selftest <outdir>`, `--sim`, `--reset-window`, and `--icon-sheet` flags from command line arguments.
+- **Global Unhandled Exception & Binding Interceptors (`App.xaml.cs`)**:
+  - Registered handlers for `Application.UnhandledException`, `TaskScheduler.UnobservedTaskException`, and `AppDomain.UnhandledException`.
+  - Attached `DebugSettings.BindingFailed` to capture XAML data-binding faults directly to the structured log.
+  - Wired non-modal `InfoBar` in `MainWindow.xaml` (`CopyErrorDetailsButton` and `OpenLogsButton`) enabling non-crashing graceful degradation.
+- **Automated WinUI 3 Layout Audit Harness (`SelftestRunner.cs` & `xtask`)**:
+  - Added `cargo xtask windows-selftest --out-dir <dir>` command in `xtask/src/main.rs`.
+  - Automated 30 test scenarios across 6 pages (Device Hub, Dynamic FX, Solid Colour, Music Rhythm, DIY Sequencer, Hardware Settings) and 5 window sizes (1000x650, 1280x720, 1536x832, 1920x1030, 2560x1440).
+  - Captures off-screen layout passes and writes 30 PNG screenshots via `RenderTargetBitmap` into `dist/selftest_screenshots/`.
+  - Audited 6 programmatic layout criteria: (a) non-empty content (>10 elements), (b) element bounds containment, (c) untrimmed text tooltips, (d) horizontal scrollbar activity, (e) binding failures, and (f) hover state stability.
+  - Published comprehensive visual defect and root cause analysis in `docs/v2-audit.md`.
+
 
 
 

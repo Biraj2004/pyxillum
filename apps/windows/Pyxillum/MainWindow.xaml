@@ -74,11 +74,23 @@
                 </InfoBar.ActionButton>
             </InfoBar>
 
-            <InfoBar x:Name="ErrorNotificationBar"
-                     IsOpen="False"
-                     Severity="Error"
-                     Title="Operating Warning"
-                     IsClosable="True" />
+            <Grid x:Name="ErrorBarContainer">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <InfoBar x:Name="ErrorNotificationBar"
+                         Grid.Column="0"
+                         IsOpen="False"
+                         Severity="Error"
+                         Title="Operating Error"
+                         IsClosable="True">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="CopyErrorDetailsButton" Content="Copy details" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+                <Button x:Name="OpenLogsButton" Grid.Column="1" Content="Open logs" VerticalAlignment="Center" Margin="8,0,16,0" Visibility="Collapsed" />
+            </Grid>
         </StackPanel>
 
         <!-- NavigationView Host -->
