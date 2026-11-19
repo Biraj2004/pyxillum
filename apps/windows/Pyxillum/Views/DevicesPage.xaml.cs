@@ -24,14 +24,36 @@ namespace Pyxillum.Views
                 ViewModel = vm;
                 DeviceListView.ItemsSource = ViewModel.DiscoveredDevices;
                 ViewModel.DiscoveredDevices.CollectionChanged += DiscoveredDevices_CollectionChanged;
+                ViewModel.PropertyChanged += ViewModel_PropertyChanged;
                 UpdateListVisibility();
 
-                ScanButton.Click += (s, args) =>
-                {
-                    ScanRing.IsActive = true;
-                    ScanRing.Visibility = Visibility.Visible;
-                    ViewModel.Dispatch(new PyxillumAction.ScanDevices());
-                };
+                ScanButton.Click += (s, args) => TriggerScan();
+                EmptyScanButton.Click += (s, args) => TriggerScan();
+                ErrorRetryButton.Click += (s, args) => TriggerScan();
+            }
+        }
+
+        private void TriggerScan()
+        {
+            if (ViewModel == null) return;
+            ScanRing.IsActive = true;
+            ScanRing.Visibility = Visibility.Visible;
+            LoadingStatusText.Text = "Scanning for BLE devices...";
+            LoadingStateCard.Visibility = Visibility.Visible;
+            EmptyStateCard.Visibility = Visibility.Collapsed;
+            DeviceListView.Visibility = Visibility.Collapsed;
+            PageErrorBar.IsOpen = false;
+
+            ViewModel.Dispatch(new PyxillumAction.ScanDevices());
+        }
+
+        private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(AppViewModel.Connection) ||
+                e.PropertyName == nameof(AppViewModel.HasError) ||
+                e.PropertyName == nameof(AppViewModel.ErrorMessage))
+            {
+                UpdateListVisibility();
             }
         }
 
@@ -42,15 +64,32 @@ namespace Pyxillum.Views
 
         private void UpdateListVisibility()
         {
-            if (ViewModel != null && ViewModel.DiscoveredDevices.Count > 0)
+            if (ViewModel == null) return;
+
+            ScanRing.IsActive = false;
+            ScanRing.Visibility = Visibility.Collapsed;
+
+            if (ViewModel.HasError && !string.IsNullOrEmpty(ViewModel.ErrorMessage))
+            {
+                PageErrorBar.Message = ViewModel.ErrorMessage;
+                PageErrorBar.IsOpen = true;
+            }
+            else
+            {
+                PageErrorBar.IsOpen = false;
+            }
+
+            if (ViewModel.DiscoveredDevices.Count > 0)
             {
                 EmptyStateCard.Visibility = Visibility.Collapsed;
+                LoadingStateCard.Visibility = Visibility.Collapsed;
                 DeviceListView.Visibility = Visibility.Visible;
             }
             else
             {
-                EmptyStateCard.Visibility = Visibility.Visible;
                 DeviceListView.Visibility = Visibility.Collapsed;
+                LoadingStateCard.Visibility = Visibility.Collapsed;
+                EmptyStateCard.Visibility = Visibility.Visible;
             }
         }
     }

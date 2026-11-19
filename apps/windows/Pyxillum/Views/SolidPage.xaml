@@ -14,6 +14,31 @@
                 <TextBlock Text="Static hues, colour temperature calibration, and curated swatches" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
             </StackPanel>
 
+            <!-- Error State InfoBar -->
+            <InfoBar x:Name="SolidErrorBar" IsOpen="False" Severity="Error" Title="Colour Update Error" Message="Failed to transmit RGB colour parameters to controller.">
+                <InfoBar.ActionButton>
+                    <Button x:Name="SolidRetryButton" Content="Retry" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <!-- Loading State Card -->
+            <Border x:Name="SolidLoadingCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                    <ProgressRing IsActive="True" Width="24" Height="24" />
+                    <TextBlock Text="Transferring static colour to controller..." VerticalAlignment="Center" FontWeight="Medium" />
+                </StackPanel>
+            </Border>
+
+            <!-- Empty State Card -->
+            <Border x:Name="SolidEmptyCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="32" Visibility="Collapsed">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE790;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
+                    <TextBlock Text="No Colour Active" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Select a colour swatch or adjust the RGB sliders to calibrate controller diodes." Opacity="0.7" TextAlignment="Center" />
+                    <Button x:Name="ResetDefaultColorButton" Content="Reset to warm white" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
             <!-- Color Palette & Kelvin Layout -->
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -58,17 +83,19 @@
                         <TextBlock x:Name="KelvinReadout" Text="4,000 K (Neutral White)" FontWeight="SemiBold" FontSize="13" />
 
                         <TextBlock Text="Architectural Swatches" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,16,0,0" />
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button x:Name="SwatchAmber" Content="Amber" Tag="#FFA500" />
                                 <Button x:Name="SwatchWarm" Content="Warm White" Tag="#FFE4B5" />
                                 <Button x:Name="SwatchRed" Content="Crimson" Tag="#FF0000" />
                                 <Button x:Name="SwatchGreen" Content="Emerald" Tag="#00FF00" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button x:Name="SwatchBlue" Content="Cobalt" Tag="#0000FF" />
                                 <Button x:Name="SwatchCyan" Content="Cyan" Tag="#00FFFF" />
                                 <Button x:Name="SwatchMagenta" Content="Magenta" Tag="#FF00FF" />
                             </StackPanel>
-                        </ScrollViewer>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>

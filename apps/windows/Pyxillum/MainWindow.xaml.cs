@@ -60,6 +60,7 @@ namespace Pyxillum
 
             NavView.ItemInvoked += NavView_ItemInvoked;
             NavView.SelectedItem = NavView.MenuItems[0];
+            NavigateTo("Devices");
 
             // Observe ViewModel changes for Shell Badges
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;

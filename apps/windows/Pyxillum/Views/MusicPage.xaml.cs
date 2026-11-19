@@ -91,6 +91,22 @@ namespace Pyxillum.Views
                         ViewModel.Dispatch(new PyxillumAction.SelectMusicMode(item.Code));
                     }
                 };
+
+                MusicRetryButton.Click += (s, args) =>
+                {
+                    MusicErrorBar.IsOpen = false;
+                    ViewModel.Dispatch(new PyxillumAction.SelectAudioInput(AudioInput.Player));
+                };
+
+                SimulateAudioButton.Click += (s, args) =>
+                {
+                    MusicEmptyCard.Visibility = Visibility.Collapsed;
+                    for (int i = 0; i < 24; i++)
+                    {
+                        double h = 10 + (i % 6) * 12;
+                        _spectrumBars[i].Height = h;
+                    }
+                };
             }
         }
     }

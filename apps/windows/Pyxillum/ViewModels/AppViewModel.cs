@@ -67,6 +67,7 @@ namespace Pyxillum.ViewModels
 
         public void Dispatch(Pyxillum.Core.Action action)
         {
+            Diagnostics.Logger.Info($"[ViewModel] Action dispatched: {action.GetType().Name}");
             Task.Run(() => _engine.Dispatch(action));
         }
 
@@ -77,6 +78,7 @@ namespace Pyxillum.ViewModels
 
         public void OnStateChanged(AppState newState)
         {
+            Diagnostics.Logger.Debug($"[ViewModel] State callback received: screen={newState.ActiveScreen}, connection={newState.ConnectionStatus.Kind}");
             // Marshal immutable state snapshot updates to UI thread via DispatcherQueue
             _dispatcherQueue.TryEnqueue(() => ApplyState(newState));
         }

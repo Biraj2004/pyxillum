@@ -14,6 +14,21 @@
                 <TextBlock Text="Select from 146 on-chip addressable SPI animation patterns" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
             </StackPanel>
 
+            <!-- Error State InfoBar -->
+            <InfoBar x:Name="DynamicErrorBar" IsOpen="False" Severity="Error" Title="Effect Dispatch Error" Message="Failed to transfer animation pattern to controller.">
+                <InfoBar.ActionButton>
+                    <Button x:Name="DynamicRetryButton" Content="Retry" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <!-- Loading State Card -->
+            <Border x:Name="DynamicLoadingCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                    <ProgressRing IsActive="True" Width="24" Height="24" />
+                    <TextBlock Text="Syncing dynamic pattern with controller..." VerticalAlignment="Center" FontWeight="Medium" />
+                </StackPanel>
+            </Border>
+
             <!-- Dynamics Controls Bar -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
                 <Grid>
@@ -51,6 +66,17 @@
 
             <!-- Effects Preset Tile Grid (146 Effects Sample Grid) -->
             <TextBlock Text="Effect Catalogue" Style="{ThemeResource SubtitleTextBlockStyle}" />
+
+            <!-- Empty Search Filter State -->
+            <Border x:Name="DynamicEmptyCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="32" Visibility="Collapsed">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE721;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
+                    <TextBlock Text="No Matching Effects Found" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Try clearing your search query or entering a different effect name or opcode." Opacity="0.7" TextAlignment="Center" />
+                    <Button x:Name="ClearFilterButton" Content="Clear filter" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
             <GridView x:Name="EffectsGridView" SelectionMode="Single">
                 <GridView.ItemTemplate>
                     <DataTemplate>

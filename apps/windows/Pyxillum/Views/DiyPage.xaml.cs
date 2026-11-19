@@ -98,6 +98,18 @@ namespace Pyxillum.Views
                         }
                     }
                 };
+
+                DiyRetryButton.Click += (s, args) =>
+                {
+                    DiyErrorBar.IsOpen = false;
+                    ViewModel.Dispatch(new PyxillumAction.ToggleDiyPreview());
+                };
+
+                EmptyAddStepButton.Click += (s, args) =>
+                {
+                    AddNodeButton(_stepButtons.Count);
+                    DiyEmptyCard.Visibility = Visibility.Collapsed;
+                };
             }
         }
 

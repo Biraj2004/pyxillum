@@ -67,6 +67,17 @@ namespace Pyxillum.Views
                         ));
                     }
                 };
+
+                SettingsRetryButton.Click += (s, args) =>
+                {
+                    SettingsErrorBar.IsOpen = false;
+                };
+
+                GoToDevicesButton.Click += (s, args) =>
+                {
+                    ViewModel.Navigate(ScreenId.DeviceHub);
+                    Frame.Navigate(typeof(DevicesPage), ViewModel);
+                };
             }
         }
     }

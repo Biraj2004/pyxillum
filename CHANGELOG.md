@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W1: Foundation & Viewport Integrity (`apps/windows/`, `xtask/`)**:
+  - Deterministic startup navigation in `MainWindow.xaml.cs` guaranteeing the initial screen activates `Devices` reliably.
+  - Implemented 4-state visual architecture (Loading, Content, Empty, Error) across all 6 views (`DevicesPage`, `DynamicPage`, `SolidPage`, `MusicPage`, `DiyPage`, `SettingsPage`).
+  - Added primary actionable CTAs across all empty states ("Scan again", "Clear filter", "Reset to warm white", "Simulate 128 BPM beat", "Add first node", "Go to Device Hub").
+  - Fixed horizontal scrollbar overflow on `SolidPage` with a balanced 2-row swatch layout.
+  - Resolved `COMException` in `MeasureOverride` caused by legacy UWP `<WrapGrid>`.
+  - Added structured action dispatch and state transition logging in `AppViewModel.cs`.
+  - Verified 30 layout scenarios via `cargo xtask windows-selftest` with 0 defects detected.
 - **Pyxillum V2 Windows Native Front End - Phase W0: Audit and Diagnostics (`apps/windows/`, `xtask/`, `docs/v2-audit.md`)**:
   - Structured rolling file logger writing to `%LOCALAPPDATA%\Pyxillum\logs\pyxillum-{date}.log`.
   - Global unhandled exception handlers (`UnhandledException`, `UnobservedTaskException`, `AppDomain.UnhandledException`) and `DebugSettings.BindingFailed` listener.

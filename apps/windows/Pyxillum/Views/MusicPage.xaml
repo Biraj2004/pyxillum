@@ -14,6 +14,31 @@
                 <TextBlock Text="Acoustic tracking and real-time spectrum visualizer" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
             </StackPanel>
 
+            <!-- Error State InfoBar -->
+            <InfoBar x:Name="MusicErrorBar" IsOpen="False" Severity="Error" Title="Audio Capture Error" Message="Unable to capture audio from selected source. Check microphone or loopback permissions.">
+                <InfoBar.ActionButton>
+                    <Button x:Name="MusicRetryButton" Content="Retry" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <!-- Loading State Card -->
+            <Border x:Name="MusicLoadingCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                    <ProgressRing IsActive="True" Width="24" Height="24" />
+                    <TextBlock Text="Initializing audio capture pipeline and frequency bins..." VerticalAlignment="Center" FontWeight="Medium" />
+                </StackPanel>
+            </Border>
+
+            <!-- Empty State Card -->
+            <Border x:Name="MusicEmptyCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="32" Visibility="Collapsed">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xEC4F;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
+                    <TextBlock Text="No Sound Detected" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Play music or audio through your PC or speak near the microphone to observe real-time spectrum tracking." Opacity="0.7" TextAlignment="Center" />
+                    <Button x:Name="SimulateAudioButton" Content="Simulate 128 BPM beat" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
             <!-- Audio Input Controls -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
                 <Grid>

@@ -163,32 +163,40 @@ fn main() -> Result<()> {
         }
         Commands::WindowsSelftest { out_dir } => {
             println!("=== [xtask] Running Windows WinUI 3 Selftest Harness ===");
-            let dotnet_cmd = if cfg!(windows) {
-                let user_profile = std::env::var("USERPROFILE").unwrap_or_default();
-                let local_dotnet = format!("{}\\.dotnet\\dotnet.exe", user_profile);
-                if std::path::Path::new(&local_dotnet).exists() {
-                    local_dotnet
+            let exe_path = std::path::Path::new("dist/winui3/pyxillum-desktop.exe");
+            let status = if exe_path.exists() {
+                Command::new(exe_path)
+                    .args(["--selftest", &out_dir])
+                    .status()
+                    .context("Failed to run pyxillum-desktop.exe for Windows selftest")?
+            } else {
+                let dotnet_cmd = if cfg!(windows) {
+                    let user_profile = std::env::var("USERPROFILE").unwrap_or_default();
+                    let local_dotnet = format!("{}\\.dotnet\\dotnet.exe", user_profile);
+                    if std::path::Path::new(&local_dotnet).exists() {
+                        local_dotnet
+                    } else {
+                        "dotnet".to_string()
+                    }
                 } else {
                     "dotnet".to_string()
-                }
-            } else {
-                "dotnet".to_string()
-            };
+                };
 
-            let status = Command::new(&dotnet_cmd)
-                .args([
-                    "run",
-                    "--project",
-                    "apps/windows/Pyxillum/Pyxillum.csproj",
-                    "-c",
-                    "Release",
-                    "-p:Platform=x64",
-                    "--",
-                    "--selftest",
-                    &out_dir,
-                ])
-                .status()
-                .context("Failed to spawn dotnet run for Windows selftest")?;
+                Command::new(&dotnet_cmd)
+                    .args([
+                        "run",
+                        "--project",
+                        "apps/windows/Pyxillum/Pyxillum.csproj",
+                        "-c",
+                        "Release",
+                        "-p:Platform=x64",
+                        "--",
+                        "--selftest",
+                        &out_dir,
+                    ])
+                    .status()
+                    .context("Failed to spawn dotnet run for Windows selftest")?
+            };
 
             if !status.success() {
                 bail!(

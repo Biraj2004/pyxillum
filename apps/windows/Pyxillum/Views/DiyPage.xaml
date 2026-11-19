@@ -24,6 +24,31 @@
                 </StackPanel>
             </Grid>
 
+            <!-- Error State InfoBar -->
+            <InfoBar x:Name="DiyErrorBar" IsOpen="False" Severity="Error" Title="Sequencer Error" Message="Failed to synchronise DIY keyframe sequence with controller.">
+                <InfoBar.ActionButton>
+                    <Button x:Name="DiyRetryButton" Content="Retry" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <!-- Loading State Card -->
+            <Border x:Name="DiyLoadingCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                    <ProgressRing IsActive="True" Width="24" Height="24" />
+                    <TextBlock Text="Transferring sequence keyframes to controller EEPROM..." VerticalAlignment="Center" FontWeight="Medium" />
+                </StackPanel>
+            </Border>
+
+            <!-- Empty State Card -->
+            <Border x:Name="DiyEmptyCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="32" Visibility="Collapsed">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE81C;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
+                    <TextBlock Text="No Keyframe Steps Configured" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Add your first animation step node to construct a custom chase or gradient sequence." Opacity="0.7" TextAlignment="Center" />
+                    <Button x:Name="EmptyAddStepButton" Content="Add first node" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
             <!-- 14-Step Timeline Container -->
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
                 <StackPanel Spacing="12">

@@ -42,6 +42,16 @@ namespace Pyxillum.Views
                 SwatchBlue.Click += (s, args) => SetSwatchColor(0, 0, 255);
                 SwatchCyan.Click += (s, args) => SetSwatchColor(0, 255, 255);
                 SwatchMagenta.Click += (s, args) => SetSwatchColor(255, 0, 255);
+
+                SolidRetryButton.Click += (s, args) =>
+                {
+                    SolidErrorBar.IsOpen = false;
+                    UpdateCustomColor();
+                };
+                ResetDefaultColorButton.Click += (s, args) =>
+                {
+                    SetSwatchColor(255, 200, 140);
+                };
             }
         }
 

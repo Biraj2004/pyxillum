@@ -14,6 +14,31 @@
                 <TextBlock Text="Configure non-volatile EEPROM registers on physical SP621E controllers" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
             </StackPanel>
 
+            <!-- Error State InfoBar -->
+            <InfoBar x:Name="SettingsErrorBar" IsOpen="False" Severity="Error" Title="EEPROM Write Error" Message="Failed to mutate non-volatile controller registers. Verify safety gate confirmation.">
+                <InfoBar.ActionButton>
+                    <Button x:Name="SettingsRetryButton" Content="Retry" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <!-- Loading State Card -->
+            <Border x:Name="SettingsLoadingCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                    <ProgressRing IsActive="True" Width="24" Height="24" />
+                    <TextBlock Text="Writing non-volatile parameters to controller EEPROM registers..." VerticalAlignment="Center" FontWeight="Medium" />
+                </StackPanel>
+            </Border>
+
+            <!-- Empty State Card -->
+            <Border x:Name="SettingsEmptyCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="32" Visibility="Collapsed">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE713;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
+                    <TextBlock Text="No Controller Connected" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Connect to a physical SP621E controller in Device Hub to query or configure EEPROM registers." Opacity="0.7" TextAlignment="Center" />
+                    <Button x:Name="GoToDevicesButton" Content="Go to Device Hub" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
             <!-- Safety Caution Warning Banner -->
             <Border Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" BorderBrush="{StaticResource BrushWarning}" BorderThickness="1" CornerRadius="12" Padding="20">
                 <StackPanel Spacing="12">

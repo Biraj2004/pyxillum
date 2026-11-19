@@ -67,6 +67,54 @@ namespace Pyxillum.Views
                         ViewModel.Dispatch(new PyxillumAction.SelectDynamicEffect(selected.Code));
                     }
                 };
+
+                EffectSearchBox.TextChanged += (s, args) =>
+                {
+                    ApplyFilter(EffectSearchBox.Text);
+                };
+
+                ClearFilterButton.Click += (s, args) =>
+                {
+                    EffectSearchBox.Text = string.Empty;
+                    ApplyFilter(string.Empty);
+                };
+
+                DynamicRetryButton.Click += (s, args) =>
+                {
+                    DynamicErrorBar.IsOpen = false;
+                    if (EffectsGridView.SelectedItem is EffectItem selected)
+                    {
+                        ViewModel.Dispatch(new PyxillumAction.SelectDynamicEffect(selected.Code));
+                    }
+                };
+            }
+        }
+
+        private void ApplyFilter(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                EffectsGridView.ItemsSource = _allEffects;
+                DynamicEmptyCard.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+                EffectsGridView.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+                return;
+            }
+
+            var filtered = _allEffects.FindAll(e =>
+                e.Name.Contains(query, System.StringComparison.OrdinalIgnoreCase) ||
+                e.Category.Contains(query, System.StringComparison.OrdinalIgnoreCase) ||
+                e.Code.ToString().Contains(query));
+
+            EffectsGridView.ItemsSource = filtered;
+            if (filtered.Count == 0)
+            {
+                DynamicEmptyCard.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+                EffectsGridView.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            }
+            else
+            {
+                DynamicEmptyCard.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+                EffectsGridView.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
             }
         }
     }

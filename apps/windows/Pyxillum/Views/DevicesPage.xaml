@@ -27,16 +27,33 @@
                 </Button>
             </Grid>
 
+            <!-- Error State InfoBar -->
+            <InfoBar x:Name="PageErrorBar" IsOpen="False" Severity="Error" Title="Bluetooth Issue" Message="Unable to access Bluetooth LE adapter.">
+                <InfoBar.ActionButton>
+                    <Button x:Name="ErrorRetryButton" Content="Retry scan" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <!-- Loading State Card -->
+            <Border x:Name="LoadingStateCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="32" Visibility="Collapsed">
+                <StackPanel Spacing="16" HorizontalAlignment="Center">
+                    <ProgressRing IsActive="True" Width="48" Height="48" HorizontalAlignment="Center" />
+                    <TextBlock x:Name="LoadingStatusText" Text="Scanning for BLE devices..." Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Searching for nearby SP621E pixel LED controllers..." Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
             <!-- Discovered Controllers Grid / List -->
-            <TextBlock Text="Discovered Controllers" Style="{ThemeResource SubtitleTextBlockStyle}" />
+            <TextBlock x:Name="ListHeader" Text="Discovered Controllers" Style="{ThemeResource SubtitleTextBlockStyle}" />
 
             <!-- Empty State Card -->
             <Border x:Name="EmptyStateCard" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="32" Visibility="Visible">
                 <StackPanel Spacing="12" HorizontalAlignment="Center">
                     <FontIcon Glyph="&#xE703;" FontSize="48" HorizontalAlignment="Center" Opacity="0.4" />
-                    <TextBlock Text="No Controllers Discovered" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
-                    <TextBlock Text="Ensure your SP621E controller is powered on, within Bluetooth range, and not connected to companion mobile applications."
+                    <TextBlock Text="No SP621E controllers found" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                    <TextBlock Text="Make sure the controller is powered and in range, and not connected to companion mobile applications."
                                Style="{ThemeResource BodyTextBlockStyle}" TextWrapping="Wrap" MaxWidth="500" TextAlignment="Center" Opacity="0.7" />
+                    <Button x:Name="EmptyScanButton" Content="Scan again" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
 
