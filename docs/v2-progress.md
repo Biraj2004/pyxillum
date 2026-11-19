@@ -42,7 +42,7 @@ Toolchain: `rustc 1.85.0-nightly` / `stable`
 | :---: | :--- | :--- | :---: | :--- |
 | **0** | **Baseline & Architecture Docs** | `docs/`, `dev-v2` branch | **COMPLETED** | Baseline verified via `cargo xtask check` |
 | **1** | **UI-Agnostic Core** | `crates/core`, `crates/app` | **COMPLETED** | Action/AppState/Engine API; 69 workspace tests passing |
-| **2** | **Audio & FFI Surface** | `crates/audio`, `crates/ffi` | Pending | UniFFI proc-macros, C#/Swift bindings, audio loopback |
+| **2** | **Audio & FFI Surface** | `crates/audio`, `crates/ffi` | **COMPLETED** | UniFFI proc-macros, C#/Swift bindings, 77 workspace tests passing |
 | **3** | **Design Source of Truth** | `design/`, `tools/` | Pending | Tokens, strings.toml, icon map, generator scripts |
 | **4** | **Windows Native Front End** | `apps/windows` (WinUI 3) | Pending | C# .NET 8, Mica, NavigationView, accessible controls |
 | **5** | **Linux Native Front End** | `apps/linux` (GTK4 + libadwaita)| Pending | GNOME HIG, AdwNavigationSplitView, Flatpak |
@@ -79,3 +79,27 @@ Toolchain: `rustc 1.85.0-nightly` / `stable`
   - Formatting (`cargo fmt --check`): PASSED.
   - Lints (`cargo clippy --all-targets -- -D warnings`): PASSED.
   - Workspace tests (`cargo test --workspace`): 69 passed, 0 failed, 0 ignored.
+
+---
+
+## Phase 2 Execution Summary
+- **Audio Capture & Spectrum Analysis Subsystem (`crates/audio`)**:
+  - Defined `AudioSource` trait and `AudioSourceKind` enum (`SystemLoopback`, `Microphone`).
+  - Implemented 24-band ISO third-octave spectrum processor with fast attack, exponential decay ballistics, and normalization to `0.0..=1.0`.
+  - Implemented native Windows WASAPI loopback and microphone endpoint capture via `windows` crate (`IMMDeviceEnumerator`, `IAudioMeterInformation`).
+  - Implemented `SimulatedAudioSource` synthesizing dynamic 128 BPM rhythmic acoustic patterns for deterministic offline testing.
+  - Scaffolded `LinuxAudioSource` (PulseAudio/PipeWire) and `MacOsAudioSource` (CoreAudio) cleanly gated by `target_os` (marked unverified on physical hardware).
+  - Wired real-time audio capture into `Engine::start_audio`, `stop_audio`, and `audio_spectrum` in `crates/core`.
+- **UniFFI Language Bindings Surface (`crates/ffi`)**:
+  - Exposed `EngineFfi`, `ActionFfi`, `AppStateFfi`, `StripFrameFfi`, `StateListenerCallback`, `PlatformServicesCallback`, and `FfiError` via UniFFI proc-macro mode.
+  - Provided `create_engine` factory supporting both simulated and hardware BLE execution backends.
+  - Configured `uniffi-bindgen` CLI tool to generate native Swift bindings into `apps/macos/PyxillumCore/Generated/` (`pyxillum_ffi.swift`, `pyxillum_ffiFFI.h`, `pyxillum_ffiFFI.modulemap`).
+  - Implemented idiomatic C# (.NET 8 / C# 12) binding declarations in `apps/windows/Pyxillum.Core/Generated/PyxillumCore.cs` for WinUI 3.
+  - Implemented end-to-end FFI contract and lifecycle test verifying snapshot queries, frame buffers, action dispatching, and audio controls across the FFI boundary.
+- **Repository Automation (`xtask`)**:
+  - Added `cargo xtask generate-bindings` for automated code generation of Swift and C# bindings.
+  - Added `cargo xtask ffi-windows`, `cargo xtask ffi-macos`, and `cargo xtask ffi-linux` for targeting platform native dynamic libraries.
+- **Verification & Quality Gate**:
+  - Total workspace tests increased to 77 tests passing (100% pass rate).
+  - Formatting (`cargo fmt --check`): PASSED.
+  - Clippy (`-D warnings`): PASSED (zero warnings across all workspace targets).

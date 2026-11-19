@@ -10,6 +10,7 @@ description = "High-level device state, effects engine, scene presets, and manag
 pyxillum-protocol = { path = "../protocol" }
 pyxillum-transport = { path = "../transport" }
 pyxillum-sim = { path = "../sim" }
+pyxillum-audio = { path = "../audio" }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "time", "rt", "rt-multi-thread"] }
 serde.workspace = true

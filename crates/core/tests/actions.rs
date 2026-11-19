@@ -240,3 +240,21 @@ async fn test_state_listener_subscription_and_coalescing() {
     assert!(notifications <= 6);
     assert_eq!(engine.snapshot().diy_page.active_step_index, 10);
 }
+
+#[tokio::test]
+async fn test_engine_audio_lifecycle() {
+    let engine = create_test_engine();
+
+    // Start loopback/simulated audio
+    assert!(engine
+        .start_audio(pyxillum_core::AudioSourceKind::SystemLoopback)
+        .await
+        .is_ok());
+
+    // Spectrum query should return 24 bands
+    let spectrum = engine.audio_spectrum().await;
+    assert_eq!(spectrum.len(), 24);
+
+    // Stop audio
+    engine.stop_audio().await;
+}

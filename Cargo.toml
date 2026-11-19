@@ -5,6 +5,8 @@ members = [
     "crates/sim",
     "crates/transport",
     "crates/core",
+    "crates/audio",
+    "crates/ffi",
     "crates/cli",
     "crates/app",
     "xtask",

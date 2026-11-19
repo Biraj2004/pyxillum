@@ -21,6 +21,7 @@ pub use catalog::{
 pub use engine::Engine;
 pub use frame::StripFrame;
 pub use listener::{CallbackListener, StateListener};
+pub use pyxillum_audio::{AudioError, AudioSource, AudioSourceKind, SPECTRUM_BANDS};
 pub use services::{DefaultPlatformServices, PlatformServices};
 pub use state::{
     AppState, ConnectionStatus, CustomColorEffect, DiyEffectType, DiyPageState, DiyPatternStyle,

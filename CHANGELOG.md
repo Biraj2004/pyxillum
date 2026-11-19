@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Native Architecture - Phase 2: Audio & UniFFI Surface (`crates/audio`, `crates/ffi`)**:
+  - `pyxillum-audio`: Native audio capture abstraction (`AudioSource`), Windows WASAPI loopback, 24-band ISO third-octave spectrum processor with decay ballistics, and simulated acoustic generator.
+  - `pyxillum-ffi`: Mozilla UniFFI proc-macro layer exposing `Engine`, `Action`, `AppState`, `StripFrame`, and `PlatformServices` for foreign language consumption.
+  - Automated generation of Swift bindings in `apps/macos/PyxillumCore/Generated/` via `uniffi-bindgen`.
+  - C# (.NET 8 / WinUI 3) type declarations and client interface in `apps/windows/Pyxillum.Core/Generated/`.
+  - `xtask generate-bindings`, `ffi-windows`, `ffi-macos`, and `ffi-linux` build workflow targets.
 - **Pyxillum V2 Native Architecture - Phase 1: UI-Agnostic Core (`crates/core`)**:
   - `Action` enum: Exhaustive definition of every user operation across navigation, power, solid colour, dynamic effects, DIY sequences, music modes, strip configuration, and error dismissal.
   - `AppState`: Immutable state snapshot modeling connection status, device metadata, current screen, individual page state, non-volatile strip configuration, preview mode, and strongly-typed user errors with localisable message keys.

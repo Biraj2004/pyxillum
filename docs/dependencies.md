@@ -41,6 +41,7 @@ All dependencies are audited for minimal footprint, memory safety, permissive or
 | **`tracing-subscriber`** | `cli`, `app` | `^0.3` | MIT | Configures terminal/GUI logging formatters. |
 | **`proptest`** | `protocol` (dev) | `^1.5` | MIT OR Apache-2.0 | Property-based randomized fuzzing for packet encoders and notification chunk reassembly. |
 | **`directories`**| `core` | `^5.0` | MIT OR Apache-2.0 | Cross-platform standard paths for configuration and preset directories (`AppData/Roaming` on Windows, `Library/Application Support` on macOS, `~/.config` on Linux). |
+| **`uniffi`** | `ffi` | `^0.28` | MPL-2.0 | Generates type-safe, high-performance foreign language bindings (Swift for macOS and C# for Windows) from Rust proc-macros. |
 
 ---
 

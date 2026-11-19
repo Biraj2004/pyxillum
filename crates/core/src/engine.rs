@@ -29,6 +29,8 @@ pub struct Engine {
     listeners: Arc<Mutex<Vec<Arc<dyn StateListener>>>>,
     state_changed: Arc<AtomicBool>,
     running: Arc<AtomicBool>,
+    audio_source: Arc<Mutex<Option<Box<dyn pyxillum_audio::AudioSource>>>>,
+    handle: tokio::runtime::Handle,
     #[allow(dead_code)]
     runtime: Option<tokio::runtime::Runtime>,
     start_time: Instant,
@@ -48,6 +50,11 @@ impl Engine {
     /// Returns a reference to the active platform services.
     pub fn platform(&self) -> &Arc<dyn PlatformServices> {
         &self.platform
+    }
+
+    /// Returns a reference to the internal Tokio runtime handle.
+    pub fn handle(&self) -> &tokio::runtime::Handle {
+        &self.handle
     }
 
     /// Returns a handle to the scene preset storage.
@@ -100,6 +107,8 @@ impl Engine {
         let listeners: Arc<Mutex<Vec<Arc<dyn StateListener>>>> = Arc::new(Mutex::new(Vec::new()));
         let state_changed = Arc::new(AtomicBool::new(false));
         let running = Arc::new(AtomicBool::new(true));
+        let audio_source: Arc<Mutex<Option<Box<dyn pyxillum_audio::AudioSource>>>> =
+            Arc::new(Mutex::new(None));
 
         let (action_tx, mut action_rx) = mpsc::unbounded_channel::<Action>();
 
@@ -200,6 +209,8 @@ impl Engine {
             listeners,
             state_changed,
             running,
+            audio_source,
+            handle,
             runtime,
             start_time: Instant::now(),
         })
@@ -227,20 +238,53 @@ impl Engine {
         let _ = self.action_tx.send(action);
     }
 
+    /// Starts real-time audio capture and spectrum monitoring for music mode lighting.
+    pub async fn start_audio(
+        &self,
+        source: pyxillum_audio::AudioSourceKind,
+    ) -> Result<(), pyxillum_audio::AudioError> {
+        let mut audio_lock = self.audio_source.lock().await;
+        if let Some(mut existing) = audio_lock.take() {
+            existing.stop();
+        }
+        let mut new_source = pyxillum_audio::create_audio_source(source);
+        new_source.start()?;
+        *audio_lock = Some(new_source);
+        Ok(())
+    }
+
+    /// Stops any active audio capture pipeline.
+    pub async fn stop_audio(&self) {
+        let mut audio_lock = self.audio_source.lock().await;
+        if let Some(mut existing) = audio_lock.take() {
+            existing.stop();
+        }
+    }
+
+    /// Retrieves the latest 24-band spectrum energy from the active audio source.
+    pub async fn audio_spectrum(&self) -> [f32; 24] {
+        let audio_lock = self.audio_source.lock().await;
+        if let Some(ref source) = *audio_lock {
+            source.spectrum()
+        } else {
+            [0.0; 24]
+        }
+    }
+
     /// Registers a state listener to receive coalesced application state snapshots.
     pub fn subscribe(&self, listener: Arc<dyn StateListener>) {
         // Send initial state snapshot immediately to new listener
         {
             let state_handle = self.state.clone();
             let listener_clone = listener.clone();
-            tokio::spawn(async move {
+            self.handle.spawn(async move {
                 let s = state_handle.read().await;
                 listener_clone.on_state_changed(&s);
             });
         }
 
         let listeners_handle = self.listeners.clone();
-        tokio::spawn(async move {
+        self.handle.spawn(async move {
             let mut list = listeners_handle.lock().await;
             list.push(listener);
         });
@@ -876,5 +920,10 @@ fn kelvin_to_rgb(kelvin: u32) -> RgbColor {
 impl Drop for Engine {
     fn drop(&mut self) {
         self.running.store(false, Ordering::Relaxed);
+        if let Ok(mut audio_lock) = self.audio_source.try_lock() {
+            if let Some(mut src) = audio_lock.take() {
+                src.stop();
+            }
+        }
     }
 }

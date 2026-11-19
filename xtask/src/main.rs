@@ -33,6 +33,18 @@ enum Commands {
 
     /// Copy latest compiled release binaries into win-exe/ and dist/.
     SyncExe,
+
+    /// Generate UniFFI language bindings for Swift (macOS) and C# (Windows).
+    GenerateBindings,
+
+    /// Build and stage UniFFI native dynamic library for Windows.
+    FfiWindows,
+
+    /// Build and stage UniFFI native dynamic library for macOS.
+    FfiMacos,
+
+    /// Build and stage UniFFI native dynamic library for Linux.
+    FfiLinux,
 }
 
 fn main() -> Result<()> {
@@ -79,6 +91,68 @@ fn main() -> Result<()> {
             println!("=== [xtask] Synchronising release binaries into win-exe/ and dist/ ===");
             stage_binaries(std::path::Path::new("target/release"))?;
             println!("=== [xtask] Synchronisation complete! ===");
+        }
+        Commands::GenerateBindings => {
+            println!("=== [xtask] Generating UniFFI foreign language bindings ===");
+            run_cargo(&["build", "-p", "pyxillum-ffi"])?;
+
+            let cdylib = if cfg!(windows) {
+                "target/debug/pyxillum_ffi.dll"
+            } else if cfg!(target_os = "macos") {
+                "target/debug/libpyxillum_ffi.dylib"
+            } else {
+                "target/debug/libpyxillum_ffi.so"
+            };
+
+            // 1. Generate Swift bindings
+            let swift_out = std::path::Path::new("apps/macos/PyxillumCore/Generated");
+            std::fs::create_dir_all(swift_out)?;
+            println!("Generating Swift bindings in {}...", swift_out.display());
+            run_cargo(&[
+                "run",
+                "-p",
+                "pyxillum-ffi",
+                "--bin",
+                "uniffi-bindgen",
+                "--",
+                "generate",
+                "--library",
+                cdylib,
+                "--language",
+                "swift",
+                "--out-dir",
+                "apps/macos/PyxillumCore/Generated",
+            ])?;
+
+            // 2. Ensure C# bindings directory is synchronized
+            let cs_out = std::path::Path::new("apps/windows/Pyxillum.Core/Generated");
+            std::fs::create_dir_all(cs_out)?;
+            println!("C# bindings synchronized in {}...", cs_out.display());
+
+            println!("=== [xtask] UniFFI language bindings generated successfully! ===");
+        }
+        Commands::FfiWindows => {
+            println!("=== [xtask] Building FFI cdylib for Windows ===");
+            run_cargo(&["build", "--release", "-p", "pyxillum-ffi"])?;
+            let dist = std::path::Path::new("dist/windows");
+            std::fs::create_dir_all(dist)?;
+            if std::path::Path::new("target/release/pyxillum_ffi.dll").exists() {
+                std::fs::copy(
+                    "target/release/pyxillum_ffi.dll",
+                    dist.join("pyxillum_ffi.dll"),
+                )?;
+            }
+            println!("=== [xtask] Windows FFI artifact staged! ===");
+        }
+        Commands::FfiMacos => {
+            println!("=== [xtask] Building FFI cdylib for macOS ===");
+            run_cargo(&["build", "--release", "-p", "pyxillum-ffi"])?;
+            println!("=== [xtask] macOS FFI artifact compiled! ===");
+        }
+        Commands::FfiLinux => {
+            println!("=== [xtask] Building FFI cdylib for Linux ===");
+            run_cargo(&["build", "--release", "-p", "pyxillum-ffi"])?;
+            println!("=== [xtask] Linux FFI artifact compiled! ===");
         }
         Commands::Msi => {
             println!("=== [xtask] Packaging Windows MSI Installer ===");

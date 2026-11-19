@@ -1,0 +1,4 @@
+module pyxillum_ffiFFI {
+    header "pyxillum_ffiFFI.h"
+    export *
+}
