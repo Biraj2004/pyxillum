@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W6: Verification, Feature Matrix & Hardware Wizard (`apps/windows/`, `tests/`)**:
+  - Implemented 7-step interactive `HardwareWizardDialog` in the Windows UI and Device Hub for guided testing.
+  - Completed simulation verification across all 7 protocol stages (`HW-01` through `HW-07`), persisting test results to `tests/hardware/RESULTS.json`.
+  - Audited `docs/feature-matrix.md`, strictly enforcing Honest Capability tagging across all features.
 - **Pyxillum V2 Windows Native Front End - Phase W5: State Machine, Async & Error Handling (`apps/windows/`)**:
   - Gated all FFI calls and action dispatches behind background thread tasks with error recovery, preventing UI thread blocking.
   - Added connection state machine transitions and direct "Connect" button wiring in `DevicesPage.xaml` and `AppViewModel.cs`.

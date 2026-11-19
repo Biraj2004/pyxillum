@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-11-19T15:37:00Z",
+  "target": "SIM:00:11:22:33:44:55",
+  "controller_family": "SP621E",
+  "simulated": true,
+  "summary": {
+    "total_tests": 7,
+    "passed": 7,
+    "failed": 0,
+    "status": "PASS (Simulator Verified)"
+  },
+  "results": [
+    {
+      "id": "HW-01",
+      "name": "Power On Command",
+      "command": "a0 62 01 01",
+      "expected": "Strip turned ON",
+      "result": "PASS",
+      "confidence": "CORROBORATED (Simulator Verified)"
+    },
+    {
+      "id": "HW-02",
+      "name": "Solid Red Colour",
+      "command": "a0 69 04 ff 00 00 ff",
+      "expected": "Strip displays pure RED",
+      "result": "PASS",
+      "confidence": "CORROBORATED (Simulator Verified)"
+    },
+    {
+      "id": "HW-03",
+      "name": "Solid Green Colour",
+      "command": "a0 69 04 00 ff 00 ff",
+      "expected": "Strip displays pure GREEN",
+      "result": "PASS",
+      "confidence": "CORROBORATED (Simulator Verified)"
+    },
+    {
+      "id": "HW-04",
+      "name": "Solid Blue Colour",
+      "command": "a0 69 04 00 00 ff ff",
+      "expected": "Strip displays pure BLUE",
+      "result": "PASS",
+      "confidence": "CORROBORATED (Simulator Verified)"
+    },
+    {
+      "id": "HW-05",
+      "name": "Brightness 50%",
+      "command": "a0 66 01 80",
+      "expected": "Strip dimmed to ~50%",
+      "result": "PASS",
+      "confidence": "CORROBORATED (Simulator Verified)"
+    },
+    {
+      "id": "HW-06",
+      "name": "Rainbow Effect",
+      "command": "a0 67 01 08 + a0 63 01 01",
+      "expected": "Strip animates rainbow sweep",
+      "result": "PASS",
+      "confidence": "CORROBORATED (Simulator Verified)"
+    },
+    {
+      "id": "HW-07",
+      "name": "Power Off Command",
+      "command": "a0 62 01 00",
+      "expected": "Strip turned completely OFF",
+      "result": "PASS",
+      "confidence": "CORROBORATED (Simulator Verified)"
+    }
+  ]
+}

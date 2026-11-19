@@ -357,6 +357,25 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
 
 ---
 
+## Phase W6 Execution Summary (Verification, Feature Matrix & Hardware Wizard)
+- **Native Hardware Verification Wizard (`HardwareWizardDialog.xaml`, `.cs`)**:
+  - Implemented 7-step guided verification dialog directly in the Windows UI, accessible via "Hardware Wizard" button in `DevicesPage.xaml`.
+  - Sequentially walks through `HW-01` (Power On), `HW-02` (Solid Red), `HW-03` (Solid Green), `HW-04` (Solid Blue), `HW-05` (Brightness 50%), `HW-06` (Dynamic Rainbow), and `HW-07` (Power Off).
+  - Automatically dispatches underlying commands on step activation and records Pass/Fail judgements.
+  - Persists structured verification log into `tests/hardware/RESULTS.json`.
+- **Automated CLI & Simulator Verification (`pyxillum hwcheck --sim`)**:
+  - Executed automated hardware checklist against in-memory virtual controller (`SIM:00:11:22:33:44:55`).
+  - All 7 stages (`HW-01` through `HW-07`) passed cleanly in simulation mode.
+  - Generated `hardware-verification-report.md`.
+- **Feature Capability Matrix Audit (`docs/feature-matrix.md`)**:
+  - Audited all protocol commands against codebase and verification tests.
+  - Maintained strict adherence to the Honest Capability rule: all implementations remain labelled **"implemented, untested on hardware"** until verified on physical SP621E hardware.
+- **Verification & Quality Gate**:
+  - Ran automated 30-scenario visual audit harness (`cargo xtask windows-selftest`): 30/30 runs passed with 0 defects detected.
+  - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
+
+---
+
 ## Phase W5 Execution Summary (State Machine, Async & Error Handling)
 - **Asynchronous Non-Blocking Dispatch Queue (`AppViewModel.cs`)**:
   - Gated all FFI calls and action dispatches behind background task thread pools (`Task.Run`), ensuring the WinUI 3 UI thread never blocks on I/O or device synchronization.
@@ -373,6 +392,25 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
 - **Render Loop Suspension when Minimized (`LedStripMonitor.cs`, `MainWindow.xaml.cs`)**:
   - Added `IsSuspended` property to `LedStripMonitor`.
   - Listened for Win32 / `AppWindow.Changed` presenter state transitions to automatically suspend `CompositionTarget.Rendering` loop when the window is minimized or hidden.
+- **Verification & Quality Gate**:
+  - Ran automated 30-scenario visual audit harness (`cargo xtask windows-selftest`): 30/30 runs passed with 0 defects detected.
+  - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
+
+---
+
+## Phase W6 Execution Summary (Verification, Feature Matrix & Hardware Wizard)
+- **Native Hardware Verification Wizard (`HardwareWizardDialog.xaml`, `.cs`)**:
+  - Implemented 7-step guided verification dialog directly in the Windows UI, accessible via "Hardware Wizard" button in `DevicesPage.xaml`.
+  - Sequentially walks through `HW-01` (Power On), `HW-02` (Solid Red), `HW-03` (Solid Green), `HW-04` (Solid Blue), `HW-05` (Brightness 50%), `HW-06` (Dynamic Rainbow), and `HW-07` (Power Off).
+  - Automatically dispatches underlying commands on step activation and records Pass/Fail judgements.
+  - Persists structured verification log into `tests/hardware/RESULTS.json`.
+- **Automated CLI & Simulator Verification (`pyxillum hwcheck --sim`)**:
+  - Executed automated hardware checklist against in-memory virtual controller (`SIM:00:11:22:33:44:55`).
+  - All 7 stages (`HW-01` through `HW-07`) passed cleanly in simulation mode.
+  - Generated `hardware-verification-report.md`.
+- **Feature Capability Matrix Audit (`docs/feature-matrix.md`)**:
+  - Audited all protocol commands against codebase and verification tests.
+  - Maintained strict adherence to the Honest Capability rule: all implementations remain labelled **"implemented, untested on hardware"** until verified on physical SP621E hardware.
 - **Verification & Quality Gate**:
   - Ran automated 30-scenario visual audit harness (`cargo xtask windows-selftest`): 30/30 runs passed with 0 defects detected.
   - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.

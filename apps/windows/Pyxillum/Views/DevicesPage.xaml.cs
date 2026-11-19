@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Specialized;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -29,6 +30,13 @@ namespace Pyxillum.Views
 
                 ScanButton.Click += (s, args) => TriggerScan();
                 EmptyScanButton.Click += (s, args) => TriggerScan();
+                WizardButton.Click += async (s, args) =>
+                {
+                    if (ViewModel == null) return;
+                    var dialog = new HardwareWizardDialog(ViewModel);
+                    dialog.XamlRoot = this.XamlRoot;
+                    await dialog.ShowAsync();
+                };
                 ErrorRetryButton.Click += (s, args) =>
                 {
                     PageErrorBar.IsOpen = false;

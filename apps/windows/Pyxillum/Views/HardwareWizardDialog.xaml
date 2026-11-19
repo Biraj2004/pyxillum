@@ -1,0 +1,28 @@
+<ContentDialog
+    x:Class="Pyxillum.Views.HardwareWizardDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Hardware Verification Wizard"
+    PrimaryButtonText="Pass (Next)"
+    SecondaryButtonText="Fail"
+    CloseButtonText="Cancel"
+    DefaultButton="Primary">
+
+    <StackPanel Spacing="16" Width="440">
+        <ProgressBar x:Name="WizardProgressBar" Minimum="1" Maximum="7" Value="1" />
+        
+        <StackPanel Spacing="4">
+            <TextBlock x:Name="StepIdText" Text="Step 1 of 7: HW-01" FontWeight="SemiBold" FontSize="13" Opacity="0.7" />
+            <TextBlock x:Name="StepTitleText" Text="Power On Command" Style="{ThemeResource SubtitleTextBlockStyle}" />
+        </StackPanel>
+
+        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+            <StackPanel Spacing="8">
+                <TextBlock Text="Expected Behaviour:" FontWeight="SemiBold" FontSize="12" Opacity="0.8" />
+                <TextBlock x:Name="ExpectedVisualText" Text="The attached LED strip turns ON." Style="{ThemeResource BodyTextBlockStyle}" />
+            </StackPanel>
+        </Border>
+
+        <TextBlock x:Name="StatusNoteText" Text="Command dispatched to controller. Verify physical LEDs or virtual strip." FontSize="12" Opacity="0.6" />
+    </StackPanel>
+</ContentDialog>

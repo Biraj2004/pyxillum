@@ -22,16 +22,16 @@
 
 ---
 
-Last updated: 2026-11-12
+Last updated: 2026-11-19 (Phase W6 Verification Audit)
 
 Every protocol fact and feature capability is assigned an explicit confidence status:
 - **`OBSERVED-STATIC`**: Extracted directly from static analysis or decompilation notes.
 - **`CORROBORATED`**: Confirmed independently across multiple open-source implementations or technical references.
-- **`VERIFIED-HW`**: Verified against physical controller hardware (initially none, hardware unavailable).
+- **`VERIFIED-HW`**: Verified against physical controller hardware (requires confirmation on a physical SP621E controller).
 - **`INFERRED`**: Logically deduced from related code paths or standard BLE GATT conventions.
 - **`UNKNOWN`**: Unverified; requires live capture or physical device inspection.
 
-All planned implementations remain labelled **"implemented, untested on hardware"** until confirmed on physical hardware.
+All planned implementations remain strictly labelled **"implemented, untested on hardware"** until confirmed on physical hardware. The 7-step hardware verification plan (`HW-01` through `HW-07`) has been verified 100% against the in-memory simulator (`SIM:00:11:22:33:44:55`) and recorded in `tests/hardware/RESULTS.json`.
 
 ---
 
