@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Native Architecture - Phase 6: macOS Native Front End (`apps/macos/`)**:
+  - `Package.swift`: Swift package configuration targeting macOS 13+ with `PyxillumCore` UniFFI target and SwiftUI `Pyxillum` executable.
+  - `ContentView.swift`: Native SwiftUI interface featuring `NavigationSplitView` with SF Symbols, unified toolbar, and route selection.
+  - `AppViewModel.swift`: `@MainActor` ViewModel handling state updates from `EngineFfi` and dispatching user actions.
+  - `LedStripMonitorView.swift`: `TimelineView` monitor rendering 60 FPS diode frames with off-screen suspension.
+  - Dedicated screen implementations: `DevicesView`, `DynamicView`, `SolidView`, `MusicView`, `DiyView`, and `SettingsView` (with `Cmd+,` shortcut scene).
+  - macOS packaging automation: `build-xcframework.sh` (Universal Mach-O), `build-dmg.sh` (DMG disk image), and `sign-and-notarize.sh`.
 - **Pyxillum V2 Native Architecture - Phase 5: Linux Native Front End (`apps/linux/`)**:
   - `pyxillum-linux`: Native GTK4 and libadwaita front end crate with direct dependency on `pyxillum-core`.
   - GNOME HIG layout with `AdwNavigationSplitView`, `AdwToastOverlay`, and `AdwBanner`.

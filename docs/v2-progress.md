@@ -46,7 +46,7 @@ Toolchain: `rustc 1.85.0-nightly` / `stable`
 | **3** | **Design Source of Truth** | `design/`, `tools/` | **COMPLETED** | Tokens, strings.toml, icon map, generator scripts, 79 workspace tests passing |
 | **4** | **Windows Native Front End** | `apps/windows` (WinUI 3) | **COMPLETED** | C# .NET 8, WinUI 3, Mica, NavigationView, 6 views, 79 tests passing |
 | **5** | **Linux Native Front End** | `apps/linux` (GTK4 + libadwaita)| **COMPLETED** | GNOME HIG, AdwNavigationSplitView, Flatpak, AppImage, deb, 79 tests passing |
-| **6** | **macOS Native Front End** | `apps/macos` (SwiftUI) | Pending | macOS 13+, NavigationSplitView, SF Symbols |
+| **6** | **macOS Native Front End** | `apps/macos` (SwiftUI) | **COMPLETED** | SwiftUI, NavigationSplitView, SF Symbols, unverified on host |
 | **7** | **Parity, Accessibility & CI** | `docs/parity.md`, `.github/` | Pending | Full feature checklist, Narrator/VoiceOver/Orca |
 | **8** | **Retire Egui Legacy App** | `crates/app` | Pending | Formal removal of crates/app; open PR summary |
 
@@ -173,6 +173,29 @@ Toolchain: `rustc 1.85.0-nightly` / `stable`
   - Debian/Ubuntu `.deb` packaging script (`build-deb.sh`) with dependency declarations for `libgtk-4-1`, `libadwaita-1-0`, and `libdbus-1-3`.
 - **Verification & Quality Gate**:
   - `cargo xtask check` PASSED (79 workspace tests passing, zero clippy warnings, zero formatting issues).
+
+---
+
+## Phase 6 Execution Summary
+- **macOS Application Architecture (`apps/macos/`)**:
+  - `Package.swift`: Swift Package definition targeting macOS 13+ (Ventura and later) with `PyxillumCore` (UniFFI bindings) and `Pyxillum` executable.
+  - `App.swift`: SwiftUI `@main` structure declaring primary `WindowGroup` with `.titleBar` and `.unified` toolbar styles, alongside a dedicated `Settings` scene mapped to `Cmd+,`.
+  - `AppViewModel.swift`: `@MainActor` observable ViewModel bridging `EngineFfi`, `StateListenerCallback`, and `PlatformServicesCallback`.
+  - `Info.plist`: Privacy declarations for `NSBluetoothAlwaysUsageDescription` and `NSMicrophoneUsageDescription`.
+  - `Pyxillum.entitlements`: Sandbox permissions configured for client Bluetooth and audio input.
+- **SwiftUI Presentation Layer (`Views/`)**:
+  - `ContentView.swift`: `NavigationSplitView` with SF Symbols sidebar navigation, global status and brightness bar, master power action, and route dispatching.
+  - `LedStripMonitorView.swift`: `TimelineView(.animation)` pulling `engine.frame()` at 60 FPS, with automatic suspension when off-screen.
+  - Screen views implemented: `DevicesView`, `DynamicView`, `SolidView`, `MusicView`, `DiyView`, and `SettingsView` with confirmation toggle gating.
+- **Packaging & Notarisation Automation**:
+  - `build-xcframework.sh`: Generates Universal Mach-O binary (`aarch64-apple-darwin` + `x86_64-apple-darwin`) via `lipo`.
+  - `build-dmg.sh`: Creates Apple disk image (`.dmg`) with Applications symlink.
+  - `sign-and-notarize.sh`: Automated code signing and notarytool submission.
+- **Hardware Verification Status**:
+  - Marked as **unverified on physical macOS hardware** per project guidelines (development performed on Windows host).
+- **Verification & Quality Gate**:
+  - `cargo xtask check` PASSED (79 workspace tests passing, zero clippy warnings, zero formatting issues).
+
 
 
 

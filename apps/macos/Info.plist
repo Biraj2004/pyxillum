@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>Pyxillum</string>
+    <key>CFBundleIdentifier</key>
+    <string>io.github.pyxillum.Pyxillum</string>
+    <key>CFBundleName</key>
+    <string>Pyxillum</string>
+    <key>CFBundleDisplayName</key>
+    <string>Pyxillum</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.5</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.5</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Pyxillum requires Bluetooth Low Energy access to discover, connect, and control SP621E/SP6xxE pixel LED controllers.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Pyxillum requires microphone access to synchronize LED lighting effects to real-time room acoustic rhythms.</string>
+</dict>
+</plist>
