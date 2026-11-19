@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W5: State Machine, Async & Error Handling (`apps/windows/`)**:
+  - Gated all FFI calls and action dispatches behind background thread tasks with error recovery, preventing UI thread blocking.
+  - Added connection state machine transitions and direct "Connect" button wiring in `DevicesPage.xaml` and `AppViewModel.cs`.
+  - Implemented `StringCatalog.cs` resolving localized titles, messages, and retry/settings action buttons from `design/strings.toml`.
+  - Added render loop suspension in `LedStripMonitor.cs` when the desktop window is minimized or hidden.
 - **Pyxillum V2 Windows Native Front End - Phase W4: Header, Connection Status & Virtual Strip Polish (`apps/windows/`)**:
   - Consolidated connection state into a single interactive badge in the global header with states for Disconnected, Scanning, Connecting, and Connected.
   - Added inline middle disconnected banner with quick action "Scan & Connect" button and dimmed master controls with descriptive preview tooltips.

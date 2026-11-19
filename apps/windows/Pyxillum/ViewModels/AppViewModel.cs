@@ -28,6 +28,9 @@ namespace Pyxillum.ViewModels
         private string? _errorMessage = null;
 
         [ObservableProperty]
+        private string? _errorKey = null;
+
+        [ObservableProperty]
         private bool _hasError = false;
 
         [ObservableProperty]
@@ -68,7 +71,33 @@ namespace Pyxillum.ViewModels
         public void Dispatch(Pyxillum.Core.Action action)
         {
             Diagnostics.Logger.Info($"[ViewModel] Action dispatched: {action.GetType().Name}");
-            Task.Run(() => _engine.Dispatch(action));
+            Task.Run(() =>
+            {
+                try
+                {
+                    _engine.Dispatch(action);
+                }
+                catch (Exception ex)
+                {
+                    Diagnostics.Logger.Error($"[ViewModel] Exception dispatching action {action.GetType().Name}", ex);
+                    _dispatcherQueue.TryEnqueue(() =>
+                    {
+                        ErrorKey = "error.generic";
+                        ErrorMessage = ex.Message;
+                        HasError = true;
+                    });
+                }
+            });
+        }
+
+        public void ConnectDevice(string address)
+        {
+            Dispatch(new Pyxillum.Core.Action.Connect(address));
+        }
+
+        public void DisconnectDevice()
+        {
+            Dispatch(new Pyxillum.Core.Action.Disconnect());
         }
 
         public StripFrame? GetCurrentFrame()
@@ -97,11 +126,13 @@ namespace Pyxillum.ViewModels
 
             if (state.UserError != null)
             {
+                ErrorKey = state.UserError.Key;
                 ErrorMessage = state.UserError.Message;
                 HasError = true;
             }
             else
             {
+                ErrorKey = null;
                 ErrorMessage = null;
                 HasError = false;
             }

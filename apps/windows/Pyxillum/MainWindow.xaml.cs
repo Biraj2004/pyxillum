@@ -150,6 +150,14 @@ namespace Pyxillum
             if (_appWindow != null)
             {
                 Diagnostics.WindowStateManager.InitializeWindow(this, _appWindow, hwnd);
+                _appWindow.Changed += (s, e) =>
+                {
+                    if (e.DidPresenterChange)
+                    {
+                        bool isMinimized = _appWindow.Presenter is OverlappedPresenter op && op.State == OverlappedPresenterState.Minimized;
+                        LiveStripMonitor.IsSuspended = isMinimized;
+                    }
+                };
             }
         }
 
@@ -247,7 +255,9 @@ namespace Pyxillum
             // Error Bar
             if (ViewModel.HasError && !string.IsNullOrEmpty(ViewModel.ErrorMessage))
             {
-                ErrorNotificationBar.Message = ViewModel.ErrorMessage;
+                var errorInfo = Diagnostics.StringCatalog.ResolveErrorInfo(ViewModel.ErrorKey, ViewModel.ErrorMessage);
+                ErrorNotificationBar.Title = errorInfo.Title;
+                ErrorNotificationBar.Message = errorInfo.Message;
                 ErrorNotificationBar.IsOpen = true;
             }
             else

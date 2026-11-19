@@ -73,7 +73,7 @@
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Name}" />
                                     <TextBlock Text="{Binding Address}" Opacity="0.6" FontSize="12" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Address}" />
                                 </StackPanel>
-                                <Button Grid.Column="2" Content="Connect" Style="{ThemeResource AccentButtonStyle}" VerticalAlignment="Center" />
+                                <Button Grid.Column="2" Content="Connect" Tag="{Binding Address}" Click="ConnectButton_Click" Style="{ThemeResource AccentButtonStyle}" VerticalAlignment="Center" />
                             </Grid>
                         </Border>
                     </DataTemplate>

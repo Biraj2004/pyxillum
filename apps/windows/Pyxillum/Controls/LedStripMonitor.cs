@@ -25,6 +25,7 @@ namespace Pyxillum.Controls
         }
 
         public Action<int, int>? StatsCallback { get; set; }
+        public bool IsSuspended { get; set; } = false;
 
         private const int MaxDiodes = 120;
         private int _activeDiodeCount = 60;
@@ -169,6 +170,11 @@ namespace Pyxillum.Controls
 
         private void OnCompositionRendering(object? sender, object e)
         {
+            if (IsSuspended || this.Visibility != Visibility.Visible || this.ActualWidth <= 0 || this.ActualHeight <= 0)
+            {
+                return;
+            }
+
             var now = DateTime.UtcNow;
             if ((now - _lastRenderTime).TotalMilliseconds < 16) // ~60 FPS cap
             {

@@ -355,6 +355,28 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
   - Ran automated 30-scenario visual audit harness (`cargo xtask windows-selftest`): 30/30 runs passed with 0 defects detected.
   - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
 
+---
+
+## Phase W5 Execution Summary (State Machine, Async & Error Handling)
+- **Asynchronous Non-Blocking Dispatch Queue (`AppViewModel.cs`)**:
+  - Gated all FFI calls and action dispatches behind background task thread pools (`Task.Run`), ensuring the WinUI 3 UI thread never blocks on I/O or device synchronization.
+  - Added structured exception handling trapping synchronous FFI invocation errors and marshalling error states back to the UI thread via `DispatcherQueue`.
+  - Added direct `ConnectDevice(address)` and `DisconnectDevice()` helper dispatchers.
+- **Connection State Machine Resilience (`DevicesPage.xaml.cs`)**:
+  - Enforced clean state transitions (`Scanning` -> `Connecting` -> `Connected` / `Disconnected` / `Error`).
+  - Added explicit "Connect" button click handler in `DeviceListView` dispatching `Action::Connect`.
+  - Automatic fallback to `Disconnected` if scanning times out or finds zero devices, eliminating indefinite scanning hangs.
+  - Integrated retryable error banner in `DevicesPage` with direct `Retry` action trigger.
+- **Localized String Catalog & Smart Error Resolution (`StringCatalog.cs`)**:
+  - Built canonical string resolver mapping all `ErrorKey` tokens from `design/strings.toml`.
+  - Added intelligent error categorization resolving human-friendly error titles, localized messages, and contextual actions (`Retry scan`, `Retry connect`, `Open Settings`, `Dismiss`).
+- **Render Loop Suspension when Minimized (`LedStripMonitor.cs`, `MainWindow.xaml.cs`)**:
+  - Added `IsSuspended` property to `LedStripMonitor`.
+  - Listened for Win32 / `AppWindow.Changed` presenter state transitions to automatically suspend `CompositionTarget.Rendering` loop when the window is minimized or hidden.
+- **Verification & Quality Gate**:
+  - Ran automated 30-scenario visual audit harness (`cargo xtask windows-selftest`): 30/30 runs passed with 0 defects detected.
+  - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
+
 
 
 

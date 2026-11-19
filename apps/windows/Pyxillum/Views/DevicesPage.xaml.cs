@@ -29,7 +29,25 @@ namespace Pyxillum.Views
 
                 ScanButton.Click += (s, args) => TriggerScan();
                 EmptyScanButton.Click += (s, args) => TriggerScan();
-                ErrorRetryButton.Click += (s, args) => TriggerScan();
+                ErrorRetryButton.Click += (s, args) =>
+                {
+                    PageErrorBar.IsOpen = false;
+                    ViewModel?.DismissError();
+                    TriggerScan();
+                };
+            }
+        }
+
+        private void ConnectButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is string address && ViewModel != null)
+            {
+                LoadingStatusText.Text = $"Connecting to {address}...";
+                LoadingStateCard.Visibility = Visibility.Visible;
+                DeviceListView.Visibility = Visibility.Collapsed;
+                EmptyStateCard.Visibility = Visibility.Collapsed;
+                PageErrorBar.IsOpen = false;
+                ViewModel.ConnectDevice(address);
             }
         }
 
@@ -44,7 +62,7 @@ namespace Pyxillum.Views
             DeviceListView.Visibility = Visibility.Collapsed;
             PageErrorBar.IsOpen = false;
 
-            ViewModel.Dispatch(new PyxillumAction.ScanDevices());
+            ViewModel.StartScan();
         }
 
         private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -66,12 +84,45 @@ namespace Pyxillum.Views
         {
             if (ViewModel == null) return;
 
-            ScanRing.IsActive = false;
-            ScanRing.Visibility = Visibility.Collapsed;
+            // Update scanning / connecting state cards
+            switch (ViewModel.Connection.Kind)
+            {
+                case ConnectionStatusKind.Scanning:
+                    ScanRing.IsActive = true;
+                    ScanRing.Visibility = Visibility.Visible;
+                    LoadingStatusText.Text = "Scanning for BLE devices...";
+                    LoadingStateCard.Visibility = Visibility.Visible;
+                    EmptyStateCard.Visibility = Visibility.Collapsed;
+                    DeviceListView.Visibility = Visibility.Collapsed;
+                    PageErrorBar.IsOpen = false;
+                    return;
 
+                case ConnectionStatusKind.Connecting:
+                    ScanRing.IsActive = false;
+                    ScanRing.Visibility = Visibility.Collapsed;
+                    LoadingStatusText.Text = string.IsNullOrEmpty(ViewModel.Connection.Name)
+                        ? "Connecting to controller..."
+                        : $"Connecting to {ViewModel.Connection.Name}...";
+                    LoadingStateCard.Visibility = Visibility.Visible;
+                    EmptyStateCard.Visibility = Visibility.Collapsed;
+                    DeviceListView.Visibility = Visibility.Collapsed;
+                    PageErrorBar.IsOpen = false;
+                    return;
+
+                default:
+                    ScanRing.IsActive = false;
+                    ScanRing.Visibility = Visibility.Collapsed;
+                    LoadingStateCard.Visibility = Visibility.Collapsed;
+                    break;
+            }
+
+            // Error display with localized string resolution
             if (ViewModel.HasError && !string.IsNullOrEmpty(ViewModel.ErrorMessage))
             {
-                PageErrorBar.Message = ViewModel.ErrorMessage;
+                var errorInfo = Diagnostics.StringCatalog.ResolveErrorInfo(ViewModel.ErrorKey, ViewModel.ErrorMessage);
+                PageErrorBar.Title = errorInfo.Title;
+                PageErrorBar.Message = errorInfo.Message;
+                ErrorRetryButton.Content = errorInfo.ActionLabel;
                 PageErrorBar.IsOpen = true;
             }
             else
@@ -79,16 +130,15 @@ namespace Pyxillum.Views
                 PageErrorBar.IsOpen = false;
             }
 
+            // Controllers list or empty state
             if (ViewModel.DiscoveredDevices.Count > 0)
             {
                 EmptyStateCard.Visibility = Visibility.Collapsed;
-                LoadingStateCard.Visibility = Visibility.Collapsed;
                 DeviceListView.Visibility = Visibility.Visible;
             }
             else
             {
                 DeviceListView.Visibility = Visibility.Collapsed;
-                LoadingStateCard.Visibility = Visibility.Collapsed;
                 EmptyStateCard.Visibility = Visibility.Visible;
             }
         }
