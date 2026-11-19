@@ -80,12 +80,12 @@ Pre-compiled production binaries, native installers, and package bundles are ava
 
 ### Ready-to-Run Windows Binaries (`win-exe/`)
 
-For instant execution on Windows without downloading release assets separately, ready-to-run executables are maintained in the [`win-exe/`](win-exe/) folder:
+For instant execution on Windows without downloading release assets separately, pre-staged ready-to-run release executables with embedded application icons are maintained directly in the [`win-exe/`](win-exe/) directory:
 
-- [`win-exe/pyxillum-desktop.exe`](win-exe/pyxillum-desktop.exe) — Native desktop GUI application (~5.4 MB)
-- [`win-exe/pyxillum.exe`](win-exe/pyxillum.exe) — Native command-line interface (~1.8 MB)
+- [`win-exe/pyxillum-desktop.exe`](win-exe/pyxillum-desktop.exe) — Native Windows 11 WinUI 3 desktop application featuring Mica material backdrop, 6 dedicated views, glowing WS2812B virtual LED strip monitor, in-memory controller simulator, and embedded official icon.
+- [`win-exe/pyxillum.exe`](win-exe/pyxillum.exe) — Native command-line interface and 7-stage interactive hardware verification wizard (~1.8 MB) with embedded official icon.
 
-See [`win-exe/README.md`](win-exe/README.md) for execution details.
+Both executables require zero external dependencies, run cleanly out of the box, and include an automated 30-scenario layout verification audit harness (`--selftest <dir>`). See [`win-exe/README.md`](win-exe/README.md) for full execution options.
 
 ---
 

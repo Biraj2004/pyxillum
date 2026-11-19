@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W8: Packaging, Validation & Release (`win-exe/`, `crates/cli/`, `apps/windows/launcher/`)**:
+  - Embedded official `assets/pyxillum.ico` icon directly into both `pyxillum-desktop.exe` and `pyxillum.exe` binaries via Windows PE resource compilation.
+  - Staged standalone portable release binaries at version `v1.0.5` into `win-exe/` adhering strictly to executables-only staging policy.
+  - Synchronized self-contained WinUI 3 payload with unified `resources.pri` ensuring seamless out-of-the-box execution without prerequisites.
 - **Pyxillum V2 Windows Native Front End - Phase W7: Polish, Performance & Accessibility (`apps/windows/`)**:
   - Implemented comprehensive `AutomationProperties.Name` and accessible descriptors across all interactive controls in `MainWindow.xaml` and all 6 screen views.
   - Verified keyboard focus management, Tab traversal order, and visible focus indicators for full Windows Narrator compatibility.

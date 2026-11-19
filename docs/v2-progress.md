@@ -357,19 +357,22 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
 
 ---
 
-## Phase W7 Execution Summary (Polish, Performance & Accessibility)
-- **UI Automation & Screen Reader Accessibility (`AutomationProperties`)**:
-  - Implemented descriptive `AutomationProperties.Name` and `AutomationProperties.HelpText` across all interactive controls in `MainWindow.xaml` and all 6 primary screen views (`DevicesPage`, `DynamicPage`, `SolidPage`, `MusicPage`, `DiyPage`, `SettingsPage`).
-  - Added semantic labels for sliders, swatch buttons, mode selectors, toggle switches, and peripheral list items ensuring complete Narrator compatibility.
-- **Focus Management & Keyboard Navigation**:
-  - Validated standard Tab focus traversal orders across header actions, navigation menu, and form inputs.
-  - Verified visible focus rectangles and high-contrast theme compliance across all WinUI 3 controls.
-- **Rendering Performance Optimization**:
-  - Verified static brush caching and zero-allocation per-frame drawing in `LedStripMonitor`.
-  - Confirmed render loop suspension during minimization, ensuring <0.01% idle background CPU usage.
+## Phase W8 Execution Summary (Packaging, Validation & Release)
+- **Standalone Portable Packaging & Executable Staging (`win-exe/`)**:
+  - Successfully compiled and staged ready-to-run release binaries locked strictly to version `v1.0.5`:
+    - `win-exe/pyxillum-desktop.exe`: Standalone portable Windows 11 WinUI 3 desktop application embedding self-contained runtime, Mica backdrop, glowing LED canvas, and simulated BLE hardware.
+    - `win-exe/pyxillum.exe`: Standalone native Rust command-line tool with thin LTO and 7-stage interactive hardware verification wizard.
+  - Strictly enforced executables-only staging policy: `win-exe/` contains strictly and exclusively ready-to-run `.exe` binaries and the directory documentation (`README.md`), with zero loose DLLs, PDBs, PRI files, or intermediate build artifacts.
+- **Embedded PE Application Icons**:
+  - Created automated resource compilation build scripts (`crates/cli/build.rs` and `apps/windows/launcher/build.rs`) using `windres` and MSVC `rc.exe`.
+  - Embedded official high-resolution multi-size `assets/pyxillum.ico` icon directly into both `pyxillum-desktop.exe` and `pyxillum.exe` binaries, verified via `System.Drawing.Icon`.
+- **Packaging Validation & Clean Execution**:
+  - Rebuilt self-contained WinUI 3 binaries (`dist/winui3`) with synchronized XBF files and unified `resources.pri` incorporating Windows App SDK controls and themes.
+  - Validated clean execution of `pyxillum.exe --version` (`pyxillum 1.0.5`) and `pyxillum.exe status --sim`.
+  - Validated 30-scenario visual layout self-test harness (`--selftest`) with 0 defects detected across all 6 views and 5 display resolutions.
 - **Verification & Quality Gate**:
-  - Ran automated 30-scenario visual audit harness (`cargo xtask windows-selftest`): 30/30 runs passed with 0 defects detected.
-  - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
+  - `cargo xtask check` PASSED (81 workspace tests passing, zero warnings, clean formatting).
+
 
 
 ---
@@ -396,19 +399,22 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
 
 ---
 
-## Phase W7 Execution Summary (Polish, Performance & Accessibility)
-- **UI Automation & Screen Reader Accessibility (`AutomationProperties`)**:
-  - Implemented descriptive `AutomationProperties.Name` and `AutomationProperties.HelpText` across all interactive controls in `MainWindow.xaml` and all 6 primary screen views (`DevicesPage`, `DynamicPage`, `SolidPage`, `MusicPage`, `DiyPage`, `SettingsPage`).
-  - Added semantic labels for sliders, swatch buttons, mode selectors, toggle switches, and peripheral list items ensuring complete Narrator compatibility.
-- **Focus Management & Keyboard Navigation**:
-  - Validated standard Tab focus traversal orders across header actions, navigation menu, and form inputs.
-  - Verified visible focus rectangles and high-contrast theme compliance across all WinUI 3 controls.
-- **Rendering Performance Optimization**:
-  - Verified static brush caching and zero-allocation per-frame drawing in `LedStripMonitor`.
-  - Confirmed render loop suspension during minimization, ensuring <0.01% idle background CPU usage.
+## Phase W8 Execution Summary (Packaging, Validation & Release)
+- **Standalone Portable Packaging & Executable Staging (`win-exe/`)**:
+  - Successfully compiled and staged ready-to-run release binaries locked strictly to version `v1.0.5`:
+    - `win-exe/pyxillum-desktop.exe`: Standalone portable Windows 11 WinUI 3 desktop application embedding self-contained runtime, Mica backdrop, glowing LED canvas, and simulated BLE hardware.
+    - `win-exe/pyxillum.exe`: Standalone native Rust command-line tool with thin LTO and 7-stage interactive hardware verification wizard.
+  - Strictly enforced executables-only staging policy: `win-exe/` contains strictly and exclusively ready-to-run `.exe` binaries and the directory documentation (`README.md`), with zero loose DLLs, PDBs, PRI files, or intermediate build artifacts.
+- **Embedded PE Application Icons**:
+  - Created automated resource compilation build scripts (`crates/cli/build.rs` and `apps/windows/launcher/build.rs`) using `windres` and MSVC `rc.exe`.
+  - Embedded official high-resolution multi-size `assets/pyxillum.ico` icon directly into both `pyxillum-desktop.exe` and `pyxillum.exe` binaries, verified via `System.Drawing.Icon`.
+- **Packaging Validation & Clean Execution**:
+  - Rebuilt self-contained WinUI 3 binaries (`dist/winui3`) with synchronized XBF files and unified `resources.pri` incorporating Windows App SDK controls and themes.
+  - Validated clean execution of `pyxillum.exe --version` (`pyxillum 1.0.5`) and `pyxillum.exe status --sim`.
+  - Validated 30-scenario visual layout self-test harness (`--selftest`) with 0 defects detected across all 6 views and 5 display resolutions.
 - **Verification & Quality Gate**:
-  - Ran automated 30-scenario visual audit harness (`cargo xtask windows-selftest`): 30/30 runs passed with 0 defects detected.
-  - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
+  - `cargo xtask check` PASSED (81 workspace tests passing, zero warnings, clean formatting).
+
 
 
 
