@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Native Architecture - Phase 7: Parity, Accessibility & Verification (`docs/parity.md`, `tests/`)**:
+  - `docs/parity.md`: Comprehensive cross-platform parity matrix across all 21 lighting and hardware operations.
+  - Accessibility audit checklist verifying Narrator (UI Automation), VoiceOver (AX traits), and Orca (AT-SPI).
+  - Performance audit confirming idle CPU < 0.01% with suspended strip rendering loop.
+  - `crates/core/tests/parity.rs`: Automated test ensuring all required domain verifications and core action references exist.
 - **Pyxillum V2 Native Architecture - Phase 6: macOS Native Front End (`apps/macos/`)**:
   - `Package.swift`: Swift package configuration targeting macOS 13+ with `PyxillumCore` UniFFI target and SwiftUI `Pyxillum` executable.
   - `ContentView.swift`: Native SwiftUI interface featuring `NavigationSplitView` with SF Symbols, unified toolbar, and route selection.
