@@ -37,6 +37,10 @@ namespace Pyxillum
             // Connect Live LED Strip Monitor frame pulling
             LiveStripMonitor.FrameSource = () => ViewModel.GetCurrentFrame();
 
+            // Adaptive NavigationView based on window width
+            this.SizeChanged += (s, e) => UpdateNavigationViewAdaptive(e.Size.Width);
+            UpdateNavigationViewAdaptive(this.Bounds.Width);
+
             // Wire UI Event Listeners
             MasterPowerButton.Click += (s, e) => ViewModel.TogglePower();
             MasterBrightnessSlider.ValueChanged += (s, e) => ViewModel.SetBrightness((byte)e.NewValue);
@@ -114,16 +118,26 @@ namespace Pyxillum
 
             if (_appWindow != null)
             {
-                var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-                if (displayArea != null)
-                {
-                    var workArea = displayArea.WorkArea;
-                    int targetWidth = (int)(workArea.Width * 0.80);
-                    int targetHeight = (int)(workArea.Height * 0.80);
-                    int posX = workArea.X + (workArea.Width - targetWidth) / 2;
-                    int posY = workArea.Y + (workArea.Height - targetHeight) / 2;
+                Diagnostics.WindowStateManager.InitializeWindow(this, _appWindow, hwnd);
+            }
+        }
 
-                    _appWindow.MoveAndResize(new RectInt32(posX, posY, targetWidth, targetHeight));
+        public void UpdateNavigationViewAdaptive(double width)
+        {
+            if (width < 1100)
+            {
+                if (NavView.PaneDisplayMode != NavigationViewPaneDisplayMode.LeftCompact)
+                {
+                    NavView.PaneDisplayMode = NavigationViewPaneDisplayMode.LeftCompact;
+                    NavView.IsPaneOpen = false;
+                }
+            }
+            else
+            {
+                if (NavView.PaneDisplayMode != NavigationViewPaneDisplayMode.Left)
+                {
+                    NavView.PaneDisplayMode = NavigationViewPaneDisplayMode.Left;
+                    NavView.IsPaneOpen = true;
                 }
             }
         }

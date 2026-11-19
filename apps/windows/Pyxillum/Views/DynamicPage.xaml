@@ -6,12 +6,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled">
         <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
             <!-- Header Section -->
             <StackPanel Spacing="4">
-                <TextBlock Text="Dynamic Effects" Style="{ThemeResource TitleTextBlockStyle}" />
-                <TextBlock Text="Select from 146 on-chip addressable SPI animation patterns" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+                <TextBlock Text="Dynamic Effects" Style="{ThemeResource TitleTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Dynamic Effects" />
+                <TextBlock Text="Select from 146 on-chip addressable SPI animation patterns" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Select from 146 on-chip addressable SPI animation patterns" />
             </StackPanel>
 
             <!-- Error State InfoBar -->
@@ -82,8 +82,8 @@
                     <DataTemplate>
                         <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16" Width="200" Height="80">
                             <StackPanel VerticalAlignment="Center" Spacing="4">
-                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding Category}" Opacity="0.6" FontSize="11" />
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Name}" />
+                                <TextBlock Text="{Binding Category}" Opacity="0.6" FontSize="11" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Category}" />
                             </StackPanel>
                         </Border>
                     </DataTemplate>

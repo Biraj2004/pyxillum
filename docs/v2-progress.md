@@ -289,6 +289,31 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
   - Executed `cargo xtask windows-selftest` testing all 30 scenarios (6 pages × 5 resolutions: 1000x650, 1280x720, 1536x832, 1920x1030, 2560x1440).
   - All 6 automated criteria passed with 0 defects detected.
 
+---
+
+## Phase W2 Execution Summary (Geometry, Scaling and Clipping Rules)
+- **Minimum Window Size Enforcement (`WindowStateManager.cs`)**:
+  - Subclassed native Win32 window procedure via `SetWindowSubclass` to intercept `WM_GETMINMAXINFO` (0x0024).
+  - Enforced DPI-scaled minimum bounds of 1000 x 650 epx, physically preventing user or system resize operations below minimum thresholds.
+- **Window Geometry Persistence across Restarts**:
+  - Saved normal window position, size, and maximized state to `%LOCALAPPDATA%\Pyxillum\window_state.json`.
+  - Added multi-monitor workspace validation ensuring saved bounds intersect with active display work areas, automatically falling back to primary centered 1280x720 if a secondary monitor was disconnected.
+  - Supported `--reset-window` CLI parameter to restore default 1280 x 720 centered geometry.
+  - Added 'Reset Window Geometry to Default (1280x720)' action button in Hardware Settings.
+- **Adaptive NavigationView Breakdown**:
+  - Handled `Window.SizeChanged` to dynamically switch `PaneDisplayMode`: expanded left pane (240px) at width >= 1100 epx, and compact icon rail (48px) at width < 1100 epx.
+- **Top Pinned Virtual Strip Monitor**:
+  - Relocated `LedStripMonitor` to Row 2 directly beneath the global header bar, with fixed 56 epx height.
+  - Positioned monitor outside of the scrolling `ContentFrame` ensuring it remains permanently visible and pinned at all times.
+- **Zero Horizontal Scrollbar Guarantee & Text Trimming**:
+  - Added `HorizontalScrollBarVisibility="Disabled"` and `HorizontalScrollMode="Disabled"` on all 6 views.
+  - Restructured wide horizontal button lists (e.g. DIY Sequencer swatches) into wrapped 2-row layouts to ensure 100% containment at 1000px width.
+  - Added `TextTrimming="CharacterEllipsis"` and attached `ToolTipService.ToolTip` across all page titles, subtitles, and list item text labels.
+- **Automated Verification**:
+  - Re-ran `cargo xtask windows-selftest`: 30/30 runs passed with 0 defects detected.
+  - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
+
+
 
 
 

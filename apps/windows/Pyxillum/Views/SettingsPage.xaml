@@ -6,12 +6,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled">
         <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
             <!-- Header Section -->
             <StackPanel Spacing="4">
-                <TextBlock Text="Hardware Settings" Style="{ThemeResource TitleTextBlockStyle}" />
-                <TextBlock Text="Configure non-volatile EEPROM registers on physical SP621E controllers" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+                <TextBlock Text="Hardware Settings" Style="{ThemeResource TitleTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Hardware Settings" />
+                <TextBlock Text="Configure non-volatile EEPROM registers on physical SP621E controllers" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Configure non-volatile EEPROM registers on physical SP621E controllers" />
             </StackPanel>
 
             <!-- Error State InfoBar -->
@@ -106,7 +106,7 @@
                 <StackPanel Spacing="16">
                     <TextBlock Text="Application Preferences" Style="{ThemeResource SubtitleTextBlockStyle}" />
                     <CheckBox Content="Remember normal window geometry on exit" IsChecked="True" />
-                    <Button Content="Reset Window Geometry to 80% Default" HorizontalAlignment="Left" />
+                    <Button x:Name="ResetGeometryButton" Content="Reset Window Geometry to Default (1280x720)" HorizontalAlignment="Left" />
                 </StackPanel>
             </Border>
         </StackPanel>

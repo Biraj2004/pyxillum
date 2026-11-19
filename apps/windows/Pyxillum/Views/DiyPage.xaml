@@ -6,7 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled">
         <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
             <!-- Header Section -->
             <Grid>
@@ -15,8 +15,8 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Spacing="4">
-                    <TextBlock Text="DIY Custom Sequencer" Style="{ThemeResource TitleTextBlockStyle}" />
-                    <TextBlock Text="Design custom multi-node gradient and chase animation sequences" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+                    <TextBlock Text="DIY Custom Sequencer" Style="{ThemeResource TitleTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="DIY Custom Sequencer" />
+                    <TextBlock Text="Design custom multi-node gradient and chase animation sequences" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Design custom multi-node gradient and chase animation sequences" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
                     <Button x:Name="PlayPauseButton" Content="Play Preview" Style="{ThemeResource AccentButtonStyle}" />
@@ -73,16 +73,18 @@
                         <Grid HorizontalAlignment="Center" Margin="0,8">
                             <Ellipse x:Name="DiyColorPreview" Width="64" Height="64" Fill="#FF3B30" Stroke="{ThemeResource CardStrokeColorDefaultBrush}" StrokeThickness="2" />
                         </Grid>
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button x:Name="DiySwatchRed" Content="Red" />
                                 <Button x:Name="DiySwatchGreen" Content="Green" />
                                 <Button x:Name="DiySwatchBlue" Content="Blue" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
                                 <Button x:Name="DiySwatchAmber" Content="Amber" />
                                 <Button x:Name="DiySwatchCyan" Content="Cyan" />
                                 <Button x:Name="DiySwatchMagenta" Content="Magenta" />
                             </StackPanel>
-                        </ScrollViewer>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,8,0,0">
                             <Button x:Name="AddStepButton" Content="Add Node" />
                             <Button x:Name="RemoveStepButton" Content="Remove Node" />

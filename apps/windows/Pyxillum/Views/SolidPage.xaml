@@ -6,12 +6,12 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalScrollMode="Disabled">
         <StackPanel Spacing="24" MaxWidth="1000" HorizontalAlignment="Stretch">
             <!-- Header Section -->
             <StackPanel Spacing="4">
-                <TextBlock Text="Solid Colour" Style="{ThemeResource TitleTextBlockStyle}" />
-                <TextBlock Text="Static hues, colour temperature calibration, and curated swatches" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" />
+                <TextBlock Text="Solid Colour" Style="{ThemeResource TitleTextBlockStyle}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Solid Colour" />
+                <TextBlock Text="Static hues, colour temperature calibration, and curated swatches" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Static hues, colour temperature calibration, and curated swatches" />
             </StackPanel>
 
             <!-- Error State InfoBar -->
@@ -80,7 +80,7 @@
                         <TextBlock Text="Adjust between warm candlelight (2,700 K) and daylight (6,500 K)" FontSize="12" Opacity="0.6" />
 
                         <Slider x:Name="KelvinSlider" Minimum="2700" Maximum="6500" Value="4000" StepFrequency="50" Margin="0,8" />
-                        <TextBlock x:Name="KelvinReadout" Text="4,000 K (Neutral White)" FontWeight="SemiBold" FontSize="13" />
+                        <TextBlock x:Name="KelvinReadout" Text="4,000 K (Neutral White)" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="4,000 K (Neutral White)" />
 
                         <TextBlock Text="Architectural Swatches" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,16,0,0" />
                         <StackPanel Spacing="8">

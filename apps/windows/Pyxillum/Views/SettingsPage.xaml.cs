@@ -78,6 +78,11 @@ namespace Pyxillum.Views
                     ViewModel.Navigate(ScreenId.DeviceHub);
                     Frame.Navigate(typeof(DevicesPage), ViewModel);
                 };
+
+                ResetGeometryButton.Click += (s, args) =>
+                {
+                    Diagnostics.WindowStateManager.ResetToDefault();
+                };
             }
         }
     }

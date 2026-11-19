@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W2: Geometry, Scaling and Clipping Rules (`apps/windows/`, `xtask/`)**:
+  - Enforced minimum window bounds (1000 x 650 epx) via Win32 `WM_GETMINMAXINFO` subclassing in `WindowStateManager.cs`.
+  - Added window geometry persistence across restarts (`%LOCALAPPDATA%\Pyxillum\window_state.json`) with monitor intersection checks.
+  - Added `--reset-window` CLI argument and in-app button to restore default 1280 x 720 centered geometry.
+  - Adaptive `NavigationView` auto-collapsing to compact rail (48px) below 1100px width and expanding to full pane (240px) above 1100px.
+  - Pinned `LedStripMonitor` to Row 2 with fixed 56 epx height above scrolling page content.
+  - Guaranteed zero horizontal scrollbars with `HorizontalScrollBarVisibility="Disabled"` and wrapped 2-row swatch grids.
+  - Added `TextTrimming="CharacterEllipsis"` and attached `ToolTipService.ToolTip` across all page titles, subtitles, and list item text.
 - **Pyxillum V2 Windows Native Front End - Phase W1: Foundation & Viewport Integrity (`apps/windows/`, `xtask/`)**:
   - Deterministic startup navigation in `MainWindow.xaml.cs` guaranteeing the initial screen activates `Devices` reliably.
   - Implemented 4-state visual architecture (Loading, Content, Empty, Error) across all 6 views (`DevicesPage`, `DynamicPage`, `SolidPage`, `MusicPage`, `DiyPage`, `SettingsPage`).
