@@ -17,7 +17,7 @@
             <!-- Error State InfoBar -->
             <InfoBar x:Name="MusicErrorBar" IsOpen="False" Severity="Error" Title="Audio Capture Error" Message="Unable to capture audio from selected source. Check microphone or loopback permissions.">
                 <InfoBar.ActionButton>
-                    <Button x:Name="MusicRetryButton" Content="Retry" />
+                    <Button x:Name="MusicRetryButton" Content="Retry" AutomationProperties.Name="Retry audio pipeline initialization" />
                 </InfoBar.ActionButton>
             </InfoBar>
 
@@ -35,7 +35,7 @@
                     <FontIcon Glyph="&#xEC4F;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
                     <TextBlock Text="No Sound Detected" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
                     <TextBlock Text="Play music or audio through your PC or speak near the microphone to observe real-time spectrum tracking." Opacity="0.7" TextAlignment="Center" />
-                    <Button x:Name="SimulateAudioButton" Content="Simulate 128 BPM beat" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    <Button x:Name="SimulateAudioButton" Content="Simulate 128 BPM beat" AutomationProperties.Name="Simulate 128 BPM beat" HorizontalAlignment="Center" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
 
@@ -49,7 +49,7 @@
 
                     <StackPanel Grid.Column="0" Spacing="8" Margin="0,0,16,0">
                         <TextBlock Text="Audio Capture Pipeline" FontWeight="Medium" FontSize="13" />
-                        <ComboBox x:Name="AudioSourceCombo" SelectedIndex="0" HorizontalAlignment="Stretch">
+                        <ComboBox x:Name="AudioSourceCombo" SelectedIndex="0" HorizontalAlignment="Stretch" AutomationProperties.Name="Audio capture pipeline">
                             <ComboBoxItem Content="PC System Audio (WASAPI Loopback)" />
                             <ComboBoxItem Content="Controller Hardware Internal Mic" />
                             <ComboBoxItem Content="Host Auxiliary Microphone" />
@@ -58,7 +58,7 @@
 
                     <StackPanel Grid.Column="1" Spacing="8" Margin="16,0,0,0">
                         <TextBlock Text="Acoustic Sensor Sensitivity" FontWeight="Medium" FontSize="13" />
-                        <Slider x:Name="SensitivitySlider" Minimum="1" Maximum="100" Value="60" />
+                        <Slider x:Name="SensitivitySlider" Minimum="1" Maximum="100" Value="60" AutomationProperties.Name="Acoustic sensor sensitivity" />
                     </StackPanel>
                 </Grid>
             </Border>

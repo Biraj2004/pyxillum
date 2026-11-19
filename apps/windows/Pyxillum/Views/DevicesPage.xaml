@@ -19,13 +19,13 @@
                     <TextBlock Text="Discover, connect, and manage nearby SP621E Bluetooth controllers" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Discover, connect, and manage nearby SP621E Bluetooth controllers" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                    <Button x:Name="WizardButton" Style="{ThemeResource DefaultButtonStyle}" ToolTipService.ToolTip="Run 7-step hardware verification wizard">
+                    <Button x:Name="WizardButton" Style="{ThemeResource DefaultButtonStyle}" AutomationProperties.Name="Run Hardware Verification Wizard" ToolTipService.ToolTip="Run 7-step hardware verification wizard">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon Glyph="&#xE9D5;" FontSize="14" />
                             <TextBlock Text="Hardware Wizard" />
                         </StackPanel>
                     </Button>
-                    <Button x:Name="ScanButton" Style="{ThemeResource AccentButtonStyle}">
+                    <Button x:Name="ScanButton" Style="{ThemeResource AccentButtonStyle}" AutomationProperties.Name="Scan for Bluetooth devices">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <ProgressRing x:Name="ScanRing" Width="16" Height="16" IsActive="False" Visibility="Collapsed" />
                             <FontIcon Glyph="&#xE72C;" FontSize="14" />
@@ -38,7 +38,7 @@
             <!-- Error State InfoBar -->
             <InfoBar x:Name="PageErrorBar" IsOpen="False" Severity="Error" Title="Bluetooth Issue" Message="Unable to access Bluetooth LE adapter.">
                 <InfoBar.ActionButton>
-                    <Button x:Name="ErrorRetryButton" Content="Retry scan" />
+                    <Button x:Name="ErrorRetryButton" Content="Retry scan" AutomationProperties.Name="Retry scanning" />
                 </InfoBar.ActionButton>
             </InfoBar>
 
@@ -61,7 +61,7 @@
                     <TextBlock Text="No SP621E controllers found" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
                     <TextBlock Text="Make sure the controller is powered and in range, and not connected to companion mobile applications."
                                Style="{ThemeResource BodyTextBlockStyle}" TextWrapping="Wrap" MaxWidth="500" TextAlignment="Center" Opacity="0.7" />
-                    <Button x:Name="EmptyScanButton" Content="Scan again" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    <Button x:Name="EmptyScanButton" Content="Scan again" Style="{ThemeResource AccentButtonStyle}" AutomationProperties.Name="Scan for devices again" HorizontalAlignment="Center" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
 
@@ -81,7 +81,7 @@
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Name}" />
                                     <TextBlock Text="{Binding Address}" Opacity="0.6" FontSize="12" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Address}" />
                                 </StackPanel>
-                                <Button Grid.Column="2" Content="Connect" Tag="{Binding Address}" Click="ConnectButton_Click" Style="{ThemeResource AccentButtonStyle}" VerticalAlignment="Center" />
+                                <Button Grid.Column="2" Content="Connect" Tag="{Binding Address}" Click="ConnectButton_Click" Style="{ThemeResource AccentButtonStyle}" AutomationProperties.Name="Connect to controller" VerticalAlignment="Center" />
                             </Grid>
                         </Border>
                     </DataTemplate>

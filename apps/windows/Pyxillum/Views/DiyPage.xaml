@@ -19,15 +19,15 @@
                     <TextBlock Text="Design custom multi-node gradient and chase animation sequences" Style="{ThemeResource BodyTextBlockStyle}" Opacity="0.6" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Design custom multi-node gradient and chase animation sequences" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                    <Button x:Name="PlayPauseButton" Content="Play Preview" Style="{ThemeResource AccentButtonStyle}" />
-                    <Button x:Name="SavePresetButton" Content="Save Preset" />
+                    <Button x:Name="PlayPauseButton" Content="Play Preview" Style="{ThemeResource AccentButtonStyle}" AutomationProperties.Name="Toggle sequence playback" />
+                    <Button x:Name="SavePresetButton" Content="Save Preset" AutomationProperties.Name="Save sequence preset" />
                 </StackPanel>
             </Grid>
 
             <!-- Error State InfoBar -->
             <InfoBar x:Name="DiyErrorBar" IsOpen="False" Severity="Error" Title="Sequencer Error" Message="Failed to synchronise DIY keyframe sequence with controller.">
                 <InfoBar.ActionButton>
-                    <Button x:Name="DiyRetryButton" Content="Retry" />
+                    <Button x:Name="DiyRetryButton" Content="Retry" AutomationProperties.Name="Retry synchronising sequence" />
                 </InfoBar.ActionButton>
             </InfoBar>
 
@@ -45,7 +45,7 @@
                     <FontIcon Glyph="&#xE81C;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
                     <TextBlock Text="No Keyframe Steps Configured" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
                     <TextBlock Text="Add your first animation step node to construct a custom chase or gradient sequence." Opacity="0.7" TextAlignment="Center" />
-                    <Button x:Name="EmptyAddStepButton" Content="Add first node" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    <Button x:Name="EmptyAddStepButton" Content="Add first node" Style="{ThemeResource AccentButtonStyle}" AutomationProperties.Name="Add first sequence node" HorizontalAlignment="Center" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
 
@@ -75,19 +75,19 @@
                         </Grid>
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button x:Name="DiySwatchRed" Content="Red" />
-                                <Button x:Name="DiySwatchGreen" Content="Green" />
-                                <Button x:Name="DiySwatchBlue" Content="Blue" />
+                                <Button x:Name="DiySwatchRed" Content="Red" AutomationProperties.Name="Red keyframe colour" />
+                                <Button x:Name="DiySwatchGreen" Content="Green" AutomationProperties.Name="Green keyframe colour" />
+                                <Button x:Name="DiySwatchBlue" Content="Blue" AutomationProperties.Name="Blue keyframe colour" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button x:Name="DiySwatchAmber" Content="Amber" />
-                                <Button x:Name="DiySwatchCyan" Content="Cyan" />
-                                <Button x:Name="DiySwatchMagenta" Content="Magenta" />
+                                <Button x:Name="DiySwatchAmber" Content="Amber" AutomationProperties.Name="Amber keyframe colour" />
+                                <Button x:Name="DiySwatchCyan" Content="Cyan" AutomationProperties.Name="Cyan keyframe colour" />
+                                <Button x:Name="DiySwatchMagenta" Content="Magenta" AutomationProperties.Name="Magenta keyframe colour" />
                             </StackPanel>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,8,0,0">
-                            <Button x:Name="AddStepButton" Content="Add Node" />
-                            <Button x:Name="RemoveStepButton" Content="Remove Node" />
+                            <Button x:Name="AddStepButton" Content="Add Node" AutomationProperties.Name="Add sequence node" />
+                            <Button x:Name="RemoveStepButton" Content="Remove Node" AutomationProperties.Name="Remove sequence node" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -98,13 +98,13 @@
                         <TextBlock Text="Sequence Dynamics" Style="{ThemeResource SubtitleTextBlockStyle}" />
                         <StackPanel Spacing="8">
                             <TextBlock Text="Animation Speed" FontSize="12" Opacity="0.7" />
-                            <Slider x:Name="DiySpeedSlider" Minimum="1" Maximum="32" Value="16" />
+                            <Slider x:Name="DiySpeedSlider" Minimum="1" Maximum="32" Value="16" AutomationProperties.Name="Sequence playback speed" />
                         </StackPanel>
                         <StackPanel Spacing="8">
                             <TextBlock Text="Direction" FontSize="12" Opacity="0.7" />
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button x:Name="ForwardButton" Content="Forward -&gt;" Style="{ThemeResource AccentButtonStyle}" />
-                                <Button x:Name="ReverseButton" Content="&lt;- Reverse" />
+                                <Button x:Name="ForwardButton" Content="Forward -&gt;" Style="{ThemeResource AccentButtonStyle}" AutomationProperties.Name="Set forward animation direction" />
+                                <Button x:Name="ReverseButton" Content="&lt;- Reverse" AutomationProperties.Name="Set reverse animation direction" />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>

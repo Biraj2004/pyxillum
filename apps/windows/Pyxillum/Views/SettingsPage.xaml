@@ -17,7 +17,7 @@
             <!-- Error State InfoBar -->
             <InfoBar x:Name="SettingsErrorBar" IsOpen="False" Severity="Error" Title="EEPROM Write Error" Message="Failed to mutate non-volatile controller registers. Verify safety gate confirmation.">
                 <InfoBar.ActionButton>
-                    <Button x:Name="SettingsRetryButton" Content="Retry" />
+                    <Button x:Name="SettingsRetryButton" Content="Retry" AutomationProperties.Name="Retry saving hardware parameters" />
                 </InfoBar.ActionButton>
             </InfoBar>
 
@@ -35,7 +35,7 @@
                     <FontIcon Glyph="&#xE713;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
                     <TextBlock Text="No Controller Connected" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
                     <TextBlock Text="Connect to a physical SP621E controller in Device Hub to query or configure EEPROM registers." Opacity="0.7" TextAlignment="Center" />
-                    <Button x:Name="GoToDevicesButton" Content="Go to Device Hub" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    <Button x:Name="GoToDevicesButton" Content="Go to Device Hub" Style="{ThemeResource AccentButtonStyle}" AutomationProperties.Name="Navigate to Device Hub" HorizontalAlignment="Center" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
 
@@ -48,7 +48,7 @@
                     </StackPanel>
                     <TextBlock Text="Changing these parameters writes directly to controller EEPROM. Incorrect settings may cause desynchronised LED timing, flickering, or invalid colour reproduction."
                                TextWrapping="Wrap" Opacity="0.8" FontSize="13" />
-                    <CheckBox x:Name="SafetyConfirmCheckBox" Content="I understand this modifies non-volatile controller registers (--i-understand-this-changes-the-device)" FontWeight="Medium" />
+                    <CheckBox x:Name="SafetyConfirmCheckBox" Content="I understand this modifies non-volatile controller registers (--i-understand-this-changes-the-device)" AutomationProperties.Name="Confirm modification of non-volatile registers" FontWeight="Medium" />
                 </StackPanel>
             </Border>
 
@@ -66,8 +66,8 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Slider x:Name="PixelCountSlider" Grid.Column="0" Minimum="1" Maximum="300" Value="60" Margin="0,0,16,0" />
-                            <NumberBox x:Name="PixelCountNumberBox" Grid.Column="1" Value="60" Minimum="1" Maximum="2048" Width="100" SpinButtonPlacementMode="Inline" />
+                            <Slider x:Name="PixelCountSlider" Grid.Column="0" Minimum="1" Maximum="300" Value="60" AutomationProperties.Name="Strip pixel count slider" Margin="0,0,16,0" />
+                            <NumberBox x:Name="PixelCountNumberBox" Grid.Column="1" Value="60" Minimum="1" Maximum="2048" Width="100" AutomationProperties.Name="Strip pixel count value" SpinButtonPlacementMode="Inline" />
                         </Grid>
                     </StackPanel>
 
@@ -75,7 +75,7 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Colour Sequence (Channel Calibration)" FontWeight="Medium" FontSize="13" />
                         <TextBlock Text="Aligns controller channel output sequence to physical LED strip diode layout" FontSize="12" Opacity="0.6" />
-                        <ComboBox x:Name="ChipOrderCombo" SelectedIndex="2" Width="260">
+                        <ComboBox x:Name="ChipOrderCombo" SelectedIndex="2" Width="260" AutomationProperties.Name="Colour channel sequence">
                             <ComboBoxItem Content="RGB" />
                             <ComboBoxItem Content="RBG" />
                             <ComboBoxItem Content="GRB (WS2812B Default)" />
@@ -88,7 +88,7 @@
                     <!-- IC Driver Model -->
                     <StackPanel Spacing="8">
                         <TextBlock Text="Driver IC Chipset Model" FontWeight="Medium" FontSize="13" />
-                        <ComboBox x:Name="IcDriverCombo" SelectedIndex="0" Width="260">
+                        <ComboBox x:Name="IcDriverCombo" SelectedIndex="0" Width="260" AutomationProperties.Name="Driver IC chipset model">
                             <ComboBoxItem Content="WS2812B / WS2811 (800 kHz)" />
                             <ComboBoxItem Content="UCS1903 (800 kHz)" />
                             <ComboBoxItem Content="SM16703 (800 kHz)" />
@@ -97,7 +97,7 @@
                     </StackPanel>
 
                     <!-- Action Apply Button -->
-                    <Button x:Name="ApplyHardwareButton" Content="Apply Hardware Changes" Style="{ThemeResource AccentButtonStyle}" IsEnabled="False" HorizontalAlignment="Left" />
+                    <Button x:Name="ApplyHardwareButton" Content="Apply Hardware Changes" Style="{ThemeResource AccentButtonStyle}" AutomationProperties.Name="Apply hardware changes to device" IsEnabled="False" HorizontalAlignment="Left" />
                 </StackPanel>
             </Border>
 
@@ -105,8 +105,8 @@
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="20">
                 <StackPanel Spacing="16">
                     <TextBlock Text="Application Preferences" Style="{ThemeResource SubtitleTextBlockStyle}" />
-                    <CheckBox Content="Remember normal window geometry on exit" IsChecked="True" />
-                    <Button x:Name="ResetGeometryButton" Content="Reset Window Geometry to Default (1280x720)" HorizontalAlignment="Left" />
+                    <CheckBox Content="Remember normal window geometry on exit" IsChecked="True" AutomationProperties.Name="Remember normal window geometry on exit" />
+                    <Button x:Name="ResetGeometryButton" Content="Reset Window Geometry to Default (1280x720)" AutomationProperties.Name="Reset window geometry to default" HorizontalAlignment="Left" />
                 </StackPanel>
             </Border>
         </StackPanel>

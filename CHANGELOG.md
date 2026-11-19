@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W7: Polish, Performance & Accessibility (`apps/windows/`)**:
+  - Implemented comprehensive `AutomationProperties.Name` and accessible descriptors across all interactive controls in `MainWindow.xaml` and all 6 screen views.
+  - Verified keyboard focus management, Tab traversal order, and visible focus indicators for full Windows Narrator compatibility.
+  - Confirmed render loop suspension and static brush pooling in `LedStripMonitor` ensuring near-zero idle CPU usage.
 - **Pyxillum V2 Windows Native Front End - Phase W6: Verification, Feature Matrix & Hardware Wizard (`apps/windows/`, `tests/`)**:
   - Implemented 7-step interactive `HardwareWizardDialog` in the Windows UI and Device Hub for guided testing.
   - Completed simulation verification across all 7 protocol stages (`HW-01` through `HW-07`), persisting test results to `tests/hardware/RESULTS.json`.

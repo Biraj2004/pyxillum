@@ -17,7 +17,7 @@
             <!-- Error State InfoBar -->
             <InfoBar x:Name="DynamicErrorBar" IsOpen="False" Severity="Error" Title="Effect Dispatch Error" Message="Failed to transfer animation pattern to controller.">
                 <InfoBar.ActionButton>
-                    <Button x:Name="DynamicRetryButton" Content="Retry" />
+                    <Button x:Name="DynamicRetryButton" Content="Retry" AutomationProperties.Name="Retry syncing dynamic effect" />
                 </InfoBar.ActionButton>
             </InfoBar>
 
@@ -39,15 +39,15 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Spacing="8" Margin="0,0,16,0">
                         <TextBlock Text="Animation Velocity (Speed)" FontWeight="Medium" FontSize="13" />
-                        <Slider x:Name="DynamicSpeedSlider" Minimum="1" Maximum="32" Value="16" />
+                        <Slider x:Name="DynamicSpeedSlider" Minimum="1" Maximum="32" Value="16" AutomationProperties.Name="Animation playback speed" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="8" Margin="16,0">
                         <TextBlock Text="Pattern Luminescence (Brightness)" FontWeight="Medium" FontSize="13" />
-                        <Slider x:Name="DynamicBrightnessSlider" Minimum="0" Maximum="255" Value="200" />
+                        <Slider x:Name="DynamicBrightnessSlider" Minimum="0" Maximum="255" Value="200" AutomationProperties.Name="Dynamic effect brightness" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Center" Margin="16,0,0,0">
                         <TextBlock Text="Auto Cycle Loop" FontWeight="Medium" FontSize="13" />
-                        <ToggleSwitch x:Name="AutoCycleToggle" OffContent="Off" OnContent="Active" />
+                        <ToggleSwitch x:Name="AutoCycleToggle" OffContent="Off" OnContent="Active" AutomationProperties.Name="Auto cycle loop" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -57,7 +57,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="EffectSearchBox" PlaceholderText="Search 146 effects by name or code..." Width="320" HorizontalAlignment="Left">
+                <TextBox x:Name="EffectSearchBox" PlaceholderText="Search 146 effects by name or code..." Width="320" HorizontalAlignment="Left" AutomationProperties.Name="Filter effects catalogue">
                     <TextBox.Header>
                         <TextBlock Text="Filter Catalogue" FontWeight="Medium" FontSize="13" Margin="0,0,0,4" />
                     </TextBox.Header>
@@ -73,7 +73,7 @@
                     <FontIcon Glyph="&#xE721;" FontSize="40" HorizontalAlignment="Center" Opacity="0.4" />
                     <TextBlock Text="No Matching Effects Found" Style="{ThemeResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
                     <TextBlock Text="Try clearing your search query or entering a different effect name or opcode." Opacity="0.7" TextAlignment="Center" />
-                    <Button x:Name="ClearFilterButton" Content="Clear filter" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    <Button x:Name="ClearFilterButton" Content="Clear filter" AutomationProperties.Name="Clear search filter" HorizontalAlignment="Center" Margin="0,8,0,0" />
                 </StackPanel>
             </Border>
 
