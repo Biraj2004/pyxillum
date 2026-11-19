@@ -1,0 +1,16 @@
+[package]
+name = "pyxillum-windows-launcher"
+version = "1.0.5"
+edition = "2021"
+rust-version = "1.81.0"
+license = "AGPL-3.0-or-later"
+description = "Standalone portable launcher for Pyxillum WinUI 3 native desktop app"
+
+[workspace]
+
+[[bin]]
+name = "pyxillum-desktop"
+path = "src/main.rs"
+
+[dependencies]
+

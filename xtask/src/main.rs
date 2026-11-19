@@ -246,7 +246,12 @@ fn stage_binaries(source_dir: &std::path::Path) -> Result<()> {
 
     let binaries = ["pyxillum-desktop.exe", "pyxillum.exe"];
     for bin in binaries {
-        let src = source_dir.join(bin);
+        let launcher_src = std::path::Path::new("apps/windows/launcher/target/release").join(bin);
+        let src = if launcher_src.exists() && bin == "pyxillum-desktop.exe" {
+            launcher_src
+        } else {
+            source_dir.join(bin)
+        };
         if src.exists() {
             for dst_dir in &destinations {
                 let dst = dst_dir.join(bin);
