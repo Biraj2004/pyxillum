@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W4: Header, Connection Status & Virtual Strip Polish (`apps/windows/`)**:
+  - Consolidated connection state into a single interactive badge in the global header with states for Disconnected, Scanning, Connecting, and Connected.
+  - Added inline middle disconnected banner with quick action "Scan & Connect" button and dimmed master controls with descriptive preview tooltips.
+  - Re-architected virtual LED strip monitor (`LedStripMonitor.cs`) with circular WS2812B diodes, dual soft ambient neon glow diffusion, auto-fit diode count, and 60 FPS live performance counter.
 - **Pyxillum V2 Windows Native Front End - Phase W3: Design System, Tokens, Hover Rules and Icons (`apps/windows/`, `design/`)**:
   - Eliminated hover scale transformations on controls, buttons, and navigation items via global style invariants in `Tokens.xaml`.
   - Aligned all navigation and view glyphs with canonical cross-platform mappings from `design/icons.toml` (Device Hub: `\uE702`, Dynamic FX: `\uE706`, Solid Colour: `\uE790`, DIY Sequencer: `\uE81C`).

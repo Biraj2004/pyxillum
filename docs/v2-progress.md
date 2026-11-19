@@ -336,6 +336,25 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
   - Re-ran `cargo xtask windows-selftest`: 30/30 scenarios passed with 0 defects.
   - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
 
+---
+
+## Phase W4 Execution Summary (Header, Connection Status & Virtual Strip Polish)
+- **Header Connection Status & Inline Quick Scan (`MainWindow.xaml`, `MainWindow.xaml.cs`)**:
+  - Consolidated connection state into a single canonical badge at the left side of the global header bar.
+  - Implemented interactive clickable badge (`ConnectionBadgeButton`) routing immediately to the Device Hub.
+  - Added dedicated visual states for `Disconnected` (amber indicator), `Scanning` (active `ProgressRing` spinner), `Connecting` (name resolution), and `Connected` (green indicator with peripheral name).
+  - Implemented middle inline disconnected banner: `"Preview mode · changes affect the virtual strip only [Scan & Connect]"` with quick-action scan trigger.
+  - Master controls (power button & master brightness slider) dynamically dim to 60% opacity when disconnected with descriptive preview mode tooltips explaining that adjustments affect the virtual strip only.
+- **Neon WS2812B Virtual LED Strip Monitor (`LedStripMonitor.cs`)**:
+  - Re-architected rendering pipeline with circular physical pixel diodes (9px diameter) styled after WS2812B LEDs.
+  - Implemented dual ambient neon glow diffusion layers: outer soft halo (0.12 opacity, 24px) and inner vibrant diffusion (0.35 opacity, 16px) around illuminated pixels, with subtle dark body (`#1F2937`) when off.
+  - Dynamically auto-fits strip diode layout to available width up to 120 pixels.
+  - Zero per-frame memory allocation via static brush pools and shape reusing.
+  - Added live diode count and 60 FPS performance monitoring text: `"{0} LEDs · {1} FPS"`.
+- **Verification & Quality Gate**:
+  - Ran automated 30-scenario visual audit harness (`cargo xtask windows-selftest`): 30/30 runs passed with 0 defects detected.
+  - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
+
 
 
 

@@ -114,6 +114,11 @@ namespace Pyxillum.ViewModels
             }
         }
 
+        public void StartScan()
+        {
+            Dispatch(new PyxillumAction.ScanDevices());
+        }
+
         public void OpenBluetoothSettings()
         {
             Dispatch(new Pyxillum.Core.Action.OpenBluetoothSettings());

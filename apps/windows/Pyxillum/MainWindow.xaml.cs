@@ -34,12 +34,33 @@ namespace Pyxillum
             // Configure AppWindow & 80% Centered Geometry
             ConfigureWindowGeometry();
 
-            // Connect Live LED Strip Monitor frame pulling
+            // Connect Live LED Strip Monitor frame pulling and stats callback
             LiveStripMonitor.FrameSource = () => ViewModel.GetCurrentFrame();
+            LiveStripMonitor.StatsCallback = (leds, fps) =>
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    StripStatsText.Text = $"{leds} LEDs · {fps} FPS";
+                    ToolTipService.SetToolTip(StripStatsText, $"{leds} LEDs · {fps} FPS");
+                });
+            };
 
             // Adaptive NavigationView based on window width
             this.SizeChanged += (s, e) => UpdateNavigationViewAdaptive(e.Size.Width);
             UpdateNavigationViewAdaptive(this.Bounds.Width);
+
+            // Wire Header & Connection Event Listeners
+            ConnectionBadgeButton.Click += (s, e) =>
+            {
+                NavView.SelectedItem = NavView.MenuItems[0];
+                NavigateTo("Devices");
+            };
+            HeaderScanButton.Click += (s, e) =>
+            {
+                NavView.SelectedItem = NavView.MenuItems[0];
+                NavigateTo("Devices");
+                ViewModel.StartScan();
+            };
 
             // Wire UI Event Listeners
             MasterPowerButton.Click += (s, e) => ViewModel.TogglePower();
@@ -177,25 +198,48 @@ namespace Pyxillum
             switch (ViewModel.Connection.Kind)
             {
                 case ConnectionStatusKind.Connected:
+                    ConnectionProgressRing.IsActive = false;
+                    ConnectionProgressRing.Visibility = Visibility.Collapsed;
+                    ConnectionIndicator.Visibility = Visibility.Visible;
                     ConnectionIndicator.Fill = (Brush)Application.Current.Resources["BrushSuccess"];
-                    ConnectionStatusText.Text = ViewModel.Connection.Name ?? "Connected";
+                    ConnectionStatusText.Text = string.IsNullOrEmpty(ViewModel.Connection.Name) ? "Connected" : ViewModel.Connection.Name;
+                    DisconnectedBanner.Visibility = Visibility.Collapsed;
+                    MasterControlsPanel.Opacity = 1.0;
+                    ToolTipService.SetToolTip(MasterControlsPanel, null);
+                    PreviewBadge.Visibility = Visibility.Collapsed;
                     break;
                 case ConnectionStatusKind.Connecting:
-                    ConnectionIndicator.Fill = (Brush)Application.Current.Resources["BrushInfo"];
-                    ConnectionStatusText.Text = "Connecting...";
+                    ConnectionIndicator.Visibility = Visibility.Collapsed;
+                    ConnectionProgressRing.IsActive = true;
+                    ConnectionProgressRing.Visibility = Visibility.Visible;
+                    ConnectionStatusText.Text = string.IsNullOrEmpty(ViewModel.Connection.Name) ? "Connecting..." : $"Connecting to {ViewModel.Connection.Name}...";
+                    DisconnectedBanner.Visibility = Visibility.Collapsed;
+                    MasterControlsPanel.Opacity = 0.8;
+                    ToolTipService.SetToolTip(MasterControlsPanel, null);
+                    PreviewBadge.Visibility = Visibility.Collapsed;
                     break;
                 case ConnectionStatusKind.Scanning:
-                    ConnectionIndicator.Fill = (Brush)Application.Current.Resources["BrushInfo"];
+                    ConnectionIndicator.Visibility = Visibility.Collapsed;
+                    ConnectionProgressRing.IsActive = true;
+                    ConnectionProgressRing.Visibility = Visibility.Visible;
                     ConnectionStatusText.Text = "Scanning...";
+                    DisconnectedBanner.Visibility = Visibility.Visible;
+                    MasterControlsPanel.Opacity = 0.6;
+                    ToolTipService.SetToolTip(MasterControlsPanel, "Preview mode: modifies the virtual strip only (connect a controller to apply to LEDs)");
+                    PreviewBadge.Visibility = ViewModel.IsPreviewMode ? Visibility.Visible : Visibility.Collapsed;
                     break;
                 default:
+                    ConnectionProgressRing.IsActive = false;
+                    ConnectionProgressRing.Visibility = Visibility.Collapsed;
+                    ConnectionIndicator.Visibility = Visibility.Visible;
                     ConnectionIndicator.Fill = (Brush)Application.Current.Resources["BrushWarning"];
                     ConnectionStatusText.Text = "Disconnected";
+                    DisconnectedBanner.Visibility = Visibility.Visible;
+                    MasterControlsPanel.Opacity = 0.6;
+                    ToolTipService.SetToolTip(MasterControlsPanel, "Preview mode: modifies the virtual strip only (connect a controller to apply to LEDs)");
+                    PreviewBadge.Visibility = ViewModel.IsPreviewMode ? Visibility.Visible : Visibility.Collapsed;
                     break;
             }
-
-            // Preview Mode Badge
-            PreviewBadge.Visibility = ViewModel.IsPreviewMode ? Visibility.Visible : Visibility.Collapsed;
 
             // Bluetooth Unavailable InfoBar
             BluetoothWarningBar.IsOpen = !ViewModel.IsBluetoothAvailable;
