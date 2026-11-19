@@ -21,7 +21,7 @@
         <!-- Custom Window Title Bar -->
         <Grid x:Name="AppTitleBar" Grid.Row="0" Height="40" VerticalAlignment="Top" Background="Transparent">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0" Spacing="8">
-                <FontIcon Glyph="&#xE703;" FontSize="16" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                <FontIcon Glyph="&#xE702;" FontSize="16" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
                 <TextBlock Text="Pyxillum" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
                 <TextBlock Text="Native Pixel LED Controller" Opacity="0.6" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="Native Pixel LED Controller" />
             </StackPanel>
@@ -126,17 +126,17 @@
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Device Hub" Tag="Devices">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE703;" />
+                        <FontIcon Glyph="&#xE702;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Dynamic FX" Tag="Dynamic">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE790;" />
+                        <FontIcon Glyph="&#xE706;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Solid Colour" Tag="Solid">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE710;" />
+                        <FontIcon Glyph="&#xE790;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Music Rhythm" Tag="Music">
@@ -146,7 +146,7 @@
                 </NavigationViewItem>
                 <NavigationViewItem Content="DIY Sequencer" Tag="Diy">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE7B5;" />
+                        <FontIcon Glyph="&#xE81C;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>

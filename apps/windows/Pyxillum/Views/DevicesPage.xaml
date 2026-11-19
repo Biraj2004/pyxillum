@@ -68,7 +68,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <FontIcon Grid.Column="0" Glyph="&#xE703;" FontSize="24" Margin="0,0,16,0" VerticalAlignment="Center" />
+                                <FontIcon Grid.Column="0" Glyph="&#xE702;" FontSize="24" Margin="0,0,16,0" VerticalAlignment="Center" />
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Name}" />
                                     <TextBlock Text="{Binding Address}" Opacity="0.6" FontSize="12" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{Binding Address}" />

@@ -42,4 +42,20 @@
     <SolidColorBrush x:Key="BrushInfo" Color="{StaticResource ColorInfo}" />
     <Color x:Key="ColorLedGlow">#FF06B6D4</Color>
     <SolidColorBrush x:Key="BrushLedGlow" Color="{StaticResource ColorLedGlow}" />
+
+    <!-- Global Hover Invariant Styles: Guarantee ZERO scale transforms or geometry enlargement on hover -->
+    <Style TargetType="NavigationViewItem">
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <CompositeTransform ScaleX="1.0" ScaleY="1.0" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="Button">
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <CompositeTransform ScaleX="1.0" ScaleY="1.0" />
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Windows Native Front End - Phase W3: Design System, Tokens, Hover Rules and Icons (`apps/windows/`, `design/`)**:
+  - Eliminated hover scale transformations on controls, buttons, and navigation items via global style invariants in `Tokens.xaml`.
+  - Aligned all navigation and view glyphs with canonical cross-platform mappings from `design/icons.toml` (Device Hub: `\uE702`, Dynamic FX: `\uE706`, Solid Colour: `\uE790`, DIY Sequencer: `\uE81C`).
+  - Added dedicated `IconSheetPage` and `--icon-sheet` CLI argument to render and verify all 16 mapped design system iconography tokens.
 - **Pyxillum V2 Windows Native Front End - Phase W2: Geometry, Scaling and Clipping Rules (`apps/windows/`, `xtask/`)**:
   - Enforced minimum window bounds (1000 x 650 epx) via Win32 `WM_GETMINMAXINFO` subclassing in `WindowStateManager.cs`.
   - Added window geometry persistence across restarts (`%LOCALAPPDATA%\Pyxillum\window_state.json`) with monitor intersection checks.

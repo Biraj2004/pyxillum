@@ -313,6 +313,30 @@ This PR rebuilds Pyxillum as a truly native desktop application across Windows 1
   - Re-ran `cargo xtask windows-selftest`: 30/30 runs passed with 0 defects detected.
   - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
 
+---
+
+## Phase W3 Execution Summary (Design System, Tokens, Hover Rules and Icons)
+- **Eliminated Hover Scale Transformations (`Tokens.xaml`)**:
+  - Defined explicit global style overrides for `NavigationViewItem` and `Button` enforcing identity transforms (`CompositeTransform ScaleX="1.0" ScaleY="1.0"`).
+  - Guaranteed that hover and pointer-over visual states restrict changes strictly to background fill, border stroke, and glyph tint, eliminating geometry expansion.
+- **Authoritative Segoe Fluent Icons Alignment (`MainWindow.xaml`, `Views/`)**:
+  - Aligned all shell navigation and page iconography with canonical mappings from `design/icons.toml`:
+    - Device Hub: Bluetooth `\uE702` (was generic broadcast `\uE703`)
+    - Dynamic FX: Sparkles / Flare `\uE706` (was palette `\uE790`)
+    - Solid Colour: Palette `\uE790` (was plus `\uE710`)
+    - Music Rhythm: Music Note `\uEC4F`
+    - DIY Sequencer: Timeline / Sliders `\uE81C` (was upload `\uE7B5`)
+    - Hardware Settings: Settings gear `\uE713`
+    - Window Title Bar: Bluetooth `\uE702`
+    - Device Hub Peripheral Rows: Bluetooth `\uE702`
+- **Icon Sheet Verification Harness (`Views/IconSheetPage.xaml`)**:
+  - Added dedicated `IconSheetPage` rendering all 16 mapped system iconography tokens with large glyphs, logical names, Unicode hex points, and descriptions.
+  - Wired `--icon-sheet` CLI argument to launch directly into the visual verification sheet.
+- **Verification & Quality Gate**:
+  - Re-ran `cargo xtask windows-selftest`: 30/30 scenarios passed with 0 defects.
+  - `cargo xtask check` passed with 81 workspace tests passing and zero warnings.
+
+
 
 
 

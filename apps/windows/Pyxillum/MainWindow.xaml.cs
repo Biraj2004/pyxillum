@@ -63,8 +63,15 @@ namespace Pyxillum
             };
 
             NavView.ItemInvoked += NavView_ItemInvoked;
-            NavView.SelectedItem = NavView.MenuItems[0];
-            NavigateTo("Devices");
+            if (Diagnostics.AppConfig.IconSheet)
+            {
+                NavigateTo("IconSheet");
+            }
+            else
+            {
+                NavView.SelectedItem = NavView.MenuItems[0];
+                NavigateTo("Devices");
+            }
 
             // Observe ViewModel changes for Shell Badges
             ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -106,6 +113,9 @@ namespace Pyxillum
                 case "Settings":
                     ViewModel.Navigate(ScreenId.HardwareSettings);
                     ContentFrame.Navigate(typeof(Views.SettingsPage), ViewModel);
+                    break;
+                case "IconSheet":
+                    ContentFrame.Navigate(typeof(Views.IconSheetPage));
                     break;
             }
         }
