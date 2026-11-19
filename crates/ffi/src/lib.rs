@@ -897,7 +897,7 @@ mod tests {
 
     #[test]
     fn test_ffi_version() {
-        assert_eq!(ffi_version(), "1.0.0");
+        assert_eq!(ffi_version(), env!("CARGO_PKG_VERSION"));
     }
 
     #[test]

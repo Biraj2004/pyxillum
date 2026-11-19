@@ -43,7 +43,7 @@ Toolchain: `rustc 1.85.0-nightly` / `stable`
 | **0** | **Baseline & Architecture Docs** | `docs/`, `dev-v2` branch | **COMPLETED** | Baseline verified via `cargo xtask check` |
 | **1** | **UI-Agnostic Core** | `crates/core`, `crates/app` | **COMPLETED** | Action/AppState/Engine API; 69 workspace tests passing |
 | **2** | **Audio & FFI Surface** | `crates/audio`, `crates/ffi` | **COMPLETED** | UniFFI proc-macros, C#/Swift bindings, 77 workspace tests passing |
-| **3** | **Design Source of Truth** | `design/`, `tools/` | Pending | Tokens, strings.toml, icon map, generator scripts |
+| **3** | **Design Source of Truth** | `design/`, `tools/` | **COMPLETED** | Tokens, strings.toml, icon map, generator scripts, 79 workspace tests passing |
 | **4** | **Windows Native Front End** | `apps/windows` (WinUI 3) | Pending | C# .NET 8, Mica, NavigationView, accessible controls |
 | **5** | **Linux Native Front End** | `apps/linux` (GTK4 + libadwaita)| Pending | GNOME HIG, AdwNavigationSplitView, Flatpak |
 | **6** | **macOS Native Front End** | `apps/macos` (SwiftUI) | Pending | macOS 13+, NavigationSplitView, SF Symbols |
@@ -103,3 +103,26 @@ Toolchain: `rustc 1.85.0-nightly` / `stable`
   - Total workspace tests increased to 77 tests passing (100% pass rate).
   - Formatting (`cargo fmt --check`): PASSED.
   - Clippy (`-D warnings`): PASSED (zero warnings across all workspace targets).
+
+---
+
+## Phase 3 Execution Summary
+- **Unified Design Tokens (`design/tokens.json`)**:
+  - Established 4px spacing scale (`space_0` through `space_16`), corner radii (`none` through `pill`), typography scale (`caption` through `dial_readout`), motion durations and bezier curves, and semantic colors in OKLCH with hex fallbacks (`success`, `warning`, `danger`, `info`, `led_glow`).
+  - Documented that platform host themes supply dynamic surfaces, text, and primary accents.
+- **Localisation & Strings Source of Truth (`design/strings.toml`)**:
+  - All user-facing strings authored in British/Indian English (`colour`, `optimised`, `initialised`, `behaviour`).
+  - Mapped all `ErrorKey::message_key()` entries under `[errors]`.
+  - Added full string catalogues for `[navigation]`, `[common]`, `[devices]`, `[dynamic]`, `[solid]`, `[music]`, `[diy]`, `[settings]`.
+- **System Icon Cross-Platform Mapping (`design/icons.toml`)**:
+  - Mapped core `IconId` definitions to Segoe Fluent glyph hex codes (`\uXXXX`), Apple SF Symbols names, and GNOME Adwaita symbolic icon identifiers.
+- **Page-by-Page Specifications (`design/spec/`)**:
+  - Created detailed layout specifications and measured ASCII wireframes for `devices.md`, `dynamic.md`, `solid.md`, `music.md`, `diy.md`, and `settings.md`.
+  - Resolved historical UI defects: removed duplicated connection badges, enlarged dial readouts, eliminated cramped scroll containers, and fixed modal scrim dimming.
+- **Automated Token Generation Tools (`tools/generate_tokens.py`)**:
+  - Reads `design/tokens.json` and automatically generates `apps/windows/Pyxillum/Themes/Tokens.xaml` (WinUI 3 ResourceDictionary), `apps/macos/PyxillumCore/Sources/Tokens.swift` (SwiftUI constants), and `apps/linux/data/tokens.css` (GTK4 CSS variables).
+- **Automated Verification**:
+  - Implemented `crates/core/tests/strings_toml.rs` validating that all `ErrorKey` message keys exist in `design/strings.toml` and all mandatory sections are present.
+  - Workspace test count increased to 79 tests passing (100% pass rate).
+  - Version updated to `1.0.5` across `Cargo.toml`.
+

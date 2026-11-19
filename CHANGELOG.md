@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pyxillum V2 Native Architecture - Phase 3: Design Source of Truth (`design/`, `tools/`)**:
+  - `design/tokens.json`: Canonical 4px spacing grid, radii scale, typography scale, motion durations, and semantic colours in OKLCH with hex fallbacks.
+  - `design/strings.toml`: Full British/Indian English localisation strings mapping all core `ErrorKey` message keys and user-facing copy.
+  - `design/icons.toml`: System iconography cross-platform mapping for Segoe Fluent glyphs, SF Symbols, and Adwaita symbolic names.
+  - `design/spec/`: Measured layout specifications and ASCII wireframes for Devices, Dynamic FX, Solid Colour, Music Rhythm, DIY Custom, and Hardware Settings.
+  - `tools/generate_tokens.py`: Multi-platform code generation producing `Tokens.xaml` (WinUI 3), `Tokens.swift` (SwiftUI), and `tokens.css` (GTK4).
+  - `crates/core/tests/strings_toml.rs`: Automated test suite ensuring all `ErrorKey::message_key()` entries and required sections exist in `design/strings.toml`.
+  - Version bump to `1.0.5` across workspace crates.
 - **Pyxillum V2 Native Architecture - Phase 2: Audio & UniFFI Surface (`crates/audio`, `crates/ffi`)**:
   - `pyxillum-audio`: Native audio capture abstraction (`AudioSource`), Windows WASAPI loopback, 24-band ISO third-octave spectrum processor with decay ballistics, and simulated acoustic generator.
   - `pyxillum-ffi`: Mozilla UniFFI proc-macro layer exposing `Engine`, `Action`, `AppState`, `StripFrame`, and `PlatformServices` for foreign language consumption.

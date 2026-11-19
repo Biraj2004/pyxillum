@@ -1,0 +1,137 @@
+# Pyxillum Cross-Platform Icon Mapping Source of Truth
+# Maps logical IconId to platform-native vector assets:
+#   - Windows: Segoe Fluent Icons (Segoe UI Variable glyph code)
+#   - macOS: Apple SF Symbols (San Francisco system icon name)
+#   - Linux: GNOME Adwaita Symbolic (FreeDesktop spec icon name)
+
+[icons.bluetooth]
+description = "Bluetooth radio connectivity and pairing"
+segoe_fluent = "\uE702"
+sf_symbol = "antenna.radiowaves.left.and.right"
+adwaita = "preferences-system-bluetooth-symbolic"
+
+[icons.power]
+description = "Master power toggle"
+segoe_fluent = "\uE7E8"
+sf_symbol = "power"
+adwaita = "system-shutdown-symbolic"
+
+[icons.lightbulb]
+description = "Illumination, brightness, and solid colour"
+segoe_fluent = "\uEA80"
+sf_symbol = "lightbulb.fill"
+adwaita = "display-brightness-symbolic"
+
+[icons.sparkle]
+description = "Dynamic lighting effects and animation patterns"
+segoe_fluent = "\uE706"
+sf_symbol = "sparkles"
+adwaita = "applications-graphics-symbolic"
+
+[icons.palette]
+description = "Solid chromatic colour disc and swatches"
+segoe_fluent = "\uE790"
+sf_symbol = "paintpalette.fill"
+adwaita = "color-select-symbolic"
+
+[icons.music]
+description = "Music reactive mode and acoustic tracking"
+segoe_fluent = "\uEC4F"
+sf_symbol = "music.note"
+adwaita = "audio-x-generic-symbolic"
+
+[icons.waveform]
+description = "Real-time audio spectrum frequency visualizer"
+segoe_fluent = "\uE95B"
+sf_symbol = "waveform"
+adwaita = "audio-volume-high-symbolic"
+
+[icons.timeline]
+description = "DIY custom sequencer and keyframe nodes"
+segoe_fluent = "\uE81C"
+sf_symbol = "slider.horizontal.below.rectangle"
+adwaita = "view-list-ordered-symbolic"
+
+[icons.settings]
+description = "Hardware settings and EEPROM configuration"
+segoe_fluent = "\uE713"
+sf_symbol = "gearshape.fill"
+adwaita = "preferences-system-symbolic"
+
+[icons.speed]
+description = "Animation velocity and tempo"
+segoe_fluent = "\uE945"
+sf_symbol = "gauge.with.needle"
+adwaita = "media-seek-forward-symbolic"
+
+[icons.search]
+description = "Preset and effect filtering search input"
+segoe_fluent = "\uE721"
+sf_symbol = "magnifyingglass"
+adwaita = "edit-find-symbolic"
+
+[icons.play]
+description = "Playback start"
+segoe_fluent = "\uE768"
+sf_symbol = "play.fill"
+adwaita = "media-playback-start-symbolic"
+
+[icons.pause]
+description = "Playback pause"
+segoe_fluent = "\uE769"
+sf_symbol = "pause.fill"
+adwaita = "media-playback-pause-symbolic"
+
+[icons.chevron_right]
+description = "Right directional navigation"
+segoe_fluent = "\uE76C"
+sf_symbol = "chevron.right"
+adwaita = "go-next-symbolic"
+
+[icons.chevron_left]
+description = "Left directional navigation"
+segoe_fluent = "\uE76B"
+sf_symbol = "chevron.left"
+adwaita = "go-previous-symbolic"
+
+[icons.refresh]
+description = "Device scan and query refresh"
+segoe_fluent = "\uE72C"
+sf_symbol = "arrow.clockwise"
+adwaita = "view-refresh-symbolic"
+
+[icons.warning]
+description = "Safety confirmation and alert status"
+segoe_fluent = "\uE7BA"
+sf_symbol = "exclamationmark.triangle.fill"
+adwaita = "dialog-warning-symbolic"
+
+[icons.info]
+description = "Informational and diagnostic callout"
+segoe_fluent = "\uE946"
+sf_symbol = "info.circle.fill"
+adwaita = "dialog-information-symbolic"
+
+[icons.success]
+description = "Operation success and positive verification"
+segoe_fluent = "\uE73E"
+sf_symbol = "checkmark.circle.fill"
+adwaita = "emblem-ok-symbolic"
+
+[icons.close]
+description = "Dismiss and dialog close"
+segoe_fluent = "\uE711"
+sf_symbol = "xmark"
+adwaita = "window-close-symbolic"
+
+[icons.speaker]
+description = "PC system audio and WASAPI loopback"
+segoe_fluent = "\uE7F5"
+sf_symbol = "speaker.wave.3.fill"
+adwaita = "audio-speakers-symbolic"
+
+[icons.microphone]
+description = "Physical microphone and auxiliary input"
+segoe_fluent = "\uE720"
+sf_symbol = "mic.fill"
+adwaita = "audio-input-microphone-symbolic"
